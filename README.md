@@ -19,6 +19,7 @@ Bu nedenle herkesten ricam, warez veya crack sitelerinde, farkli elektronik foru
 - NC77 veya NC77WA
 - IAR EW7700
 
+Eylul 2020 : Demo modunda calisan bir compiler temin edildi. Dongle ile full calisabiliyor. Icabina bakilmali :)
 
 Kolari sivadik ve 2020 senesinin pandemi gunlerinde bu calismaya basladik
 Baris DINC
