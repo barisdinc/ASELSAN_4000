@@ -55,3 +55,6 @@ dkms.conf
 !*.HEX
 .DS_Store
 __pycache__/
+
+# PC yazılımları (Windows programı ve kitaplıkları) olduğu gibi izleniyor
+!tools/t4000_programlama_yazilimi/*
