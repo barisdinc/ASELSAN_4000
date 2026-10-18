@@ -196,23 +196,43 @@ if (RING.includes('FREQ')) {
   const rec = b => Array.from(b.ram.slice(0x370, 0x37D));
   const synthBytes = r => r.slice(0, 5).concat(r.slice(7, 12)).map(x => x.toString(16).padStart(2, '0')).join(' ');
   /* the firmware's own words for a frequency: put it into EEPROM channel 1 of the original image */
-  const reference = (hz, uhf) => { const o = new Board(origText ? parseHex(origText) : rom), ee = B.defaultEeprom();
-    if (uhf) UHF(ee); B.eeSetChannel(ee, 1, hz, hz, { name: 'REF' }); B.eeFixSums(ee); o.eeprom.mem.set(ee);
+  const reference = (hz, uhf, txHz) => { const o = new Board(origText ? parseHex(origText) : rom), ee = B.defaultEeprom();
+    if (uhf) UHF(ee); B.eeSetChannel(ee, 1, hz, txHz || hz, { name: 'REF' }); B.eeFixSums(ee); o.eeprom.mem.set(ee);
     o.font = V.buildFont(o.rom); boot(o, 2.6); return synthBytes(rec(o)); };
   const b = radio();
   boot(b, 2.5);
   scenario(b, 'FREKANS: gir', enter, ['LIST', ...RING.slice(0, RING.indexOf('FREQ') + 1), '___ ____'].join('|'));
   scenario(b, 'haneler, 3. haneden sonra boşluk', '1 5 6 5 2 5', '1__ ____|15_ ____|156 ____|156 5___|156 52__|156 525_');
-  scenario(b, '# ayarlar (6 hane = kHz)', '#', '156 5250');
+  const vco0 = vco(b);
+  scenario(b, '# alma frekansını saklar, gönderme adımı', '#', '--- ----');
+  check('1. adımda telsiz değişmedi', vco(b) === vco0, vco(b));
+  scenario(b, 'gönderme frekansı haneleri', '1 6 0 6 5', '1-- ----|16- ----|160 ----|160 6---|160 65--');
+  scenario(b, 'boşken * alma frekansına döner', '* * * * * *', '160 6---|160 ----|16- ----|1-- ----|--- ----|156 5250');
+  scenario(b, 'alma frekansı düzeltilir', '* * 7 5 #', '156 525_|156 52__|156 527_|156 5275|--- ----');
+  keys(b, 'm'); keys(b, enter);
+  scenario(b, 'yeniden: alma 156,525, gönderme 160,650', '1 5 6 5 2 5 # 1 6 0 6 5 0 #', '1__ ____|15_ ____|156 ____|156 5___|156 52__|156 525_|--- ----|1-- ----|16- ----|160 ----|160 6---|160 65--|160 650-|156 5250');
   check('RX VCO = 156,525 + 45', vco(b) === '201.5250', vco(b));
-  check('sentezör baytları firmware ile aynı (156,525)', synthBytes(rec(b)) === reference(156.525e6), synthBytes(rec(b)) + ' / ' + reference(156.525e6));
-  scenario(b, 'normal ekranda frekans', 'm', '156 5250');
+  check('sentezör baytları firmware ile aynı (RX 156,525 / TX 160,650)', synthBytes(rec(b)) === reference(156.525e6, false, 160.65e6), synthBytes(rec(b)) + ' / ' + reference(156.525e6, false, 160.65e6));
   b.inputs.P4 = 0x7F; b.run(FCLK * 0.6);
-  check('PTT: TX VCO = 156,525 (simplex)', vco(b) === '156.5250', vco(b));
+  check('menüdeyken PTT: TX 160,650, ekran menüde kalır', vco(b) === '160.6500' && lcd(b) === '156 5250', vco(b) + ' ' + lcd(b));
   b.inputs.P4 = 0xFF; b.run(FCLK * 0.4);
-  check('PTT bırakıldı: RX 201,525', vco(b) === '201.5250', vco(b));
+  scenario(b, 'normal ekranda alma frekansı', 'm', '156 5250');
+  b.inputs.P4 = 0x7F; b.run(FCLK * 0.6);
+  check('PTT: TX VCO 160,650, ekranda gönderme frekansı', vco(b) === '160.6500' && lcd(b) === '160 6500', vco(b) + ' ' + lcd(b));
+  b.inputs.P4 = 0xFF; b.run(FCLK * 0.4);
+  check('PTT bırakıldı: RX 201,525, ekranda alma frekansı', vco(b) === '201.5250' && lcd(b) === '156 5250', vco(b) + ' ' + lcd(b));
+  b.inputs.P4 = 0x7F; b.run(FCLK * 0.3); b.inputs.P4 = 0xFF; b.run(FCLK * 0.4);
+  check('ikinci PTT de aynı', lcd(b) === '156 5250' && vco(b) === '201.5250', vco(b) + ' ' + lcd(b));
+  keys(b, enter + '156525#160650');
+  b.inputs.P4 = 0x7F; b.run(FCLK * 0.6);
+  check('gönderirken tuşlar yok sayılır (firmware)', keys(b, '#')[0] === '160 650-' && vco(b) === '160.6500', lcd(b) + ' ' + vco(b));
+  b.inputs.P4 = 0xFF; b.run(FCLK * 0.4);
+  scenario(b, 'bırakınca # ayarlar', '#', '156 5250');
+  { const g = keys(b, 's156525#177000#*');
+    check('gönderme adımında bant dışı: hata, sonra girişe dönüş', g[g.length - 2] === 'ERROR   ' && g[g.length - 1] === '177 000-', g.join('|')); }
+  keys(b, 'm');
   for (const [ks, f, name] of [['1565125', 156.5125e6, '12,5 kHz adım'], ['156010', 156.010e6, '10 kHz adım'], ['1560050', 156.005e6, '5 kHz adım'], ['176900', 176.9e6, 'bant üst ucu']]) {
-    keys(b, enter + 's' + ks + '#');
+    keys(b, enter + 's' + ks + '##');
     const want = ((f + 45e6) / 1e6).toFixed(4);
     check(name + ': ' + (f / 1e6) + ' MHz', vco(b) === want && synthBytes(rec(b)) === reference(f), vco(b) + ' ' + synthBytes(rec(b)) + ' / ' + reference(f));
     keys(b, 'm');
@@ -229,13 +249,21 @@ if (RING.includes('FREQ')) {
   keys(b, '*m');
   b.panel.setExt(((16 - 3) & 15) << 4 | 0x0F, b); b.run(FCLK * 0.6);
   check('kanal anahtarı: kanala dönüş', vco(b) === '201.0500' && lcd(b) === 'KANAL 03', vco(b) + ' ' + lcd(b));
+  b.inputs.P4 = 0x7F; b.run(FCLK * 0.6);
+  check('kanaldayken PTT: ekranda kanal adı kalır (VFO modu bitti)', lcd(b) === 'KANAL 03' && vco(b) !== '201.0500', vco(b) + ' ' + lcd(b));
+  b.inputs.P4 = 0xFF; b.run(FCLK * 0.4);
   /* UHF configuration (base 400 MHz, -45 MHz injection, prescaler 128) */
   const u = radio(UHF);
   boot(u, 2.5);
-  keys(u, enter + '433125#');
+  keys(u, enter + '433125##');
   check('UHF: 433,125 MHz, RX VCO 388,125', vco(u) === '388.1250' && synthBytes(rec(u)) === reference(433.125e6, true), vco(u) + ' ' + synthBytes(rec(u)) + ' / ' + reference(433.125e6, true));
   keys(u, 'm'); u.inputs.P4 = 0x7F; u.run(FCLK * 0.6);
   check('UHF PTT: TX 433,125', vco(u) === '433.1250', vco(u));
+  u.inputs.P4 = 0xFF; u.run(FCLK * 0.4);
+  keys(u, enter + '433125#438125#m');
+  check('UHF çift frekans: RX VCO 388,125, baytlar firmware ile aynı', vco(u) === '388.1250' && synthBytes(rec(u)) === reference(433.125e6, true, 438.125e6), vco(u) + ' ' + synthBytes(rec(u)) + ' / ' + reference(433.125e6, true, 438.125e6));
+  u.inputs.P4 = 0x7F; u.run(FCLK * 0.6);
+  check('UHF PTT: TX 438,125, ekranda 438 1250', vco(u) === '438.1250' && lcd(u) === '438 1250', vco(u) + ' ' + lcd(u));
   const t = radio(ee => { ee[0x018] |= 0x80; });
   boot(t, 2.5);
   const g = keys(t, enter + '1#');
@@ -261,7 +289,7 @@ if (origText) {
   check('seri yükleyiciyle yazıldı ve doğrulandı', !up.error, up.error || up.log.slice(-1)[0]);
   b.font = V.buildFont(b.rom); boot(b, 3);
   scenario(b, 'yüklemeden sonra SAYI çalışıyor', 'mms 2 0 2 6 s', 'LIST|NUMBER|_|2_|20_|202_|2026_|6202');
-  if (RING.includes('FREQ')) { keys(b, 'm'); const g = keys(b, 'mmmmms156525#'); check('yüklemeden sonra FREKANS çalışıyor', g[g.length - 1] === '156 5250' && (b.radioState().vco / 1e6).toFixed(4) === '201.5250', g.join('|')); }
+  if (RING.includes('FREQ')) { keys(b, 'm'); const g = keys(b, 'mmmmms156525##'); check('yüklemeden sonra FREKANS çalışıyor', g[g.length - 1] === '156 5250' && (b.radioState().vco / 1e6).toFixed(4) === '201.5250', g.join('|')); }
   if (RING.includes('GAME')) { keys(b, 'm'); const g = keys(b, 'mmmms123#'); check('yüklemeden sonra OYUN çalışıyor', g[4] === '___     ' && /^123 [v^]  1$|^WIN    1$/.test(g[8]), g.join('|')); }
   if (RING.includes('CALC')) { keys(b, 'm'); scenario(b, 'yüklemeden sonra HESAP çalışıyor', 'mmms 7 * * * 6 #', 'LIST|NUMBER|CALC|       0|       7|+      7|-      7|*      7|*      6|      42'); }
 }

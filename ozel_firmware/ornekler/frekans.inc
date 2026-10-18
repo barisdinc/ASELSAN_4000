@@ -1,14 +1,24 @@
-; frekans.inc - FREKANS menü öğesi: tuş takımından frekans girip telsizi ona ayarlama (VFO)
+; frekans.inc - FREKANS menü öğesi: tuş takımından alma ve gönderme frekansı girip telsizi
+;               onlara ayarlama (VFO modu)
 ;
-;   ... m (FREKANS) s   -> "___ ____"
+;   ... m (FREKANS) s   -> "___ ____"            1. adım: ALMA (RX) frekansı
 ;   0-9      frekans, noktasız: 156525 = 156,525 MHz; 12,5 kHz adım için 7 hane: 1565125
 ;            ekranda "156 5125" (3. haneden sonra boşluk = ondalık nokta)
 ;   *        son haneyi sil
-;   #        ayarla: RX ve TX (simplex) bu frekansa; onay sesi; normal ekranda frekans görünür
+;   #        alma frekansını hafızaya al (onay sesi), ekran temizlenir: "--- ----"
+;                                                 2. adım: GÖNDERME (TX) frekansı
+;   0-9 *    aynı şekilde gönderme frekansı ('-' = gönderme frekansı giriliyor)
+;   #        ayarla: telsiz RX'te 1. frekansı, TX'te 2. frekansı kullanır (onay sesi)
+;            hiç hane girmeden # = gönderme de alma frekansında (simplex)
+;   * (boşken) 1. adıma, alma frekansına geri dön
 ;   s        girişi temizle
-;   m        çık (telsiz yeni frekansta kalır; kanal anahtarı çevrilince kanala döner)
+;   m        çık (telsiz yeni frekanslarda kalır; kanal anahtarı çevrilince kanala döner)
+;
+; VFO modunda normal ekran almada alma frekansını, gönderirken (PTT) gönderme frekansını
+; gösterir: VFO_KANCA telsiz durum makinesinin her turunda (0x00F84D) radyo durumuna bakar.
+;
 ; Hatalar ("ERROR" / "HATA" + bip): 6 haneden az, 2,5 kHz ızgarasında değil, bandın dışında,
-; telsiz göndermedeyken. Hatadan sonraki tuş girişe döner.
+; telsiz göndermedeyken. Hatadan sonraki tuş girişe döner (aynı adımda kalınır).
 ;
 ; Firmware'in frekans düzeni (disasm/c_clean/synth.c, simülatörle doğrulandı):
 ;   f = (taban*10 + kelime) * 2,5 kHz;  taban RAM $0224 (25 kHz birim, EE[0x58C] kopyası)
@@ -26,10 +36,14 @@
 ; $0363 bu 13 baytlık kaydın kopyası. Kanal seçince firmware (LIST menüsü, F_00350F) yeni
 ; kelimeleri $0370'e koyup radyo durumunu ($0228) 1 yapar: ana döngü RX'e yeniden girer ve
 ; sentezörü yükler (F_00EA11). Burada da aynısı yapılır; TX'e geçişte $0377 kullanılır.
+; RX ve TX'in adımı (d, kod, RW) ayrı ayrı hesaplanır: iki frekans farklı ızgarada olabilir.
+;
+; Radyo durumu ($0228, simülatörde izlendi): 1 RX'e gir, 2 RX bekleme, PTT ile 4 -> 8 (gönderme),
+; bırakınca 12 -> 1 -> 2. 4..12 gönderme tarafı sayılır.
 
 FR_HANE     .EQU OZEL_RAM+$40   ; 7 bayt girilen haneler (ASCII)
 FR_NDIG     .EQU OZEL_RAM+$47
-FR_DURUM    .EQU OZEL_RAM+$48   ; bit 0: hata gösteriliyor
+FR_DURUM    .EQU OZEL_RAM+$48   ; bit 0: hata gösteriliyor, bit 1: gönderme frekansı adımı
 FR_FU       .EQU OZEL_RAM+$4A   ; 4 bayt: frekans, 2,5 kHz birim
 FR_KELIME   .EQU OZEL_RAM+$4E   ; 2 bayt
 FR_D        .EQU OZEL_RAM+$50   ; 2 bayt: adım böleni d
@@ -41,18 +55,36 @@ FR_BOLEN    .EQU OZEL_RAM+$5C   ; 2 bayt
 FR_KALAN    .EQU OZEL_RAM+$5E   ; 4 bayt
 FR_T        .EQU OZEL_RAM+$62   ; 4 bayt ara değer
 FR_KAYIT    .EQU OZEL_RAM+$66   ; 5 bayt: hesaplanan sentezör baytları (FR_SENTEZ çıktısı)
+; VFO modu (açılışta sıfırlanmaz: VFO_IMZA ve sentezör kaydının eşleşmesi aranır)
+VFO_IMZA    .EQU OZEL_RAM+$70   ; 2 bayt: 'VF' = VFO modu kuruldu
+VFO_DURUM   .EQU OZEL_RAM+$72   ; ekranda/kanal adında olan: 0 alma, 1 gönderme frekansı
+VFO_RX_KAYIT .EQU OZEL_RAM+$73  ; 5 bayt: alma frekansının sentezör baytları
+VFO_TX_KAYIT .EQU OZEL_RAM+$78  ; 5 bayt: gönderme frekansınınkiler
+VFO_METIN   .EQU OZEL_RAM+$7D   ; 8 bayt alma frekansı metni, ardından 8 bayt gönderme
+VFO_RX_HANE .EQU OZEL_RAM+$8D   ; 7 bayt: alma frekansının haneleri (geri dönmek / simplex için)
 
 F_HATA_G    .EQU 1
+F_TX_ADIM   .EQU 2
+VFO_IMZA_D  .EQU $4656          ; "VF"
 
 SYN_KAYIT   .EQU $0370          ; geçerli kanalın sentezör kaydı (13 bayt)
 SYN_YEDEK   .EQU $0363          ; kopyası
-RADYO_DURUM .EQU $0228          ; 1 = RX'e gir (sentezörü yükle), 2..3 RX, 4.. TX tarafı
+RADYO_DURUM .EQU $0228          ; 1 = RX'e gir (sentezörü yükle), 2..3 RX, 4..12 TX tarafı
 KANAL_ADI   .EQU $024A          ; normal ekranda gösterilen 8 karakter
 BAND_TABAN  .EQU $0224
 RX_KAYMA    .EQU $01F9
 ON_BOLUCU   .EQU $020B
 FREF        .EQU $01F5
 TERS_TABLO  .EQU $002B06        ; bit sırası ters çevirme tablosu (256 bayt)
+F_RADYO_SON .EQU $00E626        ; telsiz durum makinesinin sonunda çağrılan fonksiyon
+
+; ---------------------------------------------------------------------------------------------
+; Kanca: durum makinesinin sonundaki "JSRL F_00E626" bizim yordamımıza gider
+FR_KOD_ADRES .EQU *
+        .ORG $00F84D
+        .EXPECT $22,$26,$E6,$00
+        JSRL  VFO_KANCA
+        .ORG FR_KOD_ADRES
 
 ; ---------------------------------------------------------------------------------------------
 FREKANS_GIR:
@@ -63,7 +95,7 @@ FREKANS_GIR:
         SEM
         LDM   #bank(FREKANS_TUS),HANDLER_BK
         LDM   #0,FR_NDIG
-        LDM   #0,FR_DURUM
+        LDM   #0,FR_DURUM               ; 1. adım: alma frekansı
         JMP   FK_SON
 
 ; ---------------------------------------------------------------------------------------------
@@ -110,8 +142,14 @@ FK_TEMIZLE:
 
 FK_SIL: .ASSUME M=1,X=0
         LDA   A,FR_NDIG
-        BEQ   FK_SON
+        BEQ   FK_GERI
         DEC   FR_NDIG
+        BRA   FK_SON
+FK_GERI:                                ; boşken *: gönderme adımından alma adımına dön
+        BBC   #F_TX_ADIM,FR_DURUM,FK_SON
+        CLB   #F_TX_ADIM,FR_DURUM
+        CLM
+        JSR   FR_RX_HANELER
         BRA   FK_SON
 
 FK_RAKAM:
@@ -137,26 +175,64 @@ FK_RAKAM:
         INC   FR_NDIG
         BRA   FK_SON
 
-; ---- ayarla
+; ---- # : alma frekansını sakla ya da (2. adımda) ayarla
 FK_AYARLA:
         .ASSUME M=1,X=0
-        LDA   A,FR_NDIG
+        BBC   #F_TX_ADIM,FR_DURUM,FA_0
+        LDA   A,FR_NDIG                 ; 2. adımda hane yoksa: simplex
+        BNE   FA_0
+        CLM
+        JSR   FR_RX_HANELER
+        SEM
+FA_0:   LDA   A,FR_NDIG
         CMP   A,#6
         BCC   FK_HATA
+        BBC   #F_TX_ADIM,FR_DURUM,FA_HESAP
         LDA   A,RADYO_DURUM             ; göndermedeyken değiştirme
         CMP   A,#4
         BCS   FK_HATA
+FA_HESAP:
         CLM
         JSR   FR_HESAPLA                ; C = 1: geçersiz frekans
-        BCS   FK_HATA
+        BCC   FA_GECERLI
+        JMP   FK_HATA
+FA_GECERLI:
         SEM                             ; 6 hane girildiyse 7. hane 0
         LDA   A,FR_NDIG
         CMP   A,#7
         BEQ   FA_1
         LDM   #'0',FR_HANE+6
         LDM   #7,FR_NDIG
-FA_1:   CLM
-        JSR   FR_YAZ                    ; sentezör kaydı, kanal adı, RX'i yeniden yükle
+FA_1:   BBS   #F_TX_ADIM,FR_DURUM,FA_TX
+        ; 1. adım: alma frekansı -> sentezör baytları, metin, haneler; ekranı temizle
+        CLM
+        LDA   A,RX_KAYMA
+        JSR   FR_SENTEZ
+        LDX   #0
+        JSR   FR_SAKLA
+        LDX   #0
+        SEM
+FA_RXH: LDA   A,FR_HANE,X
+        STA   A,VFO_RX_HANE,X
+        INX
+        CPX   #7
+        BNE   FA_RXH
+        SEB   #F_TX_ADIM,FR_DURUM
+        LDM   #0,FR_NDIG
+        BRA   FA_ONAY
+FA_TX:  ; 2. adım: gönderme frekansı (kayma yok) -> telsizi ayarla
+        CLM
+        LDA   A,#0
+        JSR   FR_SENTEZ
+        LDX   #5
+        JSR   FR_SAKLA
+        JSR   FR_UYGULA                 ; sentezör kaydı, kanal adı, RX'i yeniden yükle
+        SEM
+        CLB   #F_TX_ADIM,FR_DURUM
+        CLM
+        JSR   FR_RX_HANELER             ; ekranda alma frekansı kalır
+FA_ONAY:
+        CLM
         LDY   #3                        ; onay: 2 x 1000 Hz
         JSRL  F_BEEP
         JMP   FK_SON
@@ -384,46 +460,178 @@ FR_TERS:
         AND   A,#$00FF
         RTS
 
-; RX ve TX sentezör baytlarını kayda yaz, kopyala, kanal adını ayarla, RX'i yeniden yükle
-FR_YAZ:
+; FR_KAYIT'i ve girilen frekansın metnini sakla: X = 0 alma, 5 gönderme (M=0)
+FR_SAKLA:
         .ASSUME M=0,X=0
-        LDA   A,RX_KAYMA
-        JSR   FR_SENTEZ
-        LDX   #0
+        LDY   #0
         SEM
-FY_RX:  LDA   A,FR_KAYIT,X
-        STA   A,SYN_KAYIT,X             ; $0370..$0374
+FSK_1:  LDA   A,FR_KAYIT,Y
+        STA   A,VFO_RX_KAYIT,X          ; X = 5 ise VFO_TX_KAYIT
         INX
-        CPX   #5
-        BNE   FY_RX
+        INY
+        CPY   #5
+        BNE   FSK_1
         CLM
-        LDA   A,#0                      ; TX: kayma yok (simplex)
-        JSR   FR_SENTEZ
+        JSR   FR_METIN                  ; "156 5250" -> LCD
+        LDX   #0                        ; metin: alma VFO_METIN, gönderme VFO_METIN+8
+        SEM
+        BBC   #F_TX_ADIM,FR_DURUM,FSK_2
+        LDX   #8
+FSK_2:  LDY   #0
+FSK_3:  LDA   A,LCD,Y
+        STA   A,VFO_METIN,X
+        INX
+        INY
+        CPY   #8
+        BNE   FSK_3
+        CLM
+        RTS
+
+; alma frekansının hanelerini girişe geri koy (M=0)
+FR_RX_HANELER:
+        .ASSUME M=0,X=0
         LDX   #0
         SEM
-FY_TX:  LDA   A,FR_KAYIT,X
+FRH_1:  LDA   A,VFO_RX_HANE,X
+        STA   A,FR_HANE,X
+        INX
+        CPX   #7
+        BNE   FRH_1
+        LDM   #7,FR_NDIG
+        CLM
+        RTS
+
+; VFO'yu kur: RX ve TX sentezör baytlarını kayda yaz, kopyala, kanal adı = alma frekansı,
+; RX'i yeniden yükle (M=0)
+FR_UYGULA:
+        .ASSUME M=0,X=0
+        LDX   #0
+        SEM
+FU_1:   LDA   A,VFO_RX_KAYIT,X
+        STA   A,SYN_KAYIT,X             ; $0370..$0374
+        LDA   A,VFO_TX_KAYIT,X
         STA   A,SYN_KAYIT+7,X           ; $0377..$037B
         INX
         CPX   #5
-        BNE   FY_TX
-        LDX   #0                        ; kaydın kopyası ($0363) ve kanal adı
-FY_KOP: LDA   A,SYN_KAYIT,X
+        BNE   FU_1
+        LDX   #0                        ; kaydın kopyası ($0363)
+FU_2:   LDA   A,SYN_KAYIT,X
         STA   A,SYN_YEDEK,X
         INX
         CPX   #13
-        BNE   FY_KOP
-        CLM
-        JSR   FR_METIN
+        BNE   FU_2
         LDX   #0
-        SEM
-FY_AD:  LDA   A,LCD,X
+FU_3:   LDA   A,VFO_METIN,X
         STA   A,KANAL_ADI,X
         INX
         CPX   #8
-        BNE   FY_AD
+        BNE   FU_3
+        LDM   #0,VFO_DURUM              ; kanal adında alma frekansı
         LDM   #1,RADYO_DURUM            ; ana döngü RX'e yeniden girer, sentezörü yükler
         CLM
+        LDM   #VFO_IMZA_D,VFO_IMZA
         RTS
+
+; ---------------------------------------------------------------------------------------------
+; VFO_KANCA: telsiz durum makinesinin her turunda (0x00F84D'den JSRL ile), sonra F_00E626'ya
+; devam eder. VFO modundaysa ve almadan göndermeye (ya da tersine) geçildiyse kanal adını
+; diğer frekansın metniyle değiştirir; ekranda normal ekran duruyorsa onu da hemen yeniler.
+; Kanal anahtarı / LIST / tarama sentezör kaydını değiştirince VFO modu kendiliğinden biter.
+; Tüm yazmaçlar korunur; F_00E626 aynı yığınla çağrılmış olur.
+VFO_KANCA:
+        .ASSUME M=0,X=0
+        PHP
+        CLM
+        PHA
+        PHX
+        PHY                             ; yığında 8 bayt: çerçeve göstericisi $0C,S
+        LDA   A,VFO_IMZA
+        CMP   A,#VFO_IMZA_D
+        BEQ   VK_VFO
+        JMP   VK_SON
+VK_VFO:
+        LDX   #0                        ; sentezör kaydı hâlâ bizim mi?
+        SEM
+VK_KAYIT:
+        LDA   A,SYN_KAYIT,X
+        CMP   A,VFO_RX_KAYIT,X
+        BNE   VK_BITTI
+        LDA   A,SYN_KAYIT+7,X
+        CMP   A,VFO_TX_KAYIT,X
+        BNE   VK_BITTI
+        INX
+        CPX   #5
+        BNE   VK_KAYIT
+        LDY   #0                        ; istenen: 0 alma, 1 gönderme (durum 4..12)
+        LDA   A,RADYO_DURUM
+        CMP   A,#4
+        BCC   VK_ISTENEN
+        CMP   A,#$0D
+        BCS   VK_ISTENEN
+        INY
+VK_ISTENEN:
+        TYA
+        CMP   A,VFO_DURUM
+        BEQ   VK_SON
+        STA   A,VFO_DURUM
+        CLM
+        AND   A,#$00FF
+        ASL   A
+        ASL   A
+        ASL   A
+        TAX                             ; X = yeni metin (0 / 8)
+        EOR   A,#8
+        TAY                             ; Y = eski metin
+        SEM
+        LDA   A,MENU                    ; menüdeyken ekrana dokunma
+        BNE   VK_AD
+        PHX                             ; ekranda eski metin (normal ekran) mı?
+        LDX   #0
+VK_KARS:
+        LDA   A,VFO_METIN,Y
+        CMP   A,LCD,X
+        BNE   VK_BASKA
+        INY
+        INX
+        CPX   #8
+        BNE   VK_KARS
+        PLX
+        LDY   #0
+VK_YAZ: LDA   A,VFO_METIN,X             ; kanal adı ve ekran tamponu
+        STA   A,KANAL_ADI,Y
+        STA   A,LCD,Y
+        INX
+        INY
+        CPY   #8
+        BNE   VK_YAZ
+        CLM
+        LDA   A,$0C,S                   ; NC77 çerçeve göstericisi
+        PHA
+        JSRL  F_LCD
+        CLM
+        PLA
+        BRA   VK_SON
+VK_BASKA:
+        .ASSUME M=1,X=0
+        PLX                             ; ekranda başka bir şey var: yalnız kanal adı
+VK_AD:  LDY   #0
+VK_AD1: LDA   A,VFO_METIN,X
+        STA   A,KANAL_ADI,Y
+        INX
+        INY
+        CPY   #8
+        BNE   VK_AD1
+        BRA   VK_SON
+VK_BITTI:
+        .ASSUME M=1,X=0
+        CLM
+        LDM   #0,VFO_IMZA               ; kanala dönülmüş: VFO modu bitti
+VK_SON: CLM
+        PLY
+        PLX
+        PLA
+        PLP
+        JMPL  F_RADYO_SON
 
 ; ekran (M=0)
 FR_EKRAN:
@@ -451,7 +659,8 @@ FE_GIRIS:
         CLM
         ; düşer
 
-; girilen haneleri "156 5250" biçiminde LCD'ye yaz; girilmeyen haneler '_' (M=0)
+; girilen haneleri "156 5250" biçiminde LCD'ye yaz; girilmeyen haneler '_' (alma frekansı)
+; ya da '-' (gönderme frekansı) (M=0)
 FR_METIN:
         .ASSUME M=0,X=0
         SEM
@@ -468,6 +677,8 @@ FM_1:   TXA
         LDA   A,FR_HANE,X
         BRA   FM_KOY
 FM_ALT: LDA   A,#'_'
+        BBC   #F_TX_ADIM,FR_DURUM,FM_KOY
+        LDA   A,#'-'
 FM_KOY: STA   A,LCD,Y
         INX
         INY

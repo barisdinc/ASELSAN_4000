@@ -8,7 +8,7 @@ Orijinal YA4000S yazılımına eklenen özellikler. Her örnek önce simülatör
 | `YA4000S_SAYI.HEX` | Menüde **SAYI** öğesi: girilen sayıyı yazar, `s` ile tersini gösterir | `ornekler/sayi_ters.asm` |
 | `YA4000S_HESAP.HEX` | SAYI + **HESAP**: dört işlemli hesap makinesi | `ornekler/hesap.asm` |
 | `YA4000S_OYUN.HEX` | SAYI + HESAP + **OYUN**: sayı tahmin oyunu (rastgele sayı, sesler) | `ornekler/oyun.asm` |
-| `YA4000S_FREKANS.HEX` | Önceki üçü + **FREKANS**: tuş takımından frekans girip telsizi ayarlama (VFO) | `ornekler/frekans.asm` |
+| `YA4000S_FREKANS.HEX` | Önceki üçü + **FREKANS**: tuş takımından alma ve gönderme frekansı girip telsizi ayarlama (VFO modu; PTT'de ekranda gönderme frekansı) | `ornekler/frekans.asm` |
 | `YA4000S_FREKANS_YATOLYE.HEX` | FREKANS'ın tamamı + açılışta 5 saniye **yATOLYE** (flash'a gömülü, EEPROM / programlayıcı değiştiremez; sürüm yazısı "AS V2-3" yerine) | `ornekler/frekans_yatolye.asm` |
 
 Kaynak düzeni (`ornekler/`):
@@ -95,28 +95,45 @@ Telsiz 1–999 arasında bir sayı tutar.
 - **İstenen frekans ve sürede ses (`OY_NOTA`).** Firmware'in bip yordamı `F_BEEP` tek notalık bir kodla çağrılır; ALERT ayarını ve zamanlayıcıyı o kurar. Ardından frekans `TA0 = 2016000 / f` ve süre `BEEP_SURE` (0x0214, 10 ms birim) üzerine yazılır. Firmware'in kendi tablosundaki (ROM 0x2C06) notalar en çok 30 ms sürer. ALERT kapalıysa oyun da sessizdir.
 - **Bekleme:** `F_DELAY` (Y = ms). Melodi süresince (yaklaşık 0,7 s) işleyici bekler; kesmeler çalışmaya devam eder.
 
-## FREKANS kullanımı (VFO)
+## FREKANS kullanımı (VFO modu)
+
+İki adım: önce **alma (RX)**, sonra **gönderme (TX)** frekansı.
 
 | Tuş | İş |
 |---|---|
-| `m` ×5, `s` | Menü: … GAME → **FREQ** (Türkçe **FREKANS**), ekranda `___ ____` |
+| `m` ×5, `s` | Menü: … GAME → **FREQ** (Türkçe **FREKANS**), ekranda `___ ____` (alma frekansı) |
 | `0–9` | Frekans, noktasız. `156525` = 156,525 MHz. 12,5 kHz adımlar için 7 hane: `1565125`. Ekranda `156 5125`; 3. haneden sonraki boşluk ondalık noktadır |
 | `*` | Son haneyi sil |
 | `s` | Girişi temizle |
-| `#` | Ayarla: RX ve TX bu frekansa (simplex). Onay sesi: 2 × 1000 Hz. Normal ekranda kanal adı yerine frekans görünür |
-| `m` | Çık. Telsiz yeni frekansta kalır |
+| `#` (1. adım) | Alma frekansını hafızaya al (onay sesi). Ekran temizlenir: `--- ----`. Çizgiler gönderme frekansının girildiğini gösterir |
+| `0–9`, `*` | Gönderme frekansı, aynı şekilde: `160 65--` |
+| `#` (2. adım) | Ayarla (onay sesi): telsiz almada 1. frekansı, gönderirken 2. frekansı kullanır. Ekranda alma frekansı kalır |
+| `#` (2. adımda hiç hane yokken) | Simplex: gönderme frekansı = alma frekansı |
+| `*` (2. adımda giriş boşken) | 1. adıma dön; alma frekansı düzeltilebilir |
+| `m` | Çık. Telsiz yeni frekanslarda kalır |
 
-Kanal anahtarı çevrilince telsiz o kanala döner. Frekans yalnızca RAM'de tutulur: EEPROM'a yazılmaz, kapatınca kaybolur.
+Örnek: `156525#160650#` → alma 156,525 MHz, gönderme 160,650 MHz. `156525##` → ikisi de 156,525 MHz.
 
-Bu durumlarda `ERROR` (Türkçe `HATA`) gösterilir ve bip çalar; sonraki tuş girişe döner:
+**VFO modunda ekran:** Normal ekranda almadayken alma frekansı (`156 5250`), PTT'ye basılıyken gönderme frekansı (`160 6500`) görünür; PTT bırakılınca alma frekansına döner. Menüdeyken ekran değiştirilmez, yalnız kanal adı güncellenir.
+
+Kanal anahtarı çevrilince (ya da LIST ile kanal seçilince) telsiz o kanala döner ve VFO modu biter. Frekanslar yalnızca RAM'de tutulur: EEPROM'a yazılmaz, kapatınca kaybolur.
+
+Bu durumlarda `ERROR` (Türkçe `HATA`) gösterilir ve bip çalar; sonraki tuş girişe döner (aynı adımda kalınır):
 - 6 haneden az giriş;
 - 2,5 kHz ızgarasında olmayan frekans;
 - firmware'in temsil edebildiği aralığın dışı: bant tabanı (EEPROM 0x58C) … taban + 40,95 MHz;
-- telsiz göndermedeyken basılan `#`.
+- telsiz göndermedeyken 2. adımda basılan `#`. Firmware gönderirken tuşları zaten yok sayıyor; bu denetim yedek olarak duruyor.
 
 Nasıl çalışıyor:
 - **Sentezör kelimeleri.** Firmware'in kanal hesabının aynısı burada da yapılır: taban, ±45 MHz ara frekans, ön bölücü ve referans, firmware'in açılışta EEPROM'dan kurduğu RAM değişkenlerinden okunur (formül `frekans.inc` başında). VHF ve UHF'de, üç adım türünde, simülatörde firmware'in aynı frekans için EEPROM kanalından hesapladığı baytlarla birebir aynı çıkıyor.
-- **Yükleme.** Baytlar geçerli kanalın sentezör kaydına (RAM 0x0370–0x037C) yazılır ve radyo durumu (0x0228) 1 yapılır. LIST menüsü kanal seçerken de aynısını yapar. Ana döngü RX'e yeniden girer ve sentezörü yükler; PTT'de TX kelimeleri buradan alınır.
+- **Yükleme.** RX baytları 1. adımda, TX baytları 2. adımda, her biri kendi adımıyla (12,5 / 10 / 5 kHz) hesaplanır. İkisi birlikte geçerli kanalın sentezör kaydına (RAM 0x0370–0x037C; RX 0x0370, TX 0x0377) yazılır ve radyo durumu (0x0228) 1 yapılır. LIST menüsü kanal seçerken de aynısını yapar. Ana döngü RX'e yeniden girer ve sentezörü yükler; PTT'de TX kelimeleri 0x0377'den alınır.
+- **Ekran kancası.** Firmware PTT'de ekranı yeniden çizmiyor. Telsiz durum makinesinin sonundaki `JSRL F_00E626` (0x00F84D) `VFO_KANCA`'ya çevrildi. Kanca her turda (boşta saniyede ~30, gönderirken ~1800 kez) çalışır ve şunları yapar:
+  - VFO modunda mı, bakar: imza `'VF'` olmalı, sentezör kaydı da hâlâ bizim baytlarımızı taşımalı.
+  - Radyo durumunu okur: 4–12 gönderme, diğerleri alma.
+  - Yalnız geçişte kanal adını (0x024A) diğer frekansın metniyle değiştirir.
+  - Normal ekran açıksa (menü 0 ve ekranda eski metin) LCD'yi hemen yeniler.
+
+  Sonra `F_00E626`'ya aynı yığınla devam eder; yazmaçlar korunur.
 - **Bölme.** 32 bit bölmeler kaydır-çıkar yordamıyla (`FR_BOL`) yapılır; işlemcinin DIV komutunun 32 bitlik bölünen davranışına güvenilmedi.
 
 **Gerçek cihazda dikkat.** Kabul edilen aralık (VHF tabanı 136 MHz ise 136–176,95 MHz) kılavuzdaki donanım bandından (146–174 MHz) geniştir. Bant dışında VCO kilitlenmeyebilir ve TX filtreleri uygun değildir. Ayrıca yalnızca izinli frekanslarda gönderme yapın. İlk denemeleri yapay yükle (dummy load) ve bant içindeki bilinen bir frekansla yapın. İstenirse VFO'da TX kapatılabilir ya da aralık kılavuzdaki banda daraltılabilir.

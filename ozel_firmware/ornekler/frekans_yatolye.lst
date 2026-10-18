@@ -875,6 +875,10 @@
 011979  00 00                        .WORD 0
 01197B  57 49 4E 20 20               .BYTE "WIN  "
 011980  42 55 4C 44 55               .BYTE "BULDU"
+011985                               .ORG $00F84D
+00F84D                               .EXPECT $22,$26,$E6,$00
+00F84D  22 42 1D 01                  JSRL  VFO_KANCA
+00F851  00 00 00 00 00 00 …          .ORG FR_KOD_ADRES
 011985                               .ASSUME M=0,X=0
 011985  A3 04                        LDA   A,$04,S
 011987  48                           PHA
@@ -882,7 +886,7 @@
 01198D  F8                           SEM
 01198E  9C E1 02 01                  LDM   #bank(FREKANS_TUS),HANDLER_BK
 011992  9C 47 05 00                  LDM   #0,FR_NDIG
-011996  9C 48 05 00                  LDM   #0,FR_DURUM
+011996  9C 48 05 00                  LDM   #0,FR_DURUM               ; 1. adım: alma frekansı
 01199A  4C CD 19                     JMP   FK_SON
 01199D                               .ASSUME M=0,X=0
 01199D  A3 04                        LDA   A,$04,S
@@ -897,16 +901,16 @@
 0119B5  80 16                        BRA   FK_SON
 0119B7  AD 26 02             FK_1:   LDA   A,KEY
 0119BA  C9 64                        CMP   A,#'d'
-0119BC  F0 34                        BEQ   FK_RAKAM
+0119BC  F0 43                        BEQ   FK_RAKAM
 0119BE  C9 2A                        CMP   A,#'*'
 0119C0  F0 26                        BEQ   FK_SIL
 0119C2  C9 73                        CMP   A,#'s'
 0119C4  F0 1C                        BEQ   FK_TEMIZLE
 0119C6  C9 23                        CMP   A,#'#'
 0119C8  D0 03                        BNE   FK_SON
-0119CA  4C 1F 1A                     JMP   FK_AYARLA
+0119CA  4C 2E 1A                     JMP   FK_AYARLA
 0119CD  D8                   FK_SON: CLM
-0119CE  20 A4 1C                     JSR   FR_EKRAN
+0119CE  20 EB 1D                     JSR   FR_EKRAN
 0119D1  68                           PLA
 0119D2  6B                           RTL
 0119D3  F8                           SEM                             ; hata metni + bip
@@ -920,330 +924,481 @@
 0119E6  80 E5                        BRA   FK_SON
 0119E8                       FK_SIL: .ASSUME M=1,X=0
 0119E8  AD 47 05                     LDA   A,FR_NDIG
-0119EB  F0 E0                        BEQ   FK_SON
+0119EB  F0 05                        BEQ   FK_GERI
 0119ED  CE 47 05                     DEC   FR_NDIG
 0119F0  80 DB                        BRA   FK_SON
-0119F2                               .ASSUME M=1,X=0
-0119F2  AD 93 02                     LDA   A,NDIGIT                  ; firmware'in tamponundan al
-0119F5  1A                           DEC   A
-0119F6  D8                           CLM
-0119F7  29 0F 00                     AND   A,#$000F
-0119FA  AA                           TAX
-0119FB  F8                           SEM
-0119FC  BD 83 02                     LDA   A,DIGITS,X
-0119FF  9C 93 02 00                  LDM   #0,NDIGIT
-011A03  8D 62 05                     STA   A,FR_T
-011A06  D8                           CLM
-011A07  AD 47 05                     LDA   A,FR_NDIG
-011A0A  29 FF 00                     AND   A,#$00FF
-011A0D  AA                           TAX
-011A0E  F8                           SEM
-011A0F  E0 07 00                     CPX   #7
-011A12  B0 C4                        BCS   FK_BIP
-011A14  AD 62 05                     LDA   A,FR_T
-011A17  9D 40 05                     STA   A,FR_HANE,X
-011A1A  EE 47 05                     INC   FR_NDIG
-011A1D  80 AE                        BRA   FK_SON
-011A1F                               .ASSUME M=1,X=0
-011A1F  AD 47 05                     LDA   A,FR_NDIG
-011A22  C9 06                        CMP   A,#6
-011A24  90 AD                        BCC   FK_HATA
-011A26  AD 28 02                     LDA   A,RADYO_DURUM             ; göndermedeyken değiştirme
-011A29  C9 04                        CMP   A,#4
-011A2B  B0 A6                        BCS   FK_HATA
-011A2D  D8                           CLM
-011A2E  20 51 1A                     JSR   FR_HESAPLA                ; C = 1: geçersiz frekans
-011A31  B0 A0                        BCS   FK_HATA
-011A33  F8                           SEM                             ; 6 hane girildiyse 7. hane 0
-011A34  AD 47 05                     LDA   A,FR_NDIG
-011A37  C9 07                        CMP   A,#7
-011A39  F0 08                        BEQ   FA_1
-011A3B  9C 46 05 30                  LDM   #'0',FR_HANE+6
-011A3F  9C 47 05 07                  LDM   #7,FR_NDIG
-011A43  D8                   FA_1:   CLM
-011A44  20 4E 1C                     JSR   FR_YAZ                    ; sentezör kaydı, kanal adı, RX'i yeniden yükle
-011A47  A0 03 00                     LDY   #3                        ; onay: 2 x 1000 Hz
-011A4A  22 AA 80 00                  JSRL  F_BEEP
-011A4E  4C CD 19                     JMP   FK_SON
-011A51                               .ASSUME M=0,X=0
-011A51  9C 58 05 00 00               LDM   #0,FR_BOLUNEN             ; haneleri 100 Hz birimine çevir (7 haneye tamamla)
-011A56  9C 5A 05 00 00               LDM   #0,FR_BOLUNEN+2
-011A5B  A2 00 00                     LDX   #0
-011A5E  20 48 1B                     JSR   FR_ON_KAT                 ; BOLUNEN *= 10
-011A61  BD 40 05                     LDA   A,FR_HANE,X
-011A64  29 0F 00                     AND   A,#$000F
-011A67  18                           CLC
-011A68  6D 58 05                     ADC   A,FR_BOLUNEN
-011A6B  8D 58 05                     STA   A,FR_BOLUNEN
-011A6E  AD 5A 05                     LDA   A,FR_BOLUNEN+2
-011A71  69 00 00                     ADC   A,#0
-011A74  8D 5A 05                     STA   A,FR_BOLUNEN+2
-011A77  E8                           INX
-011A78  F8                           SEM
-011A79  8A                           TXA
-011A7A  CD 47 05                     CMP   A,FR_NDIG
-011A7D  D8                           CLM
-011A7E  D0 DE                        BNE   FH_HANE
-011A80  E0 07 00                     CPX   #7
-011A83  F0 03                        BEQ   FH_7
-011A85  20 48 1B                     JSR   FR_ON_KAT                 ; 6 hane: kHz -> 100 Hz
-011A88  A9 19 00             FH_7:   LDA   A,#25                     ; 100 Hz -> 2,5 kHz; kalan olmamalı
-011A8B  20 96 1B                     JSR   FR_BOL
-011A8E  AD 5E 05                     LDA   A,FR_KALAN
-011A91  F0 03                        BEQ   FH_IZGARA
-011A93  4C 46 1B                     JMP   FH_GECERSIZ               ; 2,5 kHz ızgarasında değil
-011A96  AD 58 05                     LDA   A,FR_BOLUNEN
-011A99  8D 4A 05                     STA   A,FR_FU
-011A9C  AD 5A 05                     LDA   A,FR_BOLUNEN+2
-011A9F  8D 4C 05                     STA   A,FR_FU+2
-011AA2  AD 24 02                     LDA   A,BAND_TABAN              ; kelime = FU - taban*10 (32 bit: UHF'de 160000)
-011AA5  8D 62 05                     STA   A,FR_T
-011AA8  9C 64 05 00 00               LDM   #0,FR_T+2
-011AAD  20 64 1B                     JSR   FR_T_ON_KAT
-011AB0  38                           SEC
-011AB1  AD 4A 05                     LDA   A,FR_FU
-011AB4  ED 62 05                     SBC   A,FR_T
-011AB7  8D 4E 05                     STA   A,FR_KELIME
-011ABA  AD 4C 05                     LDA   A,FR_FU+2
-011ABD  ED 64 05                     SBC   A,FR_T+2
-011AC0  D0 08                        BNE   FH_BANT_DISI              ; negatif ya da >= 65536
-011AC2  AD 4E 05                     LDA   A,FR_KELIME
-011AC5  C9 FF 3F                     CMP   A,#$3FFF
-011AC8  90 03                        BCC   FH_BANT_ICI
-011ACA  4C 46 1B                     JMP   FH_GECERSIZ
-011ACD  8D 58 05                     STA   A,FR_BOLUNEN              ; adım: kelime % 5, kelime % 4
-011AD0  9C 5A 05 00 00               LDM   #0,FR_BOLUNEN+2
-011AD5  A9 05 00                     LDA   A,#5
-011AD8  20 96 1B                     JSR   FR_BOL
-011ADB  AD 5E 05                     LDA   A,FR_KALAN
-011ADE  D0 08                        BNE   FH_10
-011AE0  A9 05 00                     LDA   A,#5
-011AE3  A2 7D 00                     LDX   #125
-011AE6  80 16                        BRA   FH_ADIM
-011AE8  AD 4E 05             FH_10:  LDA   A,FR_KELIME
-011AEB  29 03 00                     AND   A,#3
-011AEE  D0 08                        BNE   FH_5
-011AF0  A9 04 00                     LDA   A,#4
-011AF3  A2 64 00                     LDX   #100
-011AF6  80 06                        BRA   FH_ADIM
-011AF8  A9 02 00             FH_5:   LDA   A,#2
-011AFB  A2 32 00                     LDX   #50
-011AFE  8D 50 05                     STA   A,FR_D
-011B01  8E 54 05                     STX   FR_KOD
-011B04  8D 52 05                     STA   A,FR_DP                   ; d*P: P = 64 ya da 128 (kaydırma)
-011B07  A0 06 00                     LDY   #6
-011B0A  F8                           SEM
-011B0B  AD 0B 02                     LDA   A,ON_BOLUCU
-011B0E  D8                           CLM
-011B0F  10 01                        BPL   FH_DP                     ; 128 ise bit 7 dolu
-011B11  C8                           INY
-011B12  0E 52 05             FH_DP:  ASL   FR_DP
-011B15  88                           DEY
-011B16  D0 FA                        BNE   FH_DP
-011B18  AD F5 01                     LDA   A,FREF                    ; R = fref / kod
-011B1B  8D 58 05                     STA   A,FR_BOLUNEN
-011B1E  AD F7 01                     LDA   A,FREF+2
-011B21  8D 5A 05                     STA   A,FR_BOLUNEN+2
-011B24  AD 54 05                     LDA   A,FR_KOD
-011B27  20 96 1B                     JSR   FR_BOL
-011B2A  AD 58 05                     LDA   A,FR_BOLUNEN              ; RW = R<<1 | 1 | (P == 64 ? $8000 : 0)
-011B2D  0A                           ASL   A
-011B2E  09 01 00                     ORA   A,#1
-011B31  8D 56 05                     STA   A,FR_RW
-011B34  F8                           SEM
-011B35  AD 0B 02                     LDA   A,ON_BOLUCU
-011B38  D8                           CLM
-011B39  30 09                        BMI   FH_TAMAM
-011B3B  AD 56 05                     LDA   A,FR_RW
-011B3E  09 00 80                     ORA   A,#$8000
-011B41  8D 56 05                     STA   A,FR_RW
-011B44  18                           CLC
-011B45  60                           RTS
-011B46  38                           SEC
-011B47  60                           RTS
-011B48                               .ASSUME M=0,X=0
-011B48  AD 58 05                     LDA   A,FR_BOLUNEN
-011B4B  8D 62 05                     STA   A,FR_T
-011B4E  AD 5A 05                     LDA   A,FR_BOLUNEN+2
-011B51  8D 64 05                     STA   A,FR_T+2
-011B54  20 64 1B                     JSR   FR_T_ON_KAT
-011B57  AD 62 05                     LDA   A,FR_T
-011B5A  8D 58 05                     STA   A,FR_BOLUNEN
-011B5D  AD 64 05                     LDA   A,FR_T+2
-011B60  8D 5A 05                     STA   A,FR_BOLUNEN+2
-011B63  60                           RTS
-011B64                               .ASSUME M=0,X=0
-011B64  0E 62 05                     ASL   FR_T
-011B67  2E 64 05                     ROL   FR_T+2                    ; T = 2T
-011B6A  AD 62 05                     LDA   A,FR_T
-011B6D  8D 5E 05                     STA   A,FR_KALAN
-011B70  AD 64 05                     LDA   A,FR_T+2
-011B73  8D 60 05                     STA   A,FR_KALAN+2
-011B76  0E 5E 05                     ASL   FR_KALAN
-011B79  2E 60 05                     ROL   FR_KALAN+2
-011B7C  0E 5E 05                     ASL   FR_KALAN
-011B7F  2E 60 05                     ROL   FR_KALAN+2                ; KALAN = 8T
-011B82  18                           CLC
-011B83  AD 62 05                     LDA   A,FR_T
-011B86  6D 5E 05                     ADC   A,FR_KALAN
-011B89  8D 62 05                     STA   A,FR_T
-011B8C  AD 64 05                     LDA   A,FR_T+2
-011B8F  6D 60 05                     ADC   A,FR_KALAN+2
-011B92  8D 64 05                     STA   A,FR_T+2
-011B95  60                           RTS
-011B96                               .ASSUME M=0,X=0
-011B96  8D 5C 05                     STA   A,FR_BOLEN
-011B99  DA                           PHX
-011B9A  9C 5E 05 00 00               LDM   #0,FR_KALAN
-011B9F  9C 60 05 00 00               LDM   #0,FR_KALAN+2
-011BA4  A2 20 00                     LDX   #32
-011BA7  0E 58 05             FB_DON: ASL   FR_BOLUNEN
-011BAA  2E 5A 05                     ROL   FR_BOLUNEN+2
-011BAD  2E 5E 05                     ROL   FR_KALAN
-011BB0  2E 60 05                     ROL   FR_KALAN+2
-011BB3  38                           SEC
-011BB4  AD 5E 05                     LDA   A,FR_KALAN
-011BB7  ED 5C 05                     SBC   A,FR_BOLEN
-011BBA  A8                           TAY
-011BBB  AD 60 05                     LDA   A,FR_KALAN+2
-011BBE  E9 00 00                     SBC   A,#0
-011BC1  90 09                        BCC   FB_2
-011BC3  8D 60 05                     STA   A,FR_KALAN+2
-011BC6  8C 5E 05                     STY   FR_KALAN
-011BC9  EE 58 05                     INC   FR_BOLUNEN
-011BCC  CA                   FB_2:   DEX
-011BCD  D0 D8                        BNE   FB_DON
-011BCF  FA                           PLX
-011BD0  60                           RTS
-011BD1                               .ASSUME M=0,X=0
-011BD1  8D 62 05                     STA   A,FR_T                    ; kaymayı 32 bite genişlet
-011BD4  9C 64 05 00 00               LDM   #0,FR_T+2
-011BD9  C9 00 80                     CMP   A,#$8000
-011BDC  90 05                        BCC   FS_1
-011BDE  9C 64 05 FF FF               LDM   #$FFFF,FR_T+2
-011BE3  18                   FS_1:   CLC
-011BE4  AD 4A 05                     LDA   A,FR_FU
-011BE7  6D 62 05                     ADC   A,FR_T
-011BEA  8D 58 05                     STA   A,FR_BOLUNEN
-011BED  AD 4C 05                     LDA   A,FR_FU+2
-011BF0  6D 64 05                     ADC   A,FR_T+2
-011BF3  8D 5A 05                     STA   A,FR_BOLUNEN+2
-011BF6  AD 52 05                     LDA   A,FR_DP                   ; N = toplam / (d*P)
-011BF9  20 96 1B                     JSR   FR_BOL
-011BFC  AD 58 05                     LDA   A,FR_BOLUNEN
-011BFF  8D 62 05                     STA   A,FR_T                    ; N
-011C02  AD 5E 05                     LDA   A,FR_KALAN                ; A = kalan / d
-011C05  8D 58 05                     STA   A,FR_BOLUNEN
-011C08  9C 5A 05 00 00               LDM   #0,FR_BOLUNEN+2
-011C0D  AD 50 05                     LDA   A,FR_D
-011C10  20 96 1B                     JSR   FR_BOL
-011C13  AD 62 05                     LDA   A,FR_T                    ; [0] rev(N lo)
-011C16  20 42 1C                     JSR   FR_TERS
-011C19  8D 66 05                     STA   A,FR_KAYIT
-011C1C  AD 63 05                     LDA   A,FR_T+1                  ; [1] rev(N hi)
-011C1F  20 42 1C                     JSR   FR_TERS
-011C22  8D 67 05                     STA   A,FR_KAYIT+1
-011C25  AD 58 05                     LDA   A,FR_BOLUNEN              ; [2] rev(A<<1)
-011C28  0A                           ASL   A
-011C29  20 42 1C                     JSR   FR_TERS
-011C2C  8D 68 05                     STA   A,FR_KAYIT+2
-011C2F  AD 57 05                     LDA   A,FR_RW+1                 ; [3] rev(RW hi)
-011C32  20 42 1C                     JSR   FR_TERS
-011C35  8D 69 05                     STA   A,FR_KAYIT+3
-011C38  AD 56 05                     LDA   A,FR_RW                   ; [4] rev(RW lo)
-011C3B  20 42 1C                     JSR   FR_TERS
-011C3E  8D 6A 05                     STA   A,FR_KAYIT+4
-011C41  60                           RTS
-011C42                               .ASSUME M=0,X=0
-011C42  29 FF 00                     AND   A,#$00FF
-011C45  AA                           TAX
-011C46  BF 06 2B 00                  LDA   A,>TERS_TABLO,X
-011C4A  29 FF 00                     AND   A,#$00FF
-011C4D  60                           RTS
-011C4E                               .ASSUME M=0,X=0
-011C4E  AD F9 01                     LDA   A,RX_KAYMA
-011C51  20 D1 1B                     JSR   FR_SENTEZ
-011C54  A2 00 00                     LDX   #0
-011C57  F8                           SEM
-011C58  BD 66 05             FY_RX:  LDA   A,FR_KAYIT,X
-011C5B  9D 70 03                     STA   A,SYN_KAYIT,X             ; $0370..$0374
-011C5E  E8                           INX
-011C5F  E0 05 00                     CPX   #5
-011C62  D0 F4                        BNE   FY_RX
-011C64  D8                           CLM
-011C65  A9 00 00                     LDA   A,#0                      ; TX: kayma yok (simplex)
-011C68  20 D1 1B                     JSR   FR_SENTEZ
-011C6B  A2 00 00                     LDX   #0
-011C6E  F8                           SEM
-011C6F  BD 66 05             FY_TX:  LDA   A,FR_KAYIT,X
-011C72  9D 77 03                     STA   A,SYN_KAYIT+7,X           ; $0377..$037B
-011C75  E8                           INX
-011C76  E0 05 00                     CPX   #5
-011C79  D0 F4                        BNE   FY_TX
-011C7B  A2 00 00                     LDX   #0                        ; kaydın kopyası ($0363) ve kanal adı
-011C7E  BD 70 03             FY_KOP: LDA   A,SYN_KAYIT,X
-011C81  9D 63 03                     STA   A,SYN_YEDEK,X
-011C84  E8                           INX
-011C85  E0 0D 00                     CPX   #13
-011C88  D0 F4                        BNE   FY_KOP
-011C8A  D8                           CLM
-011C8B  20 D1 1C                     JSR   FR_METIN
-011C8E  A2 00 00                     LDX   #0
-011C91  F8                           SEM
-011C92  BD 52 02             FY_AD:  LDA   A,LCD,X
-011C95  9D 4A 02                     STA   A,KANAL_ADI,X
-011C98  E8                           INX
-011C99  E0 08 00                     CPX   #8
-011C9C  D0 F4                        BNE   FY_AD
-011C9E  9C 28 02 01                  LDM   #1,RADYO_DURUM            ; ana döngü RX'e yeniden girer, sentezörü yükler
-011CA2  D8                           CLM
-011CA3  60                           RTS
-011CA4                               .ASSUME M=0,X=0
-011CA4  F8                           SEM
-011CA5  3C 48 05 01 26               BBC   #F_HATA_G,FR_DURUM,FE_GIRIS
-011CAA  A2 00 00                     LDX   #0
-011CAD  2C 40 03 80 0F               BBS   #$80,OPTIONS,FE_TR
-011CB2  BF FC 1C 01          FE_EN:  LDA   A,>TXT_FR_ERROR,X
-011CB6  9D 52 02                     STA   A,LCD,X
-011CB9  E8                           INX
-011CBA  E0 08 00                     CPX   #8
-011CBD  D0 F3                        BNE   FE_EN
-011CBF  D8                           CLM
-011CC0  60                           RTS
-011CC1                       FE_TR:  .ASSUME M=1,X=0
-011CC1  BF 04 1D 01                  LDA   A,>TXT_FR_HATA,X
-011CC5  9D 52 02                     STA   A,LCD,X
-011CC8  E8                           INX
-011CC9  E0 08 00                     CPX   #8
-011CCC  D0 F3                        BNE   FE_TR
-011CCE  D8                           CLM
-011CCF  60                           RTS
-011CD0  D8                           CLM
-011CD1                               .ASSUME M=0,X=0
-011CD1  F8                           SEM
-011CD2  A2 00 00                     LDX   #0                        ; X = hane, Y = LCD konumu
-011CD5  A0 00 00                     LDY   #0
-011CD8  C0 03 00             FM_DON: CPY   #3
-011CDB  D0 06                        BNE   FM_1
-011CDD  A9 20                        LDA   A,#' '
-011CDF  99 52 02                     STA   A,LCD,Y
-011CE2  C8                           INY
-011CE3  8A                   FM_1:   TXA
-011CE4  CD 47 05                     CMP   A,FR_NDIG
-011CE7  B0 05                        BCS   FM_ALT
-011CE9  BD 40 05                     LDA   A,FR_HANE,X
-011CEC  80 02                        BRA   FM_KOY
-011CEE  A9 5F                FM_ALT: LDA   A,#'_'
-011CF0  99 52 02             FM_KOY: STA   A,LCD,Y
+0119F2  3C 48 05 02 D6               BBC   #F_TX_ADIM,FR_DURUM,FK_SON
+0119F7  1C 48 05 02                  CLB   #F_TX_ADIM,FR_DURUM
+0119FB  D8                           CLM
+0119FC  20 E9 1C                     JSR   FR_RX_HANELER
+0119FF  80 CC                        BRA   FK_SON
+011A01                               .ASSUME M=1,X=0
+011A01  AD 93 02                     LDA   A,NDIGIT                  ; firmware'in tamponundan al
+011A04  1A                           DEC   A
+011A05  D8                           CLM
+011A06  29 0F 00                     AND   A,#$000F
+011A09  AA                           TAX
+011A0A  F8                           SEM
+011A0B  BD 83 02                     LDA   A,DIGITS,X
+011A0E  9C 93 02 00                  LDM   #0,NDIGIT
+011A12  8D 62 05                     STA   A,FR_T
+011A15  D8                           CLM
+011A16  AD 47 05                     LDA   A,FR_NDIG
+011A19  29 FF 00                     AND   A,#$00FF
+011A1C  AA                           TAX
+011A1D  F8                           SEM
+011A1E  E0 07 00                     CPX   #7
+011A21  B0 B5                        BCS   FK_BIP
+011A23  AD 62 05                     LDA   A,FR_T
+011A26  9D 40 05                     STA   A,FR_HANE,X
+011A29  EE 47 05                     INC   FR_NDIG
+011A2C  80 9F                        BRA   FK_SON
+011A2E                               .ASSUME M=1,X=0
+011A2E  3C 48 05 02 0A               BBC   #F_TX_ADIM,FR_DURUM,FA_0
+011A33  AD 47 05                     LDA   A,FR_NDIG                 ; 2. adımda hane yoksa: simplex
+011A36  D0 05                        BNE   FA_0
+011A38  D8                           CLM
+011A39  20 E9 1C                     JSR   FR_RX_HANELER
+011A3C  F8                           SEM
+011A3D  AD 47 05             FA_0:   LDA   A,FR_NDIG
+011A40  C9 06                        CMP   A,#6
+011A42  90 8F                        BCC   FK_HATA
+011A44  3C 48 05 02 07               BBC   #F_TX_ADIM,FR_DURUM,FA_HESAP
+011A49  AD 28 02                     LDA   A,RADYO_DURUM             ; göndermedeyken değiştirme
+011A4C  C9 04                        CMP   A,#4
+011A4E  B0 83                        BCS   FK_HATA
+011A50  D8                           CLM
+011A51  20 B9 1A                     JSR   FR_HESAPLA                ; C = 1: geçersiz frekans
+011A54  90 03                        BCC   FA_GECERLI
+011A56  4C D3 19                     JMP   FK_HATA
+011A59  F8                           SEM                             ; 6 hane girildiyse 7. hane 0
+011A5A  AD 47 05                     LDA   A,FR_NDIG
+011A5D  C9 07                        CMP   A,#7
+011A5F  F0 08                        BEQ   FA_1
+011A61  9C 46 05 30                  LDM   #'0',FR_HANE+6
+011A65  9C 47 05 07                  LDM   #7,FR_NDIG
+011A69  2C 48 05 02 27       FA_1:   BBS   #F_TX_ADIM,FR_DURUM,FA_TX
+011A6E  D8                           CLM
+011A6F  AD F9 01                     LDA   A,RX_KAYMA
+011A72  20 39 1C                     JSR   FR_SENTEZ
+011A75  A2 00 00                     LDX   #0
+011A78  20 B6 1C                     JSR   FR_SAKLA
+011A7B  A2 00 00                     LDX   #0
+011A7E  F8                           SEM
+011A7F  BD 40 05             FA_RXH: LDA   A,FR_HANE,X
+011A82  9D 8D 05                     STA   A,VFO_RX_HANE,X
+011A85  E8                           INX
+011A86  E0 07 00                     CPX   #7
+011A89  D0 F4                        BNE   FA_RXH
+011A8B  0C 48 05 02                  SEB   #F_TX_ADIM,FR_DURUM
+011A8F  9C 47 05 00                  LDM   #0,FR_NDIG
+011A93  80 19                        BRA   FA_ONAY
+011A95  D8                           CLM
+011A96  A9 00 00                     LDA   A,#0
+011A99  20 39 1C                     JSR   FR_SENTEZ
+011A9C  A2 05 00                     LDX   #5
+011A9F  20 B6 1C                     JSR   FR_SAKLA
+011AA2  20 FF 1C                     JSR   FR_UYGULA                 ; sentezör kaydı, kanal adı, RX'i yeniden yükle
+011AA5  F8                           SEM
+011AA6  1C 48 05 02                  CLB   #F_TX_ADIM,FR_DURUM
+011AAA  D8                           CLM
+011AAB  20 E9 1C                     JSR   FR_RX_HANELER             ; ekranda alma frekansı kalır
+011AAE  D8                           CLM
+011AAF  A0 03 00                     LDY   #3                        ; onay: 2 x 1000 Hz
+011AB2  22 AA 80 00                  JSRL  F_BEEP
+011AB6  4C CD 19                     JMP   FK_SON
+011AB9                               .ASSUME M=0,X=0
+011AB9  9C 58 05 00 00               LDM   #0,FR_BOLUNEN             ; haneleri 100 Hz birimine çevir (7 haneye tamamla)
+011ABE  9C 5A 05 00 00               LDM   #0,FR_BOLUNEN+2
+011AC3  A2 00 00                     LDX   #0
+011AC6  20 B0 1B                     JSR   FR_ON_KAT                 ; BOLUNEN *= 10
+011AC9  BD 40 05                     LDA   A,FR_HANE,X
+011ACC  29 0F 00                     AND   A,#$000F
+011ACF  18                           CLC
+011AD0  6D 58 05                     ADC   A,FR_BOLUNEN
+011AD3  8D 58 05                     STA   A,FR_BOLUNEN
+011AD6  AD 5A 05                     LDA   A,FR_BOLUNEN+2
+011AD9  69 00 00                     ADC   A,#0
+011ADC  8D 5A 05                     STA   A,FR_BOLUNEN+2
+011ADF  E8                           INX
+011AE0  F8                           SEM
+011AE1  8A                           TXA
+011AE2  CD 47 05                     CMP   A,FR_NDIG
+011AE5  D8                           CLM
+011AE6  D0 DE                        BNE   FH_HANE
+011AE8  E0 07 00                     CPX   #7
+011AEB  F0 03                        BEQ   FH_7
+011AED  20 B0 1B                     JSR   FR_ON_KAT                 ; 6 hane: kHz -> 100 Hz
+011AF0  A9 19 00             FH_7:   LDA   A,#25                     ; 100 Hz -> 2,5 kHz; kalan olmamalı
+011AF3  20 FE 1B                     JSR   FR_BOL
+011AF6  AD 5E 05                     LDA   A,FR_KALAN
+011AF9  F0 03                        BEQ   FH_IZGARA
+011AFB  4C AE 1B                     JMP   FH_GECERSIZ               ; 2,5 kHz ızgarasında değil
+011AFE  AD 58 05                     LDA   A,FR_BOLUNEN
+011B01  8D 4A 05                     STA   A,FR_FU
+011B04  AD 5A 05                     LDA   A,FR_BOLUNEN+2
+011B07  8D 4C 05                     STA   A,FR_FU+2
+011B0A  AD 24 02                     LDA   A,BAND_TABAN              ; kelime = FU - taban*10 (32 bit: UHF'de 160000)
+011B0D  8D 62 05                     STA   A,FR_T
+011B10  9C 64 05 00 00               LDM   #0,FR_T+2
+011B15  20 CC 1B                     JSR   FR_T_ON_KAT
+011B18  38                           SEC
+011B19  AD 4A 05                     LDA   A,FR_FU
+011B1C  ED 62 05                     SBC   A,FR_T
+011B1F  8D 4E 05                     STA   A,FR_KELIME
+011B22  AD 4C 05                     LDA   A,FR_FU+2
+011B25  ED 64 05                     SBC   A,FR_T+2
+011B28  D0 08                        BNE   FH_BANT_DISI              ; negatif ya da >= 65536
+011B2A  AD 4E 05                     LDA   A,FR_KELIME
+011B2D  C9 FF 3F                     CMP   A,#$3FFF
+011B30  90 03                        BCC   FH_BANT_ICI
+011B32  4C AE 1B                     JMP   FH_GECERSIZ
+011B35  8D 58 05                     STA   A,FR_BOLUNEN              ; adım: kelime % 5, kelime % 4
+011B38  9C 5A 05 00 00               LDM   #0,FR_BOLUNEN+2
+011B3D  A9 05 00                     LDA   A,#5
+011B40  20 FE 1B                     JSR   FR_BOL
+011B43  AD 5E 05                     LDA   A,FR_KALAN
+011B46  D0 08                        BNE   FH_10
+011B48  A9 05 00                     LDA   A,#5
+011B4B  A2 7D 00                     LDX   #125
+011B4E  80 16                        BRA   FH_ADIM
+011B50  AD 4E 05             FH_10:  LDA   A,FR_KELIME
+011B53  29 03 00                     AND   A,#3
+011B56  D0 08                        BNE   FH_5
+011B58  A9 04 00                     LDA   A,#4
+011B5B  A2 64 00                     LDX   #100
+011B5E  80 06                        BRA   FH_ADIM
+011B60  A9 02 00             FH_5:   LDA   A,#2
+011B63  A2 32 00                     LDX   #50
+011B66  8D 50 05                     STA   A,FR_D
+011B69  8E 54 05                     STX   FR_KOD
+011B6C  8D 52 05                     STA   A,FR_DP                   ; d*P: P = 64 ya da 128 (kaydırma)
+011B6F  A0 06 00                     LDY   #6
+011B72  F8                           SEM
+011B73  AD 0B 02                     LDA   A,ON_BOLUCU
+011B76  D8                           CLM
+011B77  10 01                        BPL   FH_DP                     ; 128 ise bit 7 dolu
+011B79  C8                           INY
+011B7A  0E 52 05             FH_DP:  ASL   FR_DP
+011B7D  88                           DEY
+011B7E  D0 FA                        BNE   FH_DP
+011B80  AD F5 01                     LDA   A,FREF                    ; R = fref / kod
+011B83  8D 58 05                     STA   A,FR_BOLUNEN
+011B86  AD F7 01                     LDA   A,FREF+2
+011B89  8D 5A 05                     STA   A,FR_BOLUNEN+2
+011B8C  AD 54 05                     LDA   A,FR_KOD
+011B8F  20 FE 1B                     JSR   FR_BOL
+011B92  AD 58 05                     LDA   A,FR_BOLUNEN              ; RW = R<<1 | 1 | (P == 64 ? $8000 : 0)
+011B95  0A                           ASL   A
+011B96  09 01 00                     ORA   A,#1
+011B99  8D 56 05                     STA   A,FR_RW
+011B9C  F8                           SEM
+011B9D  AD 0B 02                     LDA   A,ON_BOLUCU
+011BA0  D8                           CLM
+011BA1  30 09                        BMI   FH_TAMAM
+011BA3  AD 56 05                     LDA   A,FR_RW
+011BA6  09 00 80                     ORA   A,#$8000
+011BA9  8D 56 05                     STA   A,FR_RW
+011BAC  18                           CLC
+011BAD  60                           RTS
+011BAE  38                           SEC
+011BAF  60                           RTS
+011BB0                               .ASSUME M=0,X=0
+011BB0  AD 58 05                     LDA   A,FR_BOLUNEN
+011BB3  8D 62 05                     STA   A,FR_T
+011BB6  AD 5A 05                     LDA   A,FR_BOLUNEN+2
+011BB9  8D 64 05                     STA   A,FR_T+2
+011BBC  20 CC 1B                     JSR   FR_T_ON_KAT
+011BBF  AD 62 05                     LDA   A,FR_T
+011BC2  8D 58 05                     STA   A,FR_BOLUNEN
+011BC5  AD 64 05                     LDA   A,FR_T+2
+011BC8  8D 5A 05                     STA   A,FR_BOLUNEN+2
+011BCB  60                           RTS
+011BCC                               .ASSUME M=0,X=0
+011BCC  0E 62 05                     ASL   FR_T
+011BCF  2E 64 05                     ROL   FR_T+2                    ; T = 2T
+011BD2  AD 62 05                     LDA   A,FR_T
+011BD5  8D 5E 05                     STA   A,FR_KALAN
+011BD8  AD 64 05                     LDA   A,FR_T+2
+011BDB  8D 60 05                     STA   A,FR_KALAN+2
+011BDE  0E 5E 05                     ASL   FR_KALAN
+011BE1  2E 60 05                     ROL   FR_KALAN+2
+011BE4  0E 5E 05                     ASL   FR_KALAN
+011BE7  2E 60 05                     ROL   FR_KALAN+2                ; KALAN = 8T
+011BEA  18                           CLC
+011BEB  AD 62 05                     LDA   A,FR_T
+011BEE  6D 5E 05                     ADC   A,FR_KALAN
+011BF1  8D 62 05                     STA   A,FR_T
+011BF4  AD 64 05                     LDA   A,FR_T+2
+011BF7  6D 60 05                     ADC   A,FR_KALAN+2
+011BFA  8D 64 05                     STA   A,FR_T+2
+011BFD  60                           RTS
+011BFE                               .ASSUME M=0,X=0
+011BFE  8D 5C 05                     STA   A,FR_BOLEN
+011C01  DA                           PHX
+011C02  9C 5E 05 00 00               LDM   #0,FR_KALAN
+011C07  9C 60 05 00 00               LDM   #0,FR_KALAN+2
+011C0C  A2 20 00                     LDX   #32
+011C0F  0E 58 05             FB_DON: ASL   FR_BOLUNEN
+011C12  2E 5A 05                     ROL   FR_BOLUNEN+2
+011C15  2E 5E 05                     ROL   FR_KALAN
+011C18  2E 60 05                     ROL   FR_KALAN+2
+011C1B  38                           SEC
+011C1C  AD 5E 05                     LDA   A,FR_KALAN
+011C1F  ED 5C 05                     SBC   A,FR_BOLEN
+011C22  A8                           TAY
+011C23  AD 60 05                     LDA   A,FR_KALAN+2
+011C26  E9 00 00                     SBC   A,#0
+011C29  90 09                        BCC   FB_2
+011C2B  8D 60 05                     STA   A,FR_KALAN+2
+011C2E  8C 5E 05                     STY   FR_KALAN
+011C31  EE 58 05                     INC   FR_BOLUNEN
+011C34  CA                   FB_2:   DEX
+011C35  D0 D8                        BNE   FB_DON
+011C37  FA                           PLX
+011C38  60                           RTS
+011C39                               .ASSUME M=0,X=0
+011C39  8D 62 05                     STA   A,FR_T                    ; kaymayı 32 bite genişlet
+011C3C  9C 64 05 00 00               LDM   #0,FR_T+2
+011C41  C9 00 80                     CMP   A,#$8000
+011C44  90 05                        BCC   FS_1
+011C46  9C 64 05 FF FF               LDM   #$FFFF,FR_T+2
+011C4B  18                   FS_1:   CLC
+011C4C  AD 4A 05                     LDA   A,FR_FU
+011C4F  6D 62 05                     ADC   A,FR_T
+011C52  8D 58 05                     STA   A,FR_BOLUNEN
+011C55  AD 4C 05                     LDA   A,FR_FU+2
+011C58  6D 64 05                     ADC   A,FR_T+2
+011C5B  8D 5A 05                     STA   A,FR_BOLUNEN+2
+011C5E  AD 52 05                     LDA   A,FR_DP                   ; N = toplam / (d*P)
+011C61  20 FE 1B                     JSR   FR_BOL
+011C64  AD 58 05                     LDA   A,FR_BOLUNEN
+011C67  8D 62 05                     STA   A,FR_T                    ; N
+011C6A  AD 5E 05                     LDA   A,FR_KALAN                ; A = kalan / d
+011C6D  8D 58 05                     STA   A,FR_BOLUNEN
+011C70  9C 5A 05 00 00               LDM   #0,FR_BOLUNEN+2
+011C75  AD 50 05                     LDA   A,FR_D
+011C78  20 FE 1B                     JSR   FR_BOL
+011C7B  AD 62 05                     LDA   A,FR_T                    ; [0] rev(N lo)
+011C7E  20 AA 1C                     JSR   FR_TERS
+011C81  8D 66 05                     STA   A,FR_KAYIT
+011C84  AD 63 05                     LDA   A,FR_T+1                  ; [1] rev(N hi)
+011C87  20 AA 1C                     JSR   FR_TERS
+011C8A  8D 67 05                     STA   A,FR_KAYIT+1
+011C8D  AD 58 05                     LDA   A,FR_BOLUNEN              ; [2] rev(A<<1)
+011C90  0A                           ASL   A
+011C91  20 AA 1C                     JSR   FR_TERS
+011C94  8D 68 05                     STA   A,FR_KAYIT+2
+011C97  AD 57 05                     LDA   A,FR_RW+1                 ; [3] rev(RW hi)
+011C9A  20 AA 1C                     JSR   FR_TERS
+011C9D  8D 69 05                     STA   A,FR_KAYIT+3
+011CA0  AD 56 05                     LDA   A,FR_RW                   ; [4] rev(RW lo)
+011CA3  20 AA 1C                     JSR   FR_TERS
+011CA6  8D 6A 05                     STA   A,FR_KAYIT+4
+011CA9  60                           RTS
+011CAA                               .ASSUME M=0,X=0
+011CAA  29 FF 00                     AND   A,#$00FF
+011CAD  AA                           TAX
+011CAE  BF 06 2B 00                  LDA   A,>TERS_TABLO,X
+011CB2  29 FF 00                     AND   A,#$00FF
+011CB5  60                           RTS
+011CB6                               .ASSUME M=0,X=0
+011CB6  A0 00 00                     LDY   #0
+011CB9  F8                           SEM
+011CBA  B9 66 05             FSK_1:  LDA   A,FR_KAYIT,Y
+011CBD  9D 73 05                     STA   A,VFO_RX_KAYIT,X          ; X = 5 ise VFO_TX_KAYIT
+011CC0  E8                           INX
+011CC1  C8                           INY
+011CC2  C0 05 00                     CPY   #5
+011CC5  D0 F3                        BNE   FSK_1
+011CC7  D8                           CLM
+011CC8  20 18 1E                     JSR   FR_METIN                  ; "156 5250" -> LCD
+011CCB  A2 00 00                     LDX   #0                        ; metin: alma VFO_METIN, gönderme VFO_METIN+8
+011CCE  F8                           SEM
+011CCF  3C 48 05 02 03               BBC   #F_TX_ADIM,FR_DURUM,FSK_2
+011CD4  A2 08 00                     LDX   #8
+011CD7  A0 00 00             FSK_2:  LDY   #0
+011CDA  B9 52 02             FSK_3:  LDA   A,LCD,Y
+011CDD  9D 7D 05                     STA   A,VFO_METIN,X
+011CE0  E8                           INX
+011CE1  C8                           INY
+011CE2  C0 08 00                     CPY   #8
+011CE5  D0 F3                        BNE   FSK_3
+011CE7  D8                           CLM
+011CE8  60                           RTS
+011CE9                               .ASSUME M=0,X=0
+011CE9  A2 00 00                     LDX   #0
+011CEC  F8                           SEM
+011CED  BD 8D 05             FRH_1:  LDA   A,VFO_RX_HANE,X
+011CF0  9D 40 05                     STA   A,FR_HANE,X
 011CF3  E8                           INX
-011CF4  C8                           INY
-011CF5  C0 08 00                     CPY   #8
-011CF8  D0 DE                        BNE   FM_DON
-011CFA  D8                           CLM
-011CFB  60                           RTS
-011CFC  45 52 52 4F 52 20 …          .TEXT8 "ERROR"
-011D04  48 41 54 41 20 20 …          .TEXT8 "HATA"
-011D0C                               .ORG $00E0E1                    ; F_00E0E1: LDA A,$04,S / PHD / TAD
+011CF4  E0 07 00                     CPX   #7
+011CF7  D0 F4                        BNE   FRH_1
+011CF9  9C 47 05 07                  LDM   #7,FR_NDIG
+011CFD  D8                           CLM
+011CFE  60                           RTS
+011CFF                               .ASSUME M=0,X=0
+011CFF  A2 00 00                     LDX   #0
+011D02  F8                           SEM
+011D03  BD 73 05             FU_1:   LDA   A,VFO_RX_KAYIT,X
+011D06  9D 70 03                     STA   A,SYN_KAYIT,X             ; $0370..$0374
+011D09  BD 78 05                     LDA   A,VFO_TX_KAYIT,X
+011D0C  9D 77 03                     STA   A,SYN_KAYIT+7,X           ; $0377..$037B
+011D0F  E8                           INX
+011D10  E0 05 00                     CPX   #5
+011D13  D0 EE                        BNE   FU_1
+011D15  A2 00 00                     LDX   #0                        ; kaydın kopyası ($0363)
+011D18  BD 70 03             FU_2:   LDA   A,SYN_KAYIT,X
+011D1B  9D 63 03                     STA   A,SYN_YEDEK,X
+011D1E  E8                           INX
+011D1F  E0 0D 00                     CPX   #13
+011D22  D0 F4                        BNE   FU_2
+011D24  A2 00 00                     LDX   #0
+011D27  BD 7D 05             FU_3:   LDA   A,VFO_METIN,X
+011D2A  9D 4A 02                     STA   A,KANAL_ADI,X
+011D2D  E8                           INX
+011D2E  E0 08 00                     CPX   #8
+011D31  D0 F4                        BNE   FU_3
+011D33  9C 72 05 00                  LDM   #0,VFO_DURUM              ; kanal adında alma frekansı
+011D37  9C 28 02 01                  LDM   #1,RADYO_DURUM            ; ana döngü RX'e yeniden girer, sentezörü yükler
+011D3B  D8                           CLM
+011D3C  9C 70 05 56 46               LDM   #VFO_IMZA_D,VFO_IMZA
+011D41  60                           RTS
+011D42                               .ASSUME M=0,X=0
+011D42  08                           PHP
+011D43  D8                           CLM
+011D44  48                           PHA
+011D45  DA                           PHX
+011D46  5A                           PHY                             ; yığında 8 bayt: çerçeve göstericisi $0C,S
+011D47  AD 70 05                     LDA   A,VFO_IMZA
+011D4A  C9 56 46                     CMP   A,#VFO_IMZA_D
+011D4D  F0 03                        BEQ   VK_VFO
+011D4F  4C E2 1D                     JMP   VK_SON
+011D52  A2 00 00                     LDX   #0                        ; sentezör kaydı hâlâ bizim mi?
+011D55  F8                           SEM
+011D56  BD 70 03                     LDA   A,SYN_KAYIT,X
+011D59  DD 73 05                     CMP   A,VFO_RX_KAYIT,X
+011D5C  D0 7E                        BNE   VK_BITTI
+011D5E  BD 77 03                     LDA   A,SYN_KAYIT+7,X
+011D61  DD 78 05                     CMP   A,VFO_TX_KAYIT,X
+011D64  D0 76                        BNE   VK_BITTI
+011D66  E8                           INX
+011D67  E0 05 00                     CPX   #5
+011D6A  D0 EA                        BNE   VK_KAYIT
+011D6C  A0 00 00                     LDY   #0                        ; istenen: 0 alma, 1 gönderme (durum 4..12)
+011D6F  AD 28 02                     LDA   A,RADYO_DURUM
+011D72  C9 04                        CMP   A,#4
+011D74  90 05                        BCC   VK_ISTENEN
+011D76  C9 0D                        CMP   A,#$0D
+011D78  B0 01                        BCS   VK_ISTENEN
+011D7A  C8                           INY
+011D7B  98                           TYA
+011D7C  CD 72 05                     CMP   A,VFO_DURUM
+011D7F  F0 61                        BEQ   VK_SON
+011D81  8D 72 05                     STA   A,VFO_DURUM
+011D84  D8                           CLM
+011D85  29 FF 00                     AND   A,#$00FF
+011D88  0A                           ASL   A
+011D89  0A                           ASL   A
+011D8A  0A                           ASL   A
+011D8B  AA                           TAX                             ; X = yeni metin (0 / 8)
+011D8C  49 08 00                     EOR   A,#8
+011D8F  A8                           TAY                             ; Y = eski metin
+011D90  F8                           SEM
+011D91  AD 27 02                     LDA   A,MENU                    ; menüdeyken ekrana dokunma
+011D94  D0 34                        BNE   VK_AD
+011D96  DA                           PHX                             ; ekranda eski metin (normal ekran) mı?
+011D97  A2 00 00                     LDX   #0
+011D9A  B9 7D 05                     LDA   A,VFO_METIN,Y
+011D9D  DD 52 02                     CMP   A,LCD,X
+011DA0  D0 27                        BNE   VK_BASKA
+011DA2  C8                           INY
+011DA3  E8                           INX
+011DA4  E0 08 00                     CPX   #8
+011DA7  D0 F1                        BNE   VK_KARS
+011DA9  FA                           PLX
+011DAA  A0 00 00                     LDY   #0
+011DAD  BD 7D 05             VK_YAZ: LDA   A,VFO_METIN,X             ; kanal adı ve ekran tamponu
+011DB0  99 4A 02                     STA   A,KANAL_ADI,Y
+011DB3  99 52 02                     STA   A,LCD,Y
+011DB6  E8                           INX
+011DB7  C8                           INY
+011DB8  C0 08 00                     CPY   #8
+011DBB  D0 F0                        BNE   VK_YAZ
+011DBD  D8                           CLM
+011DBE  A3 0C                        LDA   A,$0C,S                   ; NC77 çerçeve göstericisi
+011DC0  48                           PHA
+011DC1  22 8C 82 00                  JSRL  F_LCD
+011DC5  D8                           CLM
+011DC6  68                           PLA
+011DC7  80 19                        BRA   VK_SON
+011DC9                               .ASSUME M=1,X=0
+011DC9  FA                           PLX                             ; ekranda başka bir şey var: yalnız kanal adı
+011DCA  A0 00 00             VK_AD:  LDY   #0
+011DCD  BD 7D 05             VK_AD1: LDA   A,VFO_METIN,X
+011DD0  99 4A 02                     STA   A,KANAL_ADI,Y
+011DD3  E8                           INX
+011DD4  C8                           INY
+011DD5  C0 08 00                     CPY   #8
+011DD8  D0 F3                        BNE   VK_AD1
+011DDA  80 06                        BRA   VK_SON
+011DDC                               .ASSUME M=1,X=0
+011DDC  D8                           CLM
+011DDD  9C 70 05 00 00               LDM   #0,VFO_IMZA               ; kanala dönülmüş: VFO modu bitti
+011DE2  D8                   VK_SON: CLM
+011DE3  7A                           PLY
+011DE4  FA                           PLX
+011DE5  68                           PLA
+011DE6  28                           PLP
+011DE7  5C 26 E6 00                  JMPL  F_RADYO_SON
+011DEB                               .ASSUME M=0,X=0
+011DEB  F8                           SEM
+011DEC  3C 48 05 01 26               BBC   #F_HATA_G,FR_DURUM,FE_GIRIS
+011DF1  A2 00 00                     LDX   #0
+011DF4  2C 40 03 80 0F               BBS   #$80,OPTIONS,FE_TR
+011DF9  BF 4A 1E 01          FE_EN:  LDA   A,>TXT_FR_ERROR,X
+011DFD  9D 52 02                     STA   A,LCD,X
+011E00  E8                           INX
+011E01  E0 08 00                     CPX   #8
+011E04  D0 F3                        BNE   FE_EN
+011E06  D8                           CLM
+011E07  60                           RTS
+011E08                       FE_TR:  .ASSUME M=1,X=0
+011E08  BF 52 1E 01                  LDA   A,>TXT_FR_HATA,X
+011E0C  9D 52 02                     STA   A,LCD,X
+011E0F  E8                           INX
+011E10  E0 08 00                     CPX   #8
+011E13  D0 F3                        BNE   FE_TR
+011E15  D8                           CLM
+011E16  60                           RTS
+011E17  D8                           CLM
+011E18                               .ASSUME M=0,X=0
+011E18  F8                           SEM
+011E19  A2 00 00                     LDX   #0                        ; X = hane, Y = LCD konumu
+011E1C  A0 00 00                     LDY   #0
+011E1F  C0 03 00             FM_DON: CPY   #3
+011E22  D0 06                        BNE   FM_1
+011E24  A9 20                        LDA   A,#' '
+011E26  99 52 02                     STA   A,LCD,Y
+011E29  C8                           INY
+011E2A  8A                   FM_1:   TXA
+011E2B  CD 47 05                     CMP   A,FR_NDIG
+011E2E  B0 05                        BCS   FM_ALT
+011E30  BD 40 05                     LDA   A,FR_HANE,X
+011E33  80 09                        BRA   FM_KOY
+011E35  A9 5F                FM_ALT: LDA   A,#'_'
+011E37  3C 48 05 02 02               BBC   #F_TX_ADIM,FR_DURUM,FM_KOY
+011E3C  A9 2D                        LDA   A,#'-'
+011E3E  99 52 02             FM_KOY: STA   A,LCD,Y
+011E41  E8                           INX
+011E42  C8                           INY
+011E43  C0 08 00                     CPY   #8
+011E46  D0 D7                        BNE   FM_DON
+011E48  D8                           CLM
+011E49  60                           RTS
+011E4A  45 52 52 4F 52 20 …          .TEXT8 "ERROR"
+011E52  48 41 54 41 20 20 …          .TEXT8 "HATA"
+011E5A                               .ORG $00E0E1                    ; F_00E0E1: LDA A,$04,S / PHD / TAD
 00E0E1                               .EXPECT $A3,$04,$0B,$5B
 00E0E1                               .ASSUME M=0,X=0
 00E0E1  5C 00 20 01                  JMPL  ACILIS
@@ -1299,6 +1454,7 @@ F_HATA_G                 $000001
 F_SONUC                  $000002
 O_SON                    $000002
 N_MELODI                 $000002
+F_TX_ADIM                $000002
 F_HATA                   $000004
 NOTA                     $000005
 N_SON                    $000006
@@ -1366,12 +1522,20 @@ FR_BOLEN                 $00055C
 FR_KALAN                 $00055E
 FR_T                     $000562
 FR_KAYIT                 $000566
+VFO_IMZA                 $000570
+VFO_DURUM                $000572
+VFO_RX_KAYIT             $000573
+VFO_TX_KAYIT             $000578
+VFO_METIN                $00057D
+VFO_RX_HANE              $00058D
 ACILIS_MS                $001388
 Y_SEGMENT                $002546
 TERS_TABLO               $002B06
+VFO_IMZA_D               $004656
 F_DELAY                  $007D7F
 F_BEEP                   $0080AA
 F_LCD                    $00828C
+F_RADYO_SON              $00E626
 MENU_NEXT                $011000
 MENU_S                   $01101C
 TITLES_EN                $01108C
@@ -1486,6 +1650,7 @@ OE_SON                   $01195B
 NOTALAR                  $01195D
 TXT_WIN                  $01197B
 TXT_BULDU                $011980
+FR_KOD_ADRES             $011985
 FREKANS_GIR              $011985
 FREKANS_TUS              $01199D
 FK_1                     $0119B7
@@ -1494,45 +1659,68 @@ FK_HATA                  $0119D3
 FK_BIP                   $0119D8
 FK_TEMIZLE               $0119E2
 FK_SIL                   $0119E8
-FK_RAKAM                 $0119F2
-FK_AYARLA                $011A1F
-FA_1                     $011A43
-FR_HESAPLA               $011A51
-FH_HANE                  $011A5E
-FH_7                     $011A88
-FH_IZGARA                $011A96
-FH_BANT_DISI             $011ACA
-FH_BANT_ICI              $011ACD
-FH_10                    $011AE8
-FH_5                     $011AF8
-FH_ADIM                  $011AFE
-FH_DP                    $011B12
-FH_TAMAM                 $011B44
-FH_GECERSIZ              $011B46
-FR_ON_KAT                $011B48
-FR_T_ON_KAT              $011B64
-FR_BOL                   $011B96
-FB_DON                   $011BA7
-FB_2                     $011BCC
-FR_SENTEZ                $011BD1
-FS_1                     $011BE3
-FR_TERS                  $011C42
-FR_YAZ                   $011C4E
-FY_RX                    $011C58
-FY_TX                    $011C6F
-FY_KOP                   $011C7E
-FY_AD                    $011C92
-FR_EKRAN                 $011CA4
-FE_EN                    $011CB2
-FE_TR                    $011CC1
-FE_GIRIS                 $011CD0
-FR_METIN                 $011CD1
-FM_DON                   $011CD8
-FM_1                     $011CE3
-FM_ALT                   $011CEE
-FM_KOY                   $011CF0
-TXT_FR_ERROR             $011CFC
-TXT_FR_HATA              $011D04
+FK_GERI                  $0119F2
+FK_RAKAM                 $011A01
+FK_AYARLA                $011A2E
+FA_0                     $011A3D
+FA_HESAP                 $011A50
+FA_GECERLI               $011A59
+FA_1                     $011A69
+FA_RXH                   $011A7F
+FA_TX                    $011A95
+FA_ONAY                  $011AAE
+FR_HESAPLA               $011AB9
+FH_HANE                  $011AC6
+FH_7                     $011AF0
+FH_IZGARA                $011AFE
+FH_BANT_DISI             $011B32
+FH_BANT_ICI              $011B35
+FH_10                    $011B50
+FH_5                     $011B60
+FH_ADIM                  $011B66
+FH_DP                    $011B7A
+FH_TAMAM                 $011BAC
+FH_GECERSIZ              $011BAE
+FR_ON_KAT                $011BB0
+FR_T_ON_KAT              $011BCC
+FR_BOL                   $011BFE
+FB_DON                   $011C0F
+FB_2                     $011C34
+FR_SENTEZ                $011C39
+FS_1                     $011C4B
+FR_TERS                  $011CAA
+FR_SAKLA                 $011CB6
+FSK_1                    $011CBA
+FSK_2                    $011CD7
+FSK_3                    $011CDA
+FR_RX_HANELER            $011CE9
+FRH_1                    $011CED
+FR_UYGULA                $011CFF
+FU_1                     $011D03
+FU_2                     $011D18
+FU_3                     $011D27
+VFO_KANCA                $011D42
+VK_VFO                   $011D52
+VK_KAYIT                 $011D56
+VK_ISTENEN               $011D7B
+VK_KARS                  $011D9A
+VK_YAZ                   $011DAD
+VK_BASKA                 $011DC9
+VK_AD                    $011DCA
+VK_AD1                   $011DCD
+VK_BITTI                 $011DDC
+VK_SON                   $011DE2
+FR_EKRAN                 $011DEB
+FE_EN                    $011DF9
+FE_TR                    $011E08
+FE_GIRIS                 $011E17
+FR_METIN                 $011E18
+FM_DON                   $011E1F
+FM_1                     $011E2A
+FM_ALT                   $011E35
+FM_KOY                   $011E3E
+TXT_FR_ERROR             $011E4A
+TXT_FR_HATA              $011E52
 ACILIS                   $012000
 AC_YAZ                   $01200D
 ACILIS_METNI             $012029
