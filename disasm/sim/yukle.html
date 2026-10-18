@@ -167,6 +167,7 @@ label.mode { display: flex; gap: 6px; align-items: center; }
 const $ = id => document.getElementById(id);
 const B = window.Board, S = window.SeriIstemci;
 const FW = window.FIRMWARE_HEX || {};
+const fwLabel = n => n + ((window.FIRMWARE_TIME || {})[n] ? '  ·  ' + window.FIRMWARE_TIME[n] : '');   // build time
 let port = null, client = null, busy = false, header = null;
 let eeDone = false, flashImg = null, wr = null;          // backups of this session, checked image to write
 let eeData = null, er = null;                             // the radio's EEPROM as read now, checked EEPROM file to restore
@@ -209,7 +210,7 @@ $('themeBtn').onclick = () => {
 };
 
 /* modes */
-for (const name of Object.keys(FW)) { const o = document.createElement('option'); o.value = o.textContent = name; $('simFw').appendChild(o); }
+for (const name of Object.keys(FW)) { const o = document.createElement('option'); o.value = name; o.textContent = fwLabel(name); $('simFw').appendChild(o); }
 if (FW['YA4000S.HEX']) $('simFw').value = 'YA4000S.HEX';
 if (!S.WebSerialPort.supported()) {
   $('noSerial').hidden = false;
@@ -335,7 +336,7 @@ $('flashBtn').onclick = () => run(async () => {
 });
 
 /* ---------------------------------------------------------------- write */
-for (const name of Object.keys(FW)) { const o = document.createElement('option'); o.value = o.textContent = name; $('wrSel').appendChild(o); }
+for (const name of Object.keys(FW)) { const o = document.createElement('option'); o.value = name; o.textContent = fwLabel(name); $('wrSel').appendChild(o); }
 $('wrSel').value = FW['YA4000S_FREKANS_YATOLYE.HEX'] ? 'YA4000S_FREKANS_YATOLYE.HEX' : 'YA4000S.HEX';
 $('wrSel').onchange = () => loadImage($('wrSel').value, FW[$('wrSel').value]);
 $('wrFileBtn').onclick = () => $('wrFile').click();

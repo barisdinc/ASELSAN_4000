@@ -20,7 +20,8 @@ let txLog = [], lastTone = null, toneSince = 0, lastSelRx = '';
 
 /* ------------------------------------------------------------ firmware */
 const fwList = Object.keys(window.FIRMWARE_HEX || {}).sort((a, b) => (a === 'YA4000S.HEX' ? -1 : b === 'YA4000S.HEX' ? 1 : a.localeCompare(b)));
-for (const n of fwList) { const o = document.createElement('option'); o.value = n; o.textContent = n; $('fwSel').appendChild(o); }
+const fwLabel = n => n + ((window.FIRMWARE_TIME || {})[n] ? '  ·  ' + window.FIRMWARE_TIME[n] : '');
+for (const n of fwList) { const o = document.createElement('option'); o.value = n; o.textContent = fwLabel(n); $('fwSel').appendChild(o); }
 if (!fwList.length) { const o = document.createElement('option'); o.textContent = '(firmware.js yok)'; $('fwSel').appendChild(o); }
 $('fwSel').value = store.get('sim.fw') || fwList[0] || '';
 $('fwBtn').onclick = () => $('fwFile').click();
@@ -536,7 +537,7 @@ function loop(t) {
 let updater = null, updHex = null, updHexName = '';
 function updFillSources() {
   const sel = $('updSrc'); sel.innerHTML = '';
-  for (const n of fwList) { const o = document.createElement('option'); o.value = n; o.textContent = n; sel.appendChild(o); }
+  for (const n of fwList) { const o = document.createElement('option'); o.value = n; o.textContent = fwLabel(n); sel.appendChild(o); }
   if (updHex) { const o = document.createElement('option'); o.value = '__file'; o.textContent = updHexName + ' (dosya)'; sel.appendChild(o); sel.value = '__file'; }
 }
 updFillSources();
