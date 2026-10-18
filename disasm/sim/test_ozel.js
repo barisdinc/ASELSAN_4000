@@ -395,6 +395,33 @@ if (RING.includes('APRS')) {
   check('APRS: bekçi köpeği / yeniden başlama yok', kotu.length === 0, kotu.map(e => (e[0] / FCLK).toFixed(2) + ' ' + e[1]).join(', '));
 }
 
+/* seçmeli çağrı kaldırıldı (ozel_firmware/ornekler/secmeli_kaldir.inc): orijinalde selftest.js'nin
+ * çalıştırdığı üç senaryo artık ton üretmez, çözmez, verici açmaz; telsiz çalışmaya devam eder */
+if (RING.includes('APRS')) {
+  const selTon = (b, sec) => { const seen = []; for (let i = 0; i < sec / 0.02; i++) { b.run(FCLK * 0.02); const r = V.analyseTx(b, FCLK, FCLK * 0.02); const d = r.selcall && r.selcall.find(x => x.startsWith('CCIR:')); if (d && seen[seen.length - 1] !== d.slice(5)) seen.push(d.slice(5)); } return seen.join(''); };
+  let b = radio(ee => { ee[0x01A] = 0x20; B.eeSetChannel(ee, 1, 156e6, 156e6, { name: 'SEL', selcall: 1 }); });
+  boot(b, 2.6); b.inputs.P4 = 0x7F;
+  const s1 = selTon(b, 0.8), vtx = (b.radioState().vco / 1e6).toFixed(4);
+  check('seçmeli çağrı yok: PTT\'de kimlik tonu gitmiyor, verici açık', s1 === '' && vtx === '156.0000', '"' + s1 + '" ' + vtx);
+  b.inputs.P4 = 0xFF; b.run(FCLK * 0.6);
+  check('seçmeli çağrı yok: PTT bırakınca da ton yok', selTon(b, 0.6) === '', '');
+  b = radio(ee => { ee[0x01A] = 0x20; B.eeSetChannel(ee, 1, 156e6, 156e6, { name: 'SEL', selcall: 1 }); });
+  boot(b, 2.6); const tb = b.now; b.inputs.P5 |= 0x80; b.run(FCLK * 0.3);
+  const ccir = V.SELCALL.CCIR, seq = [{ f: 0, ms: 20 }];
+  for (const ch of '12345') seq.push({ f: ccir.f[+ch], ms: ccir.ms });
+  b.selIn.setSequence(b.now, seq); b.run(FCLK * 1.0);
+  let d = ''; for (let k = 0; k < 8; k++) { const v = b.ram[0x264 + k]; if (v < 15) d += V.SEL_DIGITS[v]; }
+  const kotu = b.events.filter(e => e[0] > tb && /WATCHDOG|RESET/.test(e[1]));
+  check('seçmeli çağrı yok: CCIR 12345 alınınca çözülmüyor, telsiz çalışıyor', d.indexOf('12345') < 0 && kotu.length === 0 && lcd(b) === 'SEL     ', '"' + d + '" ' + lcd(b) + ' ' + kotu.length);
+  b = radio(ee => { ee[0x014] = 0x0C; ee[0x01B] = 5; ee[0x01C] = 0x30; for (let n = 1; n <= 16; n++) ee[0x2E + (n - 1) * 13 + 4] |= 0x80; });
+  boot(b, 2.5);
+  let tx = 0, sel = '';
+  for (const k of '#123') { const i = KP.indexOf(k); b.keypad.press(i, true, b); b.run(FCLK * 0.12); b.keypad.press(i, false, b);
+    for (let t = 0; t < 0.7; t += 0.05) { b.run(FCLK * 0.05); if (b.ram[0x228] >= 4 && b.ram[0x228] <= 12) tx++; } }
+  for (let t = 0; t < 1.5; t += 0.05) { sel += selTon(b, 0.05); if (b.ram[0x228] >= 4 && b.ram[0x228] <= 12) tx++; }
+  check('seçmeli çağrı yok: # ile çağrı vericiyi açmıyor, ton yok', tx === 0 && sel === '', tx + ' TX örneği, "' + sel + '"');
+}
+
 /* boot screen built into the ROM (acilis_yatolye.inc): 5 s, independent of the EEPROM */
 if (new Board(rom).rom[0xE0E1] === 0x5C) {
   for (const [name, mod] of [['varsayılan EEPROM', null], ['Türkçe + UHF EEPROM', ee => { ee[0x018] |= 0x80; ee[0x58C] = 0x3E; ee[0x58D] = 0x80; }]]) {

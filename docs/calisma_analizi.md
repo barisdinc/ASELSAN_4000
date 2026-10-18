@@ -378,7 +378,7 @@ Son adımın ayrıntıları (tablo karşılaştırma toleransı, hane zamanlama 
 
 Toplam ~1850 komut. TB1 kesmesinin (`L_01C627`) TX dalı DTMF için de kullanıldığından kalır; RX dalı (0x023E bit 4) yalnız çözücü içindir. Çözücü, telsizin kendi seçmeli çağrı numarası programlıysa (0x0066B9, 0x015118: 0x023A bit 15) alma kurulumunda (0x00EBF2) başlatılır.
 
-APRS (ozel_firmware/ornekler/aprs.inc) PTT'deki kimlik gönderimini (0x00F4E4) kendisi kullanıyor; orada seçmeli çağrı artık hiç gönderilmiyor.
+APRS (ozel_firmware/ornekler/aprs.inc) PTT'deki kimlik gönderimini (0x00F4E4) kendisi kullanıyor. Özel firmware'de bu dört bölge `ozel_firmware/ornekler/secmeli_kaldir.inc` ile tamamen kaldırıldı (4232 bayt boşaltıldı).
 
 ## 10. Veri, C-BUS, ses kaydı, PC bağlantısı ve flash yükleme
 

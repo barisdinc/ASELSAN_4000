@@ -7,6 +7,7 @@ Safety rules, so that a patch cannot silently break the original code:
   * a byte may be written where the original image is erased (0xFF) or absent, or
     where a preceding `.EXPECT` in the source has confirmed the original bytes;
   * every `.EXPECT` is checked against the original image;
+  * `.SERBEST a,n,...` releases an unused original region (first bytes checked, rest 0xFF);
   * every branch / jump must arrive with the M/X its target was assembled for (a77 check_flow);
   * the ROM checksum (16-bit sum of 0x2000..0xFFFF, big-endian word at 0x010003,
     checked at power on: "ERR FLSH") is recomputed;
@@ -90,6 +91,11 @@ def patch(base, sources, listing=None):
                 raise SystemExit('%s: .EXPECT 0x%06X tutmuyor: beklenen %s, görüntüde %s' %
                                  (src, at, data.hex(' ').upper(), have.hex(' ').upper()))
             allowed.update(range(at, at + len(data)))
+        for at, n in asm.released:                  # .SERBEST: bölge boşaltılır
+            allowed.update(range(at, at + n))
+            for a in range(at, at + n):
+                if a not in asm.mem and a in mem:
+                    mem[a] = 0xFF
         for a, v in sorted(asm.mem.items()):
             if a in allowed or base.get(a, 0xFF) == 0xFF:
                 mem[a] = v

@@ -8,8 +8,8 @@ Orijinal YA4000S yazılımına eklenen özellikler. Her örnek önce simülatör
 | `YA4000S_SAYI.HEX` | Menüde **SAYI** öğesi: girilen sayıyı yazar, `s` ile tersini gösterir | `ornekler/sayi_ters.asm` |
 | `YA4000S_HESAP.HEX` | SAYI + **HESAP**: dört işlemli hesap makinesi | `ornekler/hesap.asm` |
 | `YA4000S_OYUN.HEX` | SAYI + HESAP + **OYUN**: sayı tahmin oyunu (rastgele sayı, sesler) | `ornekler/oyun.asm` |
-| `YA4000S_FREKANS.HEX` | Önceki üçü + **FREKANS**: tuş takımından alma ve gönderme frekansı girip telsizi ayarlama (VFO modu; PTT'de ekranda gönderme frekansı) + **APRS**: PTT'de 144,800 MHz'de sabit konum paketi (1200 baud AFSK, AX.25). Seçmeli çağrı kimliğinin PTT'de gönderilmesi kaldırıldı | `ornekler/frekans.asm` |
-| `YA4000S_FREKANS_YATOLYE.HEX` | FREKANS ve APRS'in tamamı + açılışta 5 saniye **yATOLYE** (flash'a gömülü, EEPROM / programlayıcı değiştiremez; sürüm yazısı "AS V2-3" yerine) | `ornekler/frekans_yatolye.asm` |
+| `YA4000S_FREKANS.HEX` | Önceki üçü + **FREKANS**: tuş takımından alma ve gönderme frekansı girip telsizi ayarlama (VFO modu; PTT'de ekranda gönderme frekansı) + **APRS**: PTT'de 144,800 MHz'de sabit konum paketi (1200 baud AFSK, AX.25). **Seçmeli çağrı (Select-5) tamamen kaldırıldı**, ~4,1 KB flash boşaldı | `ornekler/frekans.asm` |
+| `YA4000S_FREKANS_YATOLYE.HEX` | FREKANS ve APRS'in tamamı (seçmeli çağrı kaldırılmış) + açılışta 5 saniye **yATOLYE** (flash'a gömülü, EEPROM / programlayıcı değiştiremez; sürüm yazısı "AS V2-3" yerine) | `ornekler/frekans_yatolye.asm` |
 
 Kaynak düzeni (`ornekler/`):
 
@@ -210,6 +210,25 @@ Ad geçersizse ekranda `CAGRI -`, `ENLEM -` ya da `BOYLAM -` (İngilizce `CALL -
 - FX806'nın ön vurgusu 2200 Hz'i 1200 Hz'den daha yüksek verebilir. Alıcıda (direwolf, APRSdroid) çözülmezse iki ton için ayrı genlik gerekebilir.
 - 144,800 MHz kılavuzdaki donanım bandının (146–174 MHz) altında. VCO kilitlenmeyebilir; ilk deneme yapay yükle.
 - Paket yalnızca lisanslı çağrı işaretiyle, izinli frekansta gönderilmelidir.
+
+## Seçmeli çağrının kaldırılması
+
+`ornekler/secmeli_kaldir.inc`. Çağrı grafiğinden yalnız seçmeli çağrının kullandığı dört kod bölgesi bulundu ve bunlara dışarıdan giren tüm çağrılar tarandı (5 çağrı + TA1 kesme vektörü; başka referans yok). Çağrılar `NOP` yapıldı, bölgeler `.SERBEST` ile boşaltıldı (0xFF).
+
+| Bölge | Boyut | Ne yapıyordu |
+|---|---|---|
+| 0x00E65B–0x00E9D1 (`F_00E65B`) | 887 B | gönderme: kimlik, çağrı, transpond tonları |
+| 0x007C46–0x007CF5 (`F_007C46`) | 176 B | alma çözücüsünü başlatma |
+| 0x01BBE4–0x01C626 (`F_01BBE4`) | 2627 B | hane kararı, çağrı / grup / transpond, çağrı ekranı |
+| 0x01C6C0–0x01C8DD (TA1 kesmesi) | 542 B | periyot ortalaması, hane bulma |
+
+Toplam 4232 bayt; bank 0'da ilk kez boş yer açıldı (1063 bayt). Ayrıca "çağır" (`#` tuşu) ve "transpond" istekleri (RAM 0x0244 bit 0 / 1) kurulmuyor; kurulsalar telsiz ton göndermeden vericiye geçerdi. TA1 kesme vektörü boş bir `RTI`'ye bağlandı. TB1 kesmesi DTMF ve APRS için duruyor, sinüs tablosu 0x28FA APRS'te kullanılıyor.
+
+Simülatörde: PTT'de / bırakınca kimlik tonu yok, CCIR 12345 alınınca çözülmüyor, `#123` ile verici açılmıyor; telsiz bekçi köpeğine düşmeden çalışıyor (`test_ozel.js`).
+
+Flash kullanımı (0x2000–0x1FFFF, 120 KB): orijinal %83,9, şimdi %85,4 (FREKANS + APRS + açılış ekranı dahil).
+
+`.SERBEST adres,uzunluk,ilk baytlar...` (a77 / yama.py): orijinaldeki kullanılmayan bir bölgeyi boşaltır; baştaki baytlar orijinalle karşılaştırılır (yanlış adresi silmemek için), bölge 0xFF yapılır ve yeni kod oraya yazılabilir.
 
 ## Yeni bir örnek yazmak
 

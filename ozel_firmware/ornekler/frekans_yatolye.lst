@@ -2451,7 +2451,34 @@
 012CAF  9C F9 04 5E                  LDM   #94,AP_OTO_SURE           ; ~3 s
 012CB3  D8                           CLM
 012CB4  60                           RTS
-012CB5                               .ORG $00E0E1                    ; F_00E0E1: LDA A,$04,S / PHD / TAD
+012CB5                               .ORG $00F628                    ; durum 12 (PTT bırakıldı): kimlik gönder
+00F628                               .EXPECT $22,$5B,$E6,$00         ; JSRL F_00E65B
+00F628  EA EA EA EA                  .BYTE $EA,$EA,$EA,$EA           ; NOP
+00F62C  00 00 00 00 00 00 …          .ORG $00F67A                    ; durum 7: çağrı / transpond gönder
+00F67A                               .EXPECT $22,$5B,$E6,$00
+00F67A  EA EA EA EA                  .BYTE $EA,$EA,$EA,$EA
+00F67E                               .ORG $00EBF2                    ; alma kurulumu: çözücüyü başlat
+00EBF2                               .EXPECT $22,$46,$7C,$00         ; JSRL F_007C46
+00EBF2  EA EA EA EA                  .BYTE $EA,$EA,$EA,$EA
+00EBF6                               .ORG $00202C                    ; VEC_TA1: karar kesmesi yerine boş kesme
+00202C                               .EXPECT $5C,$C0,$C6,$01         ; JMPL L_01C6C0
+00202C  5C B5 2C 01                  JMPL  SC_TA1
+002030  00 00 00 00 00 00 …          .ORG $003964                    ; # menüsü: numara tamam -> çağır
+003964                               .EXPECT $0C,$44,$02,$01,$00     ; SEB #$0001,$0244
+003964  EA EA EA EA EA               .BYTE $EA,$EA,$EA,$EA,$EA
+003969  00 00 00 00 00 00 …          .ORG $006461
+006461                               .EXPECT $0C,$44,$02,$02,$00     ; SEB #$0002,$0244
+006461  EA EA EA EA EA               .BYTE $EA,$EA,$EA,$EA,$EA
+006466  00 00 00 00 00 00 …          .ORG $0068FB                    ; bekleyen çağrı (0x0246 bit 7) -> gönder
+0068FB                               .EXPECT $0C,$44,$02,$02,$00
+0068FB  EA EA EA EA EA               .BYTE $EA,$EA,$EA,$EA,$EA
+006900                               .SERBEST $00E65B,$00E9D2-$00E65B,$A3,$04,$0B,$5B,$18,$69,$15,$00   ; F_00E65B
+006900                               .SERBEST $007C46,$007CF6-$007C46,$A3,$04,$0B,$5B,$64,$00,$00,$00   ; F_007C46
+006900                               .SERBEST $01BBE4,$01C627-$01BBE4,$A3,$04,$0B,$5B,$84,$00           ; F_01BBE4
+006900                               .SERBEST $01C6C0,$01C8DE-$01C6C0,$C2,$39,$EB,$3F,$89,$C2,$00       ; TA1 kesmesi
+006900  00 00 00 00 00 00 …          .ORG SC_KOD_ADRES
+012CB5  40                   SC_TA1: RTI
+012CB6                               .ORG $00E0E1                    ; F_00E0E1: LDA A,$04,S / PHD / TAD
 00E0E1                               .EXPECT $A3,$04,$0B,$5B
 00E0E1                               .ASSUME M=0,X=0
 00E0E1  5C 00 20 01                  JMPL  ACILIS
@@ -3001,4 +3028,6 @@ AOZ_SAY                  $012C7B
 AOZ_1                    $012C81
 AOZ_2                    $012C93
 AOZ_SON                  $012CB3
+SC_KOD_ADRES             $012CB5
+SC_TA1                   $012CB5
 TB1_ORIJINAL             $01C627

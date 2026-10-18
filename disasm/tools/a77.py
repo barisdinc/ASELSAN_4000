@@ -28,6 +28,8 @@ Directives:
     .FILL n[,value]       .TEXT8 "abc"    (8 characters, padded with blanks: one LCD screen)
     .COPY src,n           n bytes copied from the original image (yama.py supplies it)
     .INCLUDE "file"       insert another source (path relative to this file)
+    .SERBEST a,n,b1,...   release n original bytes at a (first bytes checked; yama.py fills
+                          the rest of the region with 0xFF and lets new code use it)
     .EXPECT b1,b2,...     the original image must hold these bytes here; it also allows
                           the following code to overwrite them (see yama.py)
 
@@ -364,7 +366,7 @@ class Asm:
         for k, v in s.defines.items():
             s.syms[k] = (v, width_of(v))
         s.pc, s.m, s.x = 0, 0, 0
-        s.listing, s.expects = [], []
+        s.listing, s.expects, s.released = [], [], []
         s.state_at, s.flow_refs = {}, []     # M/X at each instruction; (target, m, x, line) of jumps
         s.insn_at = {}                       # addr -> (name, mode, length, operand text)
         s.cur_line = ''
@@ -458,6 +460,16 @@ class Asm:
         elif op == '.EXPECT':
             data = bytes(s.value(a).v & 0xFF for a in split_commas(args))
             s.expects.append((s.pc, data))
+        elif op == '.SERBEST':
+            # .SERBEST adres,uzunluk,b1,b2,...: orijinaldeki bu bölge artık kullanılmıyor (yama.py
+            # baştaki baytları denetler, bölgeyi 0xFF yapar; yeni kod buraya yazılabilir)
+            p = split_commas(args)
+            at, n = s.value(p[0]).v, s.value(p[1]).v
+            data = bytes(s.value(a).v & 0xFF for a in p[2:])
+            if not data:
+                raise AsmError('.SERBEST: bölgenin ilk baytları verilmeli (yanlış adresi silmemek için)')
+            s.expects.append((at, data))
+            s.released.append((at, n))
         elif op == '.END':
             pass
         else:
