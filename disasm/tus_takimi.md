@@ -13,7 +13,8 @@ Tuşlar: `0–9 * #` ve işlev tuşları `m s p q` (ROM 0x31EC tablosu `*0#q 789
 | `p` | Taramayı başlat / durdur. Ekranda **SCAN**; liste boşsa **NO LIST** | Liste dolu olmalı | Doğrulandı |
 | `#` | Seçmeli çağrı ile arama ("C …") | EE[0x014] bit 2, kanalda seçmeli çağrı açık | Doğrulandı |
 | `q` | Monitör (B tipi kartta); A tipinde etkisiz | | |
-| `s`, `*`, rakamlar | Etkisiz | | Doğrulandı |
+| rakamlar | Kanala git: iki hane (`0 5` → `CH 05`) | Kanal anahtarı **16** konumunda (0x46 b7..4 = 0 → RAM 0x0206 = 0x10 → 0x023A bit 10) ve EE[0x014] bit 3 | Doğrulandı |
+| `s`, `*`, rakamlar | Etkisiz | Kanal anahtarı 1–15 | Doğrulandı |
 
 ## Menü (`m` sonraki öğe, `s` gir / seç)
 
@@ -45,16 +46,18 @@ m s  m m s  m m s  0 5 m m s  m s   p
 
 **Tarama:** Liste kanallarını sırayla dinler. Susturma açılınca (kanalda sinyal, P57 = 1) o kanalda durur ve ekranda kanal adı görünür; sinyal gidince devam eder. `p` ile durur. P1/P2 öncelikli kanallarına aralıklarla bakılır (F_00EEE9). Zamanlamalar EE[0x01C] alt 4 bit ve EE[0x025].
 
-### SUB MENU (doğrulandı, EE[0x018] = 0x21 ile)
+### SUB MENU / ALT MENU (doğrulandı)
+
+Menüde yalnızca **EE[0x018] bit 5** (0x20) açıksa görünür; T4000 programındaki seçenek bu bit. EE[0x018] bit 7 dili seçer (0 = İngilizce, 1 = Türkçe: ALT MENU / ISIK / UYARI / GOSTERGE / PAROLA). EEPROM elle değiştirilirse 0x018–0x534 bloğunun sağlama toplamı (0x535–0x536) da düzeltilmeli, yoksa açılışta `ARZ PRG` (simülatörde "EEPROM / kanallar" sekmesindeki **Düzelt** düğmesi, `eeFixSums`). Cihazdan okunan EEPROM'da EE[0x018] = 0x01 olduğu için alt menü görünmüyor.
 
 `s` ile girilir, `m` ile öğeler arasında:
 
 | Öğe | `s` |
 |---|---|
-| LIGHT | Arka ışık aç `*` / kapa `-` (0x023C bit 12) |
-| ALERT | Uyarı sesi aç / kapa (0x023A bit 11) |
-| DISPLAY | `s` → INVERT ↔ NORMAL (`m` ile), ekran ters / normal |
-| PASSWORD | `s` → `NP` parola girişi (OP) |
+| LIGHT / ISIK | Arka ışık aç `*` / kapa `-` (0x023C bit 12) |
+| ALERT / UYARI | Uyarı sesi aç / kapa (0x023A bit 11) |
+| DISPLAY / GOSTERGE | `s` → INVERT ↔ NORMAL (TR TERS ↔ NORMAL) (`m` ile), ekran ters / normal |
+| PASSWORD / PAROLA | `s` → `NP` (TR `YP`) yeni parola: rakamlar, `s` kaydeder. EEPROM 0x54E–0x551 (boş = FF); kaydederken 0x552–0x553 de değişiyor (kontrol değeri, formülü çözülmedi). Parola varsa telsiz açılışta `PASSWORD` / `PAROLA` gösterir, `PR ----` ile 4 hane ve `s` ister; yanlışsa yeniden sorar |
 | MSR RSSI | `s` → sinyal gücü ölçümü (e80 … e120 dBm); 0x01EB ≥ 3 gerekir |
 
 ## `#` — seçmeli çağrı ile arama (doğrulandı)
