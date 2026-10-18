@@ -150,7 +150,7 @@ Menüde FREKANS'tan sonra gelir (`m` ile **APRS** başlığına gelip `s`).
 
 | Ekran / tuş | Ne olur |
 |---|---|
-| `s` (APRS başlığında) | Telsiz alma ve gönderme **144,800 MHz**'e geçer, TKS kapanır. Ekranda `APRS PTT` |
+| `s` (APRS başlığında) | Telsiz alma ve gönderme **144,800 MHz**'e geçer, TKS kapanır, hoparlör kapanır (kanaldaki paketler duyulmaz; tuş ve uyarı sesleri duyulur). Ekranda `APRS PTT` |
 | PTT | ~130 ms sonra paket gider (0,75 s): ekranda `APRS TX`, bitince `APRS OK`. PTT basılı tutulursa telsiz 144,800'de göndermeye (konuşmaya) devam eder |
 | `m` | Çık: telsiz önceki kanalına / frekansına döner. Menüdeyken kanal anahtarı çevrildiyse yeni kanal kalır |
 
@@ -159,11 +159,11 @@ FREKANS'taki gibi APRS açıkken firmware'in ~4 s'lik menü zaman aşımı kapal
 **Paket** (sabit, flash'ta):
 
 ```
-TA7W-7>APZ001,WIDE1-1,WIDE2-1:!4050.63N/03109.39Eb ASELSAN 4000
+TA7W-7>APIZCI,WIDE1-1,WIDE2-1:!4050.63N/03109.39Eb ASELSAN 4000
 ```
 
 - Konum Düzce merkezi: 40° 50,63' K, 031° 09,39' D. Simge `/b` (bisiklet).
-- `APZ001` deneysel yazılımlar için ayrılmış hedef adı. Yol `WIDE1-1,WIDE2-1`.
+- `APIZCI` hedef alanı (tocall): APRS haritalarında cihaz / yazılım adı olarak görünür. APRS tocall listesine kayıtlı değil; bilinmeyen kimliği çoğu hizmet "bilinmeyen cihaz" olarak gösterir. Yol `WIDE1-1,WIDE2-1`.
 - Değiştirmek için `disasm/tools/aprs_paket.py`'nin başındaki `CAGRI`, `BILGI`, `YOL` değerleri; `make -C disasm ozel` paketi yeniden üretir.
 
 **Ton üretimi.** Seçmeli çağrının donanım yolu kullanılır (bkz. `docs/calisma_analizi.md` bölüm 9):
@@ -181,6 +181,7 @@ TA7W-7>APZ001,WIDE1-1,WIDE2-1:!4050.63N/03109.39Eb ASELSAN 4000
 | 0x002028 `VEC_TB1` | `JMPL $01C627` | `AFSK_TB1`: paket gidiyorsa örnek üretir, yoksa orijinal kesmeye geçer (DTMF, alma) |
 | 0x00EDA2 (durum 4) | PTT'de kimlik gönderilecek mi? (5 ya da doğrudan 8) | APRS menüsündeyse 5'e geçer; gecikme 4 × 32 ms (EEPROM'daki ton gönderme gecikmesi değil: senin telsizinde 1,5 s) |
 | 0x00F4E4 (durum 5) | `JSRL F_00E65B` (seçmeli çağrı kimliği) | `APRS_PTT`: APRS menüsündeyse paketi gönderir, değilse hiçbir şey |
+| 0x00E9FE (`F_00E9D2`) | susturma açıldı → `SEB #$40,P4` (hoparlör açık) | `APRS_HOPARLOR`: APRS menüsündeyse P46 = 0 |
 | `VFO_KANCA` (0x00F84D) | | `APRS_KANCA`: menü zaman aşımını yeniler, menüden çıkılınca sentezör kaydını geri yükler |
 
 **Simülatörde doğrulama** (`test_ozel.js`, `disasm/sim/afsk.js`): TA1'e yazılan örnekler firmware'den bağımsız bir çözücüden geçirilir (1200/2200 Hz enerjisi, bit saati, NRZI, bit doldurma, CRC). Paket bayt bayt çözülür, FCS doğru, süre 0,754 s, örnekleme 9600 Hz. Tip B kart ve gerçek telsizin EEPROM'uyla da çözüldü.

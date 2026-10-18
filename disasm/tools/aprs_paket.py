@@ -19,7 +19,7 @@ Kodlama (AX.25 2.2 / APRS 1.0.1):
 import sys
 
 CAGRI = ('TA7W', 7)                      # gönderen
-HEDEF = ('APZ001', 0)                    # deneysel yazılım
+HEDEF = ('APIZCI', 0)                    # cihaz kimliği (tocall)
 YOL = [('WIDE1', 1), ('WIDE2', 1)]
 # Düzce: 40,8438 K 31,1565 D -> 40° 50,63' K, 031° 09,39' D; simge tablosu '/', simge 'b' (bisiklet)
 BILGI = '!4050.63N/03109.39Eb ASELSAN 4000'

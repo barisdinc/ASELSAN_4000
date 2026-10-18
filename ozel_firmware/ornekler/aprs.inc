@@ -1,11 +1,12 @@
 ; aprs.inc - APRS menü öğesi: PTT'ye basınca 144,800 MHz'de sabit konum paketi (AX.25 / 1200 baud AFSK)
 ;
-;   ... m (APRS) s     -> "APRS PTT"    telsiz alma ve gönderme 144,800 MHz'e geçer (TKS kapalı)
+;   ... m (APRS) s     -> "APRS PTT"    telsiz alma ve gönderme 144,800 MHz'e geçer (TKS kapalı),
+;                                       hoparlör kapanır (kanaldaki paketler duyulmaz)
 ;   PTT                -> "APRS TX"     paket gider (~0,75 s), ardından "APRS OK"; PTT basılı
 ;                                       tutulursa telsiz 144,800'de göndermeye devam eder
 ;   m                  -> çık: telsiz önceki kanalına / frekansına döner
 ; Paket (aprs_paket.inc, disasm/tools/aprs_paket.py ile derlemede üretilir):
-;   TA7W-7>APZ001,WIDE1-1,WIDE2-1:!4050.63N/03109.39Eb ASELSAN 4000   (Düzce, simge bisiklet)
+;   TA7W-7>APIZCI,WIDE1-1,WIDE2-1:!4050.63N/03109.39Eb ASELSAN 4000   (Düzce, simge bisiklet)
 ;
 ; Ton üretimi seçmeli çağrının donanım yolunu kullanır (F_00E65B ile aynı ayarlar):
 ;   TB1 zamanlayıcı modunda örnekleme saati: 4,032 MHz / 420 = 9600 Hz, kesme önceliği 6
@@ -22,6 +23,10 @@
 ;   0x00F4E4 durum 5 (PTT'den sonra verici açıldı) JSRL F_00E65B (seçmeli çağrı kimliği)
 ;            -> APRS_PTT: APRS menüsündeyse paketi gönderir; değilse hiçbir şey (seçmeli
 ;            çağrı kimliği gönderimi kaldırıldı)
+;   0x00E9FE F_00E9D2'nin hoparlörü açtığı yer (P46 SUSTURMA_BILGISI = 1): APRS menüsündeyken
+;            hoparlör kapalı kalır (kanaldaki paketler kullanıcıyı rahatsız etmesin); uyarı ve tuş
+;            sesleri (P50) etkilenmez. APRS'e girerken hoparlör hemen kapatılır, çıkışta
+;            RX'e yeniden girilince firmware susturmaya göre yeniden açar
 ;   VFO_KANCA (frekans.inc) her turda APRS_KANCA'yı çağırır: menü zaman aşımını yeniler,
 ;            menüden herhangi bir yolla çıkılınca sentezör kaydını geri yükler
 
@@ -47,6 +52,7 @@ AP_GECIKME  .EQU 4              ; PTT'den paketin başına: 4 x 32 ms (verici ve
 TB1_9600    .EQU 419            ; 4032000 / (419 + 1) = 9600 Hz
 SINUS       .EQU $0028FA
 
+R_P4        .EQU $000A          ; P46 SUSTURMA_BILGISI: 1 = hoparlör açık
 R_TCSTART   .EQU $0040          ; sayıcı başlatma (bit 1 TA1, bit 6 TB1)
 R_TOSTART   .EQU $0042          ; tek atım tetikleme (bit 1 TA1)
 R_TA1       .EQU $0048
@@ -69,6 +75,10 @@ AP_KOD_ADRES .EQU *
         .ASSUME M=0,X=0
         JMPL  APRS_KARAR
         .BYTE $EA,$EA                   ; (NOP, çalışmaz)
+        .ORG $00E9FE                    ; F_00E9D2: susturma açıldı -> hoparlörü aç (P46 = 1)
+        .EXPECT $F8,$0C,$0A,$00,$40,$4C,$0B,$EA   ; SEM / SEB #$40,P4 / JMP L_00EA0B
+        JMPL  APRS_HOPARLOR
+        .BYTE $EA,$EA,$EA,$EA           ; (NOP, çalışmaz)
         .ORG $00F4E4                    ; durum 5 -> 6: seçmeli çağrı kimliği yerine APRS
         .EXPECT $22,$5B,$E6,$00
         JSRL  APRS_PTT
@@ -150,6 +160,29 @@ AKR_ORJ:
         BBS   #$0002,$0244,AKR_5
         JMPL  $00EDA8
 AKR_5:  JMPL  $00EDC4
+
+; ---------------------------------------------------------------------------------------------
+; F_00E9D2'nin hoparlörü açtığı yer (M = 1): APRS menüsündeyse kapalı tut
+APRS_HOPARLOR:
+        .ASSUME M=1,X=0
+        SEM
+        JSR   AP_ETKIN
+        BNE   AH_AC
+        CLB   #$40,R_P4                 ; APRS: hoparlör kapalı
+        JMPL  $00EA0E
+AH_AC:  SEB   #$40,R_P4                 ; orijinal
+        JMPL  $00EA0E
+
+; APRS menüsü açık ve frekans kurulu mu? Z = 1: evet (M = 1 giriş ve çıkış, A bozulur)
+AP_ETKIN:
+        .ASSUME M=1,X=0
+        LDA   A,MENU
+        CMP   A,#ST_APRS_ON
+        BNE   AE_SON
+        LDA   A,AP_DURUM
+        AND   A,#F_AP_KURULU
+        EOR   A,#F_AP_KURULU            ; kuruluysa 0
+AE_SON: RTS
 
 ; ---------------------------------------------------------------------------------------------
 ; Durum 5'te (verici açıldı, PTT basılı) telsiz durum makinesinden çağrılır (M = 0, 4,S çerçeve).
@@ -358,6 +391,7 @@ AK_5:   LDA   A,SYN_KAYIT,X             ; kopya ($0363) ve karşılaştırma iç
         CPX   #13
         BNE   AK_5
         LDM   #F_AP_KURULU,AP_DURUM
+        CLB   #$40,R_P4                 ; hoparlör kapalı (APRS_HOPARLOR açık tutmaz)
         LDM   #1,RADYO_DURUM            ; RX'e yeniden gir, sentezörü yükle
         CLM
         RTS

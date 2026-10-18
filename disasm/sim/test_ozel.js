@@ -281,7 +281,7 @@ if (RING.includes('FREQ')) {
 
 /* APRS (ozel_firmware/ornekler/aprs.inc): PTT'de 144,800 MHz'de AFSK konum paketi */
 if (RING.includes('APRS')) {
-  const PAKET = 'TA7W-7>APZ001,WIDE1-1,WIDE2-1:!4050.63N/03109.39Eb ASELSAN 4000';
+  const PAKET = 'TA7W-7>APIZCI,WIDE1-1,WIDE2-1:!4050.63N/03109.39Eb ASELSAN 4000';
   const vco = b => (b.radioState().vco / 1e6).toFixed(4);
   const enter = 'mm' + 'm'.repeat(RING.indexOf('APRS')) + 's';
   const b = radio();
@@ -290,6 +290,10 @@ if (RING.includes('APRS')) {
   scenario(b, 'APRS: gir', enter, ['LIST', ...RING.slice(0, RING.indexOf('APRS') + 1), 'APRS PTT'].join('|'));
   b.run(FCLK * 0.3);
   check('APRS: alma 144,800 (VCO 189,800)', vco(b) === '189.8000', vco(b));
+  const hop = () => b.radioState().squelchInfo;
+  b.inputs.P5 |= 0x80; b.run(FCLK * 0.6);                    // P57 = 1: kanalda sinyal
+  check('APRS: kanalda sinyal varken hoparlör kapalı (P46 = 0)', !hop(), 'P46=' + (hop() ? 1 : 0));
+  b.inputs.P5 &= ~0x80; b.run(FCLK * 0.4);
   /* PTT: örnekleri toplayıp çöz */
   const log = [], push = b.pushAudio.bind(b);
   b.pushAudio = (buf, v) => { if (buf === b.audio.ta1) log.push(b.now, v); push(buf, v); };
@@ -306,6 +310,10 @@ if (RING.includes('APRS')) {
   scenario(b, 'APRS: m ile çık', 'm', 'KANAL 01');
   b.run(FCLK * 0.3);
   check('APRS: çıkınca kanala dönüş', vco(b) === vco0, vco(b) + ' / ' + vco0);
+  b.inputs.P5 |= 0x80; b.run(FCLK * 0.6);
+  check('çıkınca kanalda sinyal: hoparlör açılır (P46 = 1)', hop(), 'P46=' + (hop() ? 1 : 0));
+  b.inputs.P5 &= ~0x80; b.run(FCLK * 0.6);
+  check('sinyal gidince hoparlör kapanır', !hop(), 'P46=' + (hop() ? 1 : 0));
   log.length = 0;
   b.inputs.P4 = 0x7F; b.run(FCLK * 1.0);
   check('APRS menüsü dışında PTT: paket yok (seçmeli çağrı kimliği de yok)', AFSK.decode(log, FCLK).length === 0 && log.length === 0, log.length / 2 + ' örnek');
