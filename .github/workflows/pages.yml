@@ -1,0 +1,39 @@
+# Web simülatörünü (disasm/sim) GitHub Pages'e yayınlar:
+# https://barisdinc.github.io/ASELSAN_4000/
+name: Simülatör (GitHub Pages)
+
+on:
+  push:
+    branches: [master]
+    paths: ['disasm/sim/**', '.github/workflows/pages.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Siteyi hazırla
+        run: |
+          mkdir _site
+          cd disasm/sim
+          cp index.html app.js board.js m7700.js radio_view.js updater.js firmware.js ../../_site/
+          touch ../../_site/.nojekyll
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - id: deployment
+        uses: actions/deploy-pages@v4
