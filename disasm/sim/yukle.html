@@ -125,6 +125,7 @@ label.mode { display: flex; gap: 6px; align-items: center; }
       <div class="checks">
         <label><input type="checkbox" id="wrC1"> Telsizin gücü yükleme bitene kadar kesilmeyecek (sabit güç kaynağı ya da dolu akü).</label>
         <label><input type="checkbox" id="wrC2"> EEPROM ve flash yedeklerini indirdim ve sakladım.</label>
+        <label id="wrC3Row" class="warn" hidden><input type="checkbox" id="wrC3"> Bu dosya başka bir ürün ailesine ait; bu telsize uygun olduğundan eminim.</label>
       </div>
       <div class="row"><button class="danger" id="wrBtn" disabled>Yüklemeyi başlat</button><span class="note" id="wrGate"></span></div>
     </div>
@@ -231,6 +232,7 @@ $('connectBtn').onclick = () => run(async () => {
   setStatus('Bağlı', 'ok');
   header = await client.readHeader();
   showHeader(header);
+  if (lastSel) loadImage(lastSel[0], lastSel[1]);
 });
 
 $('disconnectBtn').onclick = () => run(async () => {
@@ -332,7 +334,7 @@ async function loadFile(f) {
 $('wrFile').onchange = () => { loadFile($('wrFile').files[0]); $('wrFile').value = ''; };
 addEventListener('dragover', e => { e.preventDefault(); });
 addEventListener('drop', e => { e.preventDefault(); if (e.dataTransfer.files[0]) { loadFile(e.dataTransfer.files[0]); $('wrCard').scrollIntoView({ behavior: 'smooth' }); } });
-['wrC1', 'wrC2', 'wrRecover'].forEach(id => $(id).onchange = updateWrite);
+['wrC1', 'wrC2', 'wrC3', 'wrRecover'].forEach(id => $(id).onchange = updateWrite);
 
 let lastSel = null;
 function loadImage(name, text) {
@@ -347,6 +349,11 @@ function loadImage(name, text) {
     h += '<div>Sürüm</div><div>' + esc(r.header.version) + ', ' + esc(r.header.date) + ', ' + esc(opt) + '</div>' +
          '<div>Yazılacak</div><div>' + r.blocks + ' blok × 128 bayt, yazma + doğrulama ≈ ' + Math.floor(sec / 60) + ' dk ' + (sec % 60) + ' sn</div>' +
          '<div>Denetim</div><div class="ok">✓ reset vektörü ve seri yükleyici yerinde' + (r.notes.length ? '<br><span class="note">' + r.notes.map(esc).join('<br>') + '</span>' : '') + '</div>';
+    /* first letter of "AS V2-3": product family (A = YA4000 / 4021-4025), second = option variant */
+    const fam = r.header.version[0], radioFam = header ? header.version[0] : 'A';
+    r.famWarn = fam !== radioFam;
+    if (r.famWarn) h += '<div>Ürün ailesi</div><div class="bad">⚠ Dosya "' + esc(r.header.version.slice(0, 2)) + '" ailesinden, telsiz "' + esc(header ? header.version.slice(0, 2) : 'A?') +
+      '". Başka bir telsiz modelinin firmware\'i olabilir; yanlış donanımda telsiz çalışmayabilir.</div>';
     if (flashImg) {
       const d = S.diffCount(flashImg, r.image);
       h += '<div>Telsizdekine göre</div><div>' + (d ? d + ' bayt değişecek' : '<span class="ok">telsizdeki firmware ile aynı</span> <span class="note">(gerçek telsizde ilk yükleme denemesi için en güvenli seçim)</span>') + '</div>';
@@ -356,6 +363,7 @@ function loadImage(name, text) {
     h += '</div><ul class="errs bad">' + r.errors.map(e => '<li>' + esc(e) + '</li>').join('') + '</ul>';
   }
   $('wrInfo').innerHTML = h;
+  $('wrC3Row').hidden = !(wr && wr.famWarn); $('wrC3').checked = false;
   updateWrite();
 }
 
@@ -364,12 +372,14 @@ function updateWrite() {
   const gate = !!client && ($('wrRecover').checked || (eeDone && !!flashImg));
   $('wrBody').classList.toggle('locked', !gate);
   ['wrSel', 'wrFileBtn'].forEach(id => $(id).disabled = busy);
-  ['wrC1', 'wrC2'].forEach(id => $(id).disabled = !gate || busy);
+  ['wrC1', 'wrC2', 'wrC3'].forEach(id => $(id).disabled = !gate || busy);
   $('wrRecover').disabled = busy;
   $('wrGate').textContent = !client ? 'Yüklemek için: önce bağlanın (1), EEPROM (3) ve flash (4) yedeklerini alın.'
     : !gate && !eeDone ? 'Önce EEPROM yedeğini alın (3. adım).' : !gate && !flashImg ? 'Önce flash yedeğini alın (4. adım).'
-    : !wr ? 'Geçerli bir firmware seçin.' : !($('wrC1').checked && $('wrC2').checked) ? 'İki kutuyu işaretleyin.' : '';
-  $('wrBtn').disabled = !(gate && wr && $('wrC1').checked && $('wrC2').checked && !busy);
+    : !wr ? 'Geçerli bir firmware seçin (dosya denetimden geçmedi, sebebi yukarıda kırmızıyla yazıyor).'
+    : !($('wrC1').checked && $('wrC2').checked) ? 'Onay kutularını işaretleyin.'
+    : wr.famWarn && !$('wrC3').checked ? 'Ürün ailesi uyarısını onaylayın.' : '';
+  $('wrBtn').disabled = !(gate && wr && $('wrC1').checked && $('wrC2').checked && (!wr.famWarn || $('wrC3').checked) && !busy);
 }
 
 function guard(e) { e.preventDefault(); e.returnValue = ''; }
@@ -412,6 +422,21 @@ loadImage($('wrSel').value, FW[$('wrSel').value]);
 refresh();
 
 /* headless check: yukle.html#otomatik-test runs the whole flow on the simulator and marks the page */
+if (location.hash === '#otomatik-test-aile') (async () => {
+  document.querySelector('input[value=sim]').checked = true; onMode();
+  const until = c => new Promise(r => { const t = setInterval(() => { if (c()) { clearInterval(t); r(); } }, 50); });
+  $('connectBtn').click(); await until(() => client && !busy);
+  $('eeBtn').click(); await until(() => !busy);
+  $('flashBtn').click(); await until(() => !busy);
+  // the same image with family letter 'K' at 0x010009
+  const t = FW['YA4000S.HEX'].split('\n').map(l => l.startsWith('S214010000') ? l.slice(0, 10 + 18) + '4B' + l.slice(10 + 20) : l).join('\n');
+  await loadFile(new File([t], 'baska_aile.HEX'));
+  $('wrC1').checked = $('wrC2').checked = true; updateWrite();
+  const a = !$('wrC3Row').hidden && $('wrBtn').disabled && /aile/.test($('wrGate').textContent);
+  $('wrC3').checked = true; updateWrite();
+  const b = !$('wrBtn').disabled;
+  document.body.dataset.test = a && b ? 'bitti' : 'hata ' + a + ' ' + b + ' ' + $('wrGate').textContent;
+})();
 if (location.hash === '#otomatik-test') (async () => {
   document.querySelector('input[value=sim]').checked = true; onMode();
   const until = c => new Promise(r => { const t = setInterval(() => { if (c()) { clearInterval(t); r(); } }, 50); });

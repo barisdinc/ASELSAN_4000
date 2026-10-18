@@ -174,8 +174,14 @@ function refusals(basePath) {
   const badLoader = new Map(ref); badLoader.set(S.LOADER_LO + 10, badLoader.get(S.LOADER_LO + 10) ^ 1);
   const noVec = new Map(ref); noVec.delete(0xFFFE); noVec.delete(0xFFFF);
   const r1 = S.checkImage(noLoader, ref), r2 = S.checkImage(badLoader, ref), r3 = S.checkImage(noVec, ref);
-  check('reddedilir: yükleyici eksik', !r1.ok && /eksik/.test(r1.errors[0]), r1.errors[0]);
-  check('reddedilir: yükleyici değiştirilmiş', !r2.ok && /farklı/.test(r2.errors[0]), r2.errors[0]);
+  check('reddedilir: yükleyici yok', !r1.ok && /bulunamadı/.test(r1.errors[0]), r1.errors[0]);
+  check('reddedilir: yükleyici değiştirilmiş', !r2.ok && /bulunamadı/.test(r2.errors[0]), r2.errors[0]);
+  /* the 2001 builds keep the same loader at 0x010200 */
+  const moved = new Map(ref);
+  for (let a = S.LOADER_LO; a < S.LOADER_HI; a++) moved.delete(a);
+  for (let a = S.LOADER_LO; a < S.LOADER_HI; a++) moved.set(a + 0x100, ref.get(a));
+  const r5 = S.checkImage(moved, ref);
+  check('kabul: yükleyici 0x010200\'de (2001 sürümleri)', r5.ok && r5.loaderAt === 0x10200, r5.errors.concat(r5.notes).join('; '));
   check('reddedilir: reset vektörü yok', !r3.ok && /reset/.test(r3.errors[0]), r3.errors[0]);
   const patched = new Map(ref); patched.set(0x2DE9, 0x4B);   // a byte in the checksummed area, sum not fixed
   const r4 = S.checkImage(patched, ref);

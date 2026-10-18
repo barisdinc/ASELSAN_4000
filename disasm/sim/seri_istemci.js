@@ -235,13 +235,20 @@ function checkImage(image, ref) {
   const lo = img.get(0xFFFE), hi = img.get(0xFFFF);
   if (lo === undefined || hi === undefined) errors.push('reset vektörü (0xFFFE) yok');
   else if ((hi << 8 | lo) < 0x2000) errors.push('reset vektörü geçersiz: 0x' + (hi << 8 | lo).toString(16));
-  let missing = 0, differ = 0;
-  for (let a = LOADER_LO; a < LOADER_HI; a++) {
-    if (!img.has(a)) missing++;
-    else if (ref && ref.get(a) !== img.get(a)) differ++;
+  /* the loader (1224 bytes, copied to RAM 0x0080 by 0D 03) must be in the image, byte for byte as in
+   * the known firmware: YA4000x 1999 at 0x010100, the 2001 builds at 0x010200; the 0D 03 code copies
+   * it from there.  Without it the radio could never be updated over the serial port again. */
+  let loaderAt = -1;
+  if (ref) {
+    const L = []; for (let a = LOADER_LO; a < LOADER_HI; a++) L.push(ref.get(a));
+    const flat = new Uint8Array(0x20000).fill(0xFF); for (const [a, v] of img) flat[a] = v;
+    loaderAt = findBytes(flat, L);
+    if (loaderAt < 0) errors.push('seri yükleyici bulunamadı (bilinen 1224 baytlık yükleyici dosyada yok). Bu dosya yüklenirse telsiz bir daha seri porttan güncellenemez');
+    else if (loaderAt !== LOADER_LO) notes.push('seri yükleyici 0x' + loaderAt.toString(16).toUpperCase() + ' adresinde (1999 sürümlerinde 0x010100)');
+  } else {
+    let missing = 0; for (let a = LOADER_LO; a < LOADER_HI; a++) if (!img.has(a)) missing++;
+    if (missing) errors.push('seri yükleyici (0x010100–0x0105C7) eksik: ' + missing + ' bayt');
   }
-  if (missing) errors.push('seri yükleyici (0x010100–0x0105C7) eksik: ' + missing + ' bayt. Bu dosya yüklenirse telsiz bir daha seri porttan güncellenemez');
-  else if (differ) errors.push('seri yükleyici bilinen yükleyiciden farklı (' + differ + ' bayt). Güvenlik için reddedildi');
   for (let a = 0x10000; a < 0x10010; a++) if (!img.has(a)) { errors.push('sürüm başlığı (0x010000) eksik'); break; }
   let header = null;
   if (!errors.length) {
@@ -251,7 +258,17 @@ function checkImage(image, ref) {
     if (!c.ok) { U.fixRomChecksum(img); notes.push('ROM sağlama toplamı düzeltildi: 0x' + c.sum.toString(16).toUpperCase() + ' (dosyada 0x' + (c.stored < 0 ? 'yok' : c.stored.toString(16).toUpperCase()) + '); yoksa telsiz "ERR FLSH" verirdi'); }
     if (header) header.romSum = U.checkRomChecksum(img).sum;
   }
-  return { ok: !errors.length, errors, notes, image: img, header, blocks: errors.length ? 0 : U.blocks(img, 128).length };
+  return { ok: !errors.length, errors, notes, image: img, header, loaderAt, blocks: errors.length ? 0 : U.blocks(img, 128).length };
+}
+
+function findBytes(hay, needle) {
+  const first = needle[0];
+  outer: for (let i = 0x2000; i <= hay.length - needle.length; i++) {
+    if (hay[i] !== first) continue;
+    for (let j = 1; j < needle.length; j++) if (hay[i + j] !== needle[j]) continue outer;
+    return i;
+  }
+  return -1;
 }
 
 /* bytes that would change on the radio (img = flash backup Uint8Array, image = Map after checkImage) */
