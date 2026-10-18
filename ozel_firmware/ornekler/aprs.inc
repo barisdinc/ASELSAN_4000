@@ -9,8 +9,8 @@
 ;
 ; Ayarlar kanal adlarında (8 karakter; telsiz ve programlayıcı A-Z 0-9 boşluk _ - / kabul eder):
 ;   kanal 50  çağrı işareti ve SSID      "TA7W-7"    -> kaynak adresi TA7W, SSID 7
-;   kanal 51  enlem  DDMMmm + N/S        "4050 63N"  -> 4050.63N  (rakam dışı işaretler atlanır)
-;   kanal 52  boylam DDDMMmm + E/W       "0310939E"  -> 03109.39E (6 rakam yazılırsa başa 0)
+;   kanal 51  enlem  DDMM mm + N/S       "4050 63N"  -> 4050.63N  (boşluk = ondalık nokta)
+;   kanal 52  boylam DDDMM mm + E/W      "3109 39E"  -> 03109.39E (noktadan önce 4 hane: başa 0)
 ;   kanal 53  yorum (mesaj)              "ASELSAN"   -> sondaki boşluklar atılır
 ;   kanal 54  simge: tablo + kod         "/B"        -> /b (koddaki harf küçük harfe çevrilir;
 ;                                                       tek karakterse tablo '/'; boşsa /b)
@@ -812,14 +812,19 @@ AR_H:   SEC
         RTS
 
 ; Kanal 51 / 52: konum. A = noktadan önceki hane sayısı (4 enlem, 5 boylam),
-; Y = izin verilen iki harf (alt bayt / üst bayt). Rakam dışı işaretler (boşluk - _ /) atlanır;
-; boylamda 6 rakam yazılmışsa başa 0 eklenir. Çerçeveye "DDMM.mmH" / "DDDMM.mmH" yazar.
-; (M = 1, X = yazma yeri, ilerler). C = 1: geçersiz. AP_CRC geçici olarak harfleri tutar.
+; Y = izin verilen iki harf (alt bayt / üst bayt). Çerçeveye "DDMM.mmH" / "DDDMM.mmH" yazar.
+; Rakamlar arasındaki boşluk ondalık noktadır (kanal adında nokta yazılamaz): noktadan sonra
+; 1 ya da 2 hane (1 ise sona 0), boylamda noktadan önce 4 hane yazılmışsa başa 0.
+; Boşluk yoksa noktanın yeri sabittir (son iki hane ondalık; boylamda 6 rakam ise başa 0).
+; Baştaki / harften sonraki boşluklar ve - _ / atlanır.
+; (M = 1, X = yazma yeri, ilerler). C = 1: geçersiz. AP_CRC harfleri, AP_SAY noktanın yerini
+; ($FF = yok) geçici olarak tutar.
 AP_KONUM_YAZ:
         .ASSUME M=1,X=0
         STA   A,AP_T2                   ; noktadan önceki hane
         STY   AP_CRC                    ; izin verilen harfler
         LDM   #0,AP_YARI
+        LDM   #$FF,AP_SAY               ; nokta yok
         PHX
         LDX   #0
         STX   AP_HSAY
@@ -828,7 +833,9 @@ AKY_1:  CPY   #8
         BEQ   AKY_2
         LDA   A,AP_AD,Y
         INY
-        CMP   A,#'0'                    ; boşluk - / atlanır
+        CMP   A,#' '
+        BEQ   AKY_BOSLUK
+        CMP   A,#'0'                    ; - / atlanır
         BCC   AKY_1
         CMP   A,#'9'+1
         BCS   AKY_HARF
@@ -846,11 +853,50 @@ AKY_HARF:
         CMP   A,AP_CRC
         BEQ   AKY_H1
         CMP   A,AP_CRC+1
-        BNE   AKY_HATA
+        BNE   AKY_HJ
 AKY_H1: STA   A,AP_YARI
         BRA   AKY_1
+AKY_BOSLUK:                             ; rakamlardan sonra, harften önceki ilk boşluk = nokta
+        LDA   A,AP_YARI
+        BNE   AKY_1
+        LDA   A,AP_HSAY
+        BEQ   AKY_1
+        LDA   A,AP_SAY
+        CMP   A,#$FF
+        BNE   AKY_1
+        LDA   A,AP_HSAY
+        STA   A,AP_SAY
+        BRA   AKY_1
+AKY_HJ: JMP   AKY_HATA                  ; (yakın dallanma için)
 AKY_2:  LDA   A,AP_YARI
-        BEQ   AKY_HATA
+        BEQ   AKY_HJ
+        LDA   A,AP_SAY
+        CMP   A,#$FF
+        BEQ   AKY_SABIT
+        LDA   A,AP_HSAY                 ; noktadan sonra 1 ya da 2 hane
+        SEC
+        SBC   A,AP_SAY
+        BEQ   AKY_HJ
+        CMP   A,#3
+        BCS   AKY_HJ
+        CMP   A,#2
+        BEQ   AKY_N1
+        LDX   AP_HSAY                   ; tek hane: sona 0
+        LDA   A,#'0'
+        STA   A,AP_HANE,X
+        INX
+        STX   AP_HSAY
+AKY_N1: LDA   A,AP_SAY                  ; noktadan önce tam hane ya da (boylam) bir eksik
+        CMP   A,AP_T2
+        BEQ   AKY_YAZ
+        INC   A
+        CMP   A,AP_T2
+        BNE   AKY_HJ
+        LDA   A,AP_T2
+        CMP   A,#5
+        BNE   AKY_HJ
+        BRA   AKY_KAYDIR
+AKY_SABIT:
         LDA   A,AP_T2                   ; beklenen rakam sayısı = hane + 2
         CLC
         ADC   A,#2
@@ -860,10 +906,11 @@ AKY_2:  LDA   A,AP_YARI
         BEQ   AKY_YAZ
         INC   A                         ; bir eksikse ve boylamsa başa 0
         CMP   A,AP_T1
-        BNE   AKY_HATA
+        BNE   AKY_HJ
         LDA   A,AP_T2
         CMP   A,#5
-        BNE   AKY_HATA
+        BNE   AKY_HJ
+AKY_KAYDIR:
         LDX   #5
 AKY_K:  LDA   A,AP_HANE,X
         STA   A,AP_HANE+1,X

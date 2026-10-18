@@ -283,7 +283,7 @@ if (RING.includes('FREQ')) {
 if (RING.includes('APRS')) {
   /* ayarlar kanal 50..54'ün adlarında (programlayıcı nokta ve küçük harf kabul etmez) */
   const adlar = a => ee => a.forEach((ad, i) => B.eeSetChannel(ee, 50 + i, 144.8e6, 144.8e6, { name: ad }));
-  const AYAR = ['TA7W-7', '4050 63N', '0310939E', 'ASELSAN', '/B'];
+  const AYAR = ['TA7W-7', '4050 63N', '3109 39E', 'ASELSAN', '/B'];   // boşluk = ondalık nokta
   const PAKET = 'TA7W-7>APIZCI,WIDE1-1,WIDE2-1:!4050.63N/03109.39EbASELSAN';
   const vco = b => (b.radioState().vco / 1e6).toFixed(4);
   const enter = 'mm' + 'm'.repeat(RING.indexOf('APRS')) + 's';
@@ -343,7 +343,11 @@ if (RING.includes('APRS')) {
     ['başka çağrı, SSID 12, 6 haneli boylam, yorum yok, tek karakter simge',
       ['TA1AB-12', '3958-20N', '325120E', '', 'K'], 'TA1AB-12>APIZCI,WIDE1-1,WIDE2-1:!3958.20N/03251.20Ek'],
     ['SSID yok, güney / batı, simge tablosu ve kod', ['N0CALL', '3352 10S', '1512345W', 'TEST 123', '/-'],
-      'N0CALL>APIZCI,WIDE1-1,WIDE2-1:!3352.10S/15123.45W-TEST 123']]) {
+      'N0CALL>APIZCI,WIDE1-1,WIDE2-1:!3352.10S/15123.45W-TEST 123'],
+    ['boşluk = nokta: noktadan sonra tek hane, boylamda 5 tam hane', ['TA7W-7', '4050 6N', '03109 3E', '', '/B'],
+      'TA7W-7>APIZCI,WIDE1-1,WIDE2-1:!4050.60N/03109.30Eb'],
+    ['boşluksuz yazım (nokta sabit yerde)', ['TA7W-7', '405063N', '0310939E', '', '/B'],
+      'TA7W-7>APIZCI,WIDE1-1,WIDE2-1:!4050.63N/03109.39Eb']]) {
     const r = radio(adlar(ayar)); boot(r, 2.5); keys(r, enter); r.run(FCLK * 0.3);
     const f = paketGonder(r);
     check('APRS ayar: ' + ad, f.length === 1 && f[0].fcsOk && f[0].text === bek, f.map(x => x.text + (x.fcsOk ? '' : ' (FCS yanlış)')).join(' / ') || lcd(r));
@@ -351,7 +355,9 @@ if (RING.includes('APRS')) {
   for (const [ad, ayar, ekran] of [['çağrı işareti boş', ['', '4050 63N', '0310939E', '', ''], 'CALL -'],
                                    ['çağrı işaretinde geçersiz SSID', ['TA7W-16', '4050 63N', '0310939E', '', ''], 'CALL -'],
                                    ['enlemde harf yok', ['TA7W-7', '405063', '0310939E', '', ''], 'LAT -'],
-                                   ['boylamda eksik rakam', ['TA7W-7', '4050 63N', '31093E', '', ''], 'LON -']]) {
+                                   ['boylamda eksik rakam', ['TA7W-7', '4050 63N', '31093E', '', ''], 'LON -'],
+                                   ['enlemde nokta yanlış yerde', ['TA7W-7', '40 5063N', '3109 39E', '', ''], 'LAT -'],
+                                   ['boylamda noktadan sonra 3 hane', ['TA7W-7', '4050 63N', '310 939E', '', ''], 'LON -']]) {
     const r = radio(adlar(ayar)); boot(r, 2.5); const g = keys(r, enter); r.run(FCLK * 0.3);
     const f = paketGonder(r);
     check('APRS hatalı ayar: ' + ad + ' -> ' + ekran + ', paket yok', g[g.length - 1] === ekran.padEnd(8) && f.length === 0, g[g.length - 1] + ' / ' + f.length + ' paket');

@@ -160,10 +160,12 @@ FREKANS'taki gibi APRS açıkken firmware'in ~4 s'lik menü zaman aşımı kapal
 | Kanal | Ne | Ad örneği | Pakette |
 |---|---|---|---|
 | 50 | Çağrı işareti ve SSID (1–6 harf/rakam, isteğe bağlı `-0`..`-15`) | `TA7W-7` | `TA7W-7` |
-| 51 | Enlem: 6 rakam (DDMMmm) + `N`/`S`; aradaki boşluk, `-`, `_`, `/` atlanır | `4050 63N` | `4050.63N` |
-| 52 | Boylam: 7 rakam (DDDMMmm) + `E`/`W`; 6 rakamsa başa 0 eklenir | `0310939E` | `03109.39E` |
+| 51 | Enlem: DDMM, **boşluk = ondalık nokta**, mm, `N`/`S` | `4050 63N` | `4050.63N` |
+| 52 | Boylam: DDDMM (4 hane yazılırsa başa 0), boşluk, mm, `E`/`W` | `3109 39E` | `03109.39E` |
 | 53 | Yorum (sondaki boşluklar atılır; boş olabilir) | `ASELSAN` | `ASELSAN` |
 | 54 | Simge: tablo + kod. Koddaki harf küçük harfe çevrilir; tek karakterse tablo `/`; boşsa `/b` | `/B` | `/b` (bisiklet) |
+
+Koordinatlarda rakamlar arasındaki ilk boşluk ondalık noktadır (kanal adında nokta yazılamaz). Noktadan sonra 1 ya da 2 hane yazılabilir (tek haneyse sona 0 eklenir: `4050 6N` → `4050.60N`); noktadan önce enlemde 4, boylamda 5 hane (4 yazılırsa başa 0) olmalı. Boşluk hiç yoksa son iki rakam ondalık sayılır (`405063N`, `0310939E`). Baştaki ve harften sonraki boşluklar ile `-` `_` `/` atlanır.
 
 Paket:
 
