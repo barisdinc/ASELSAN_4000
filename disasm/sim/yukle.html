@@ -1,0 +1,296 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ASELSAN 4000 Seri Yedekleme</title>
+<style>
+:root {
+  --bg: #f3f2ee; --panel: #ffffff; --ink: #1d1f22; --muted: #6b6f76; --line: #dcdad3;
+  --accent: #2f6fdb; --accent-ink: #ffffff; --bad: #c8372d; --good: #23843b; --warn: #b7791f;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #17181b; --panel: #202227; --ink: #e6e6e3; --muted: #9a9ea6; --line: #33363d; --accent: #5b8ef0;
+  --good: #4cc26a; --bad: #ef6a5e; --warn: #e0a64a;
+} }
+:root[data-theme="dark"] {
+  --bg: #17181b; --panel: #202227; --ink: #e6e6e3; --muted: #9a9ea6; --line: #33363d; --accent: #5b8ef0;
+  --good: #4cc26a; --bad: #ef6a5e; --warn: #e0a64a;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+header { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; padding: 10px 16px; border-bottom: 1px solid var(--line); background: var(--panel); position: sticky; top: 0; z-index: 5; }
+header h1 { font-size: 16px; margin: 0; font-weight: 650; }
+header nav { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+header a { color: var(--accent); text-decoration: none; font-size: 13px; }
+button, select { font: inherit; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 6px 11px; }
+button { cursor: pointer; }
+button:hover:not(:disabled) { border-color: var(--muted); }
+button:disabled { opacity: .45; cursor: default; }
+button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+main { max-width: 920px; margin: 0 auto; padding: 16px; display: grid; gap: 14px; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
+.card h2 { margin: 0 0 10px; font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); font-weight: 650; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.kv { display: grid; grid-template-columns: max-content 1fr; gap: 4px 14px; font-size: 13px; }
+.kv > div:nth-child(odd) { color: var(--muted); }
+.note { color: var(--muted); font-size: 12.5px; }
+.mono { font-family: var(--mono); font-size: 12px; }
+.ok { color: var(--good); } .bad { color: var(--bad); } .warn { color: var(--warn); }
+.banner { border-left: 3px solid var(--good); padding: 8px 12px; background: color-mix(in srgb, var(--good) 8%, transparent); border-radius: 4px; font-size: 13px; }
+.banner.warn { border-color: var(--warn); background: color-mix(in srgb, var(--warn) 10%, transparent); }
+.status { font-size: 13px; margin-left: 4px; }
+progress { width: 100%; height: 10px; accent-color: var(--accent); }
+.prog { display: none; gap: 4px; margin-top: 10px; }
+.prog.on { display: grid; }
+.dl { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.dl a { color: var(--accent); font-size: 13px; font-weight: 600; text-decoration: none; border: 1px solid var(--line); border-radius: 6px; padding: 5px 10px; }
+.dl a:hover { border-color: var(--accent); }
+table { border-collapse: collapse; width: 100%; font-size: 12.5px; }
+th, td { text-align: left; padding: 3px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+th { color: var(--muted); font-weight: 600; }
+td.num { font-family: var(--mono); }
+.scroll { max-height: 260px; overflow: auto; margin-top: 10px; }
+#log { height: 160px; overflow: auto; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; white-space: pre-wrap; margin: 0; }
+label.mode { display: flex; gap: 6px; align-items: center; }
+@media (max-width: 600px) { .kv { grid-template-columns: 1fr; } .kv > div:nth-child(odd) { margin-top: 6px; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>ASELSAN 4000 · Seri Yedekleme</h1>
+  <nav><a href="./">Simülatör</a><a href="https://github.com/barisdinc/ASELSAN_4000">GitHub</a><button id="themeBtn" title="Açık / koyu tema">◐</button></nav>
+</header>
+<main>
+  <div class="banner">Bu sayfa telsizden yalnızca <b>okur</b>: sürüm bilgisi, EEPROM ve flash yedeği. Telsize hiçbir şey yazmaz. Yükleme ayrı bir adım olacak ve önce burada alınan yedekleri gerektirecek.</div>
+
+  <section class="card">
+    <h2>1 · Bağlantı</h2>
+    <div class="row" style="gap:16px">
+      <label class="mode"><input type="radio" name="mode" value="serial" checked> Gerçek telsiz (USB-RS232)</label>
+      <label class="mode"><input type="radio" name="mode" value="sim"> Simülatör (deneme)</label>
+      <select id="simFw" title="Simülatördeki telsizin firmware'i" hidden></select>
+    </div>
+    <p class="note" id="serialNote">Telsizi açın, seri kabloyu bağlayın, <b>Bağlan</b>'a basıp listeden USB-seri dönüştürücüyü seçin. Ayar: 9600 baud, 8N1 (telsizin servis protokolü, T4000 ile aynı hat). USB-TTL değil, RS232 seviyeli dönüştürücü gerekir.</p>
+    <p class="note warn" id="noSerial" hidden>Bu tarayıcıda Web Serial yok. Gerçek telsiz için masaüstünde Chrome ya da Edge kullanın; simülatör modu her tarayıcıda çalışır.</p>
+    <div class="row">
+      <button class="primary" id="connectBtn">Bağlan</button>
+      <button id="disconnectBtn" disabled>Bağlantıyı kes</button>
+      <span class="status" id="status">Bağlı değil</span>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>2 · Telsizdeki yazılım</h2>
+    <div class="kv" id="info"><div>Durum</div><div>Bağlandıktan sonra okunur</div></div>
+  </section>
+
+  <section class="card">
+    <h2>3 · EEPROM yedeği</h2>
+    <p class="note">2 KB: kanallar, seçenekler, bant, güç kalibrasyonu, parola. Yaklaşık 10 saniye.</p>
+    <button id="eeBtn" disabled>EEPROM'u oku</button>
+    <div class="prog" id="eeProg"><progress id="eeBar" max="1" value="0"></progress><span class="note" id="eeTxt"></span></div>
+    <div class="dl" id="eeDl"></div>
+    <div id="eeSum"></div>
+  </section>
+
+  <section class="card">
+    <h2>4 · Flash yedeği</h2>
+    <p class="note">Telsizdeki firmware'in tamamı (0x2000–0x1FFFF, 120 KB), telsizin kendisinden okunur. 9600 baud'da yaklaşık 3 dakika. Bitince bilinen firmware'lerle karşılaştırılır.</p>
+    <button id="flashBtn" disabled>Flash'ı oku</button>
+    <div class="prog" id="flProg"><progress id="flBar" max="1" value="0"></progress><span class="note" id="flTxt"></span></div>
+    <div class="dl" id="flDl"></div>
+    <div id="flSum"></div>
+  </section>
+
+  <section class="card">
+    <h2>Günlük</h2>
+    <pre id="log" class="mono"></pre>
+  </section>
+
+  <p class="note">Protokol: <a href="https://github.com/barisdinc/ASELSAN_4000/blob/master/disasm/seri_protokol.md">seri_protokol.md</a> · Kaynak: <span class="mono">disasm/sim/yukle.html</span>, <span class="mono">seri_istemci.js</span></p>
+</main>
+
+<script src="m7700.js"></script>
+<script src="board.js"></script>
+<script src="updater.js"></script>
+<script src="seri_istemci.js"></script>
+<script src="firmware.js"></script>
+<script>
+'use strict';
+const $ = id => document.getElementById(id);
+const B = window.Board, S = window.SeriIstemci;
+const FW = window.FIRMWARE_HEX || {};
+let port = null, client = null, busy = false, header = null;
+
+/* ---------------------------------------------------------------- ui helpers */
+function log(s) {
+  const t = new Date().toLocaleTimeString('tr-TR');
+  $('log').textContent += t + '  ' + s + '\n'; $('log').scrollTop = $('log').scrollHeight;
+}
+function esc(s) { return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
+function setStatus(s, cls) { $('status').textContent = s; $('status').className = 'status ' + (cls || ''); }
+function stamp() { const d = new Date(), p = n => String(n).padStart(2, '0'); return d.getFullYear() + p(d.getMonth() + 1) + p(d.getDate()) + '-' + p(d.getHours()) + p(d.getMinutes()); }
+function download(el, name, data, type, label) {
+  const url = URL.createObjectURL(new Blob([data], { type }));
+  const a = document.createElement('a'); a.href = url; a.download = name; a.textContent = label + ' (' + name + ')';
+  el.appendChild(a); return a;
+}
+function refresh() {
+  const on = !!client;
+  $('connectBtn').disabled = on || busy; $('disconnectBtn').disabled = !on || busy;
+  $('eeBtn').disabled = !on || busy; $('flashBtn').disabled = !on || busy;
+  document.querySelectorAll('input[name=mode]').forEach(r => r.disabled = on || busy);
+  $('simFw').disabled = on || busy;
+}
+function mode() { return document.querySelector('input[name=mode]:checked').value; }
+function progress(barId, txtId, frac, t0) {
+  $(barId).value = frac;
+  const el = (performance.now() - t0) / 1000, left = frac > 0.02 ? el / frac - el : 0;
+  $(txtId).textContent = Math.round(frac * 100) + ' %' + (left ? ' · kalan ≈ ' + (left >= 60 ? Math.floor(left / 60) + ' dk ' : '') + Math.round(left % 60) + ' sn' : '');
+}
+
+/* theme */
+$('themeBtn').onclick = () => {
+  const r = document.documentElement, cur = r.getAttribute('data-theme');
+  const dark = cur ? cur === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+  r.setAttribute('data-theme', dark ? 'light' : 'dark');
+};
+
+/* modes */
+for (const name of Object.keys(FW)) { const o = document.createElement('option'); o.value = o.textContent = name; $('simFw').appendChild(o); }
+if (FW['YA4000S.HEX']) $('simFw').value = 'YA4000S.HEX';
+if (!S.WebSerialPort.supported()) {
+  $('noSerial').hidden = false;
+  document.querySelector('input[value=serial]').disabled = true;
+  document.querySelector('input[value=sim]').checked = true;
+}
+function onMode() { const sim = mode() === 'sim'; $('simFw').hidden = !sim; $('serialNote').hidden = sim; }
+document.querySelectorAll('input[name=mode]').forEach(r => r.onchange = onMode); onMode();
+
+/* ---------------------------------------------------------------- connect */
+async function run(fn) {
+  busy = true; refresh();
+  try { await fn(); }
+  catch (e) { log('HATA: ' + e.message); setStatus(e.message, 'bad'); }
+  finally { busy = false; refresh(); }
+}
+
+$('connectBtn').onclick = () => run(async () => {
+  if (mode() === 'sim') {
+    const name = $('simFw').value;
+    setStatus('Simülatör açılıyor…');
+    const b = new B.Board(B.parseHex(FW[name]));
+    b.eeprom.mem.set(B.defaultEeprom());
+    const bootSec = b.rom[0xE0E1] === 0x5C ? 8 : 2.5;     // firmware with the 5 s yATOLYE screen boots longer
+    for (let t = 0; t < bootSec; t += 0.25) { b.run(B.FCLK * 0.25); await new Promise(r => setTimeout(r, 0)); }
+    port = new S.SimPort(b, B.FCLK);
+    log('simülatör: ' + name + ' (varsayılan EEPROM)');
+  } else {
+    port = new S.WebSerialPort();
+    setStatus('Port seçin…');
+    await port.open(9600);
+    log('seri port açıldı (9600 8N1)');
+  }
+  setStatus('Telsize bağlanılıyor…');
+  const c = new S.RadioClient(port, { log });
+  try { await c.connect(); } catch (e) { await port.close(); port = null; throw e; }
+  client = c;
+  setStatus('Bağlı', 'ok');
+  header = await client.readHeader();
+  showHeader(header);
+});
+
+$('disconnectBtn').onclick = () => run(async () => {
+  if (port) await port.close();
+  port = null; client = null; setStatus('Bağlı değil'); log('bağlantı kesildi');
+});
+
+function showHeader(h) {
+  const opt = h.texts.find(t => /VERSIYON|OPSIYON/i.test(t)) || '—';
+  $('info').innerHTML =
+    '<div>Sürüm</div><div class="mono">' + esc(h.version) + '</div>' +
+    '<div>Tarih</div><div>' + esc(h.date) + '</div>' +
+    '<div>Seçenek</div><div>' + esc(opt) + '</div>' +
+    '<div>ROM toplamı</div><div class="mono">0x' + h.romSum.toString(16).toUpperCase().padStart(4, '0') + '</div>' +
+    '<div>Metinler</div><div class="note">' + h.texts.map(esc).join(' · ') + '</div>';
+  log('yazılım: ' + h.version + ', ' + h.date + ', ' + opt);
+}
+
+/* ---------------------------------------------------------------- EEPROM */
+$('eeBtn').onclick = () => run(async () => {
+  $('eeDl').innerHTML = ''; $('eeSum').innerHTML = ''; $('eeProg').classList.add('on');
+  const t0 = performance.now();
+  log('EEPROM okunuyor');
+  const ee = await client.readEeprom(f => progress('eeBar', 'eeTxt', f, t0));
+  log('EEPROM okundu (' + ee.length + ' bayt, ' + ((performance.now() - t0) / 1000).toFixed(1) + ' s)');
+  download($('eeDl'), 'aselsan_eeprom_' + stamp() + '.bin', ee, 'application/octet-stream', 'EEPROM yedeğini indir');
+  showEeprom(ee);
+});
+
+function showEeprom(ee) {
+  const sums = B.eeCheckSums(ee), names = ['0x578 kalibrasyon', '0x000 seçenek', '0x008 seçenek', '0x018 parametre + kanallar'];
+  const base = B.eeBase(ee) * 25e3, band = base < 250e6 ? 'VHF' : 'UHF';
+  const pw = Array.from(ee.slice(0x54E, 0x552));
+  const pwTxt = pw.every(x => x === 0xFF) ? 'yok' : pw.every(x => x <= 9) ? 'var: ' + pw.join('') : 'tanımsız içerik (' + pw.map(x => x.toString(16).padStart(2, '0')).join(' ') + ')';
+  const chans = [];
+  for (let n = 1; n <= 99; n++) { const c = B.eeChannel(ee, n); if (c) chans.push([n, c]); }
+  const mhz = f => (f / 1e6).toFixed(4);
+  let h = '<div class="kv" style="margin-top:12px">' +
+    '<div>Sağlama toplamları</div><div>' + sums.map((ok, i) => '<span class="' + (ok ? 'ok' : 'bad') + '">' + (ok ? '✓' : '✗') + ' ' + names[i] + '</span>').join('<br>') + '</div>' +
+    '<div>Bant tabanı</div><div>' + (base / 1e6).toFixed(3) + ' MHz (' + band + ')</div>' +
+    '<div>Referans</div><div>' + (ee[0x58F] ? '13,0 MHz' : '12,8 MHz') + '</div>' +
+    '<div>Menü dili</div><div>' + (ee[0x018] & 0x80 ? 'Türkçe' : 'İngilizce') + '</div>' +
+    '<div>ALT MENU</div><div>' + (ee[0x018] & 0x20 ? 'açık' : 'kapalı') + ' <span class="note">(EE 0x018 bit 5)</span></div>' +
+    '<div>Tuş takımı</div><div>' + (ee[0x014] & 0x08 ? 'açık' : 'kapalı') + ' <span class="note">(EE 0x014 bit 3)</span></div>' +
+    '<div>Parola</div><div>' + esc(pwTxt) + '</div>' +
+    '<div>Kanal sayısı</div><div>' + chans.length + '</div></div>';
+  if (!sums.every(x => x)) h += '<p class="note bad">Sağlama toplamı tutmayan blok var: telsiz açılışta "ARZ PRG" gösterebilir ya da okuma hatalı olabilir; bir kez daha okuyun.</p>';
+  if (chans.length) {
+    h += '<div class="scroll"><table><thead><tr><th>Kanal</th><th>Alma (MHz)</th><th>Gönderme (MHz)</th><th>Ad</th><th>TKS al/gön</th></tr></thead><tbody>' +
+      chans.map(([n, c]) => '<tr><td class="num">' + String(n).padStart(2, '0') + '</td><td class="num">' + mhz(c.rx) + '</td><td class="num">' + mhz(c.tx) +
+        '</td><td class="mono">' + esc(c.name) + '</td><td class="num">' + (c.rxTone || '–') + ' / ' + (c.txTone || '–') + '</td></tr>').join('') + '</tbody></table></div>';
+  }
+  $('eeSum').innerHTML = h;
+}
+
+/* ---------------------------------------------------------------- flash */
+$('flashBtn').onclick = () => run(async () => {
+  $('flDl').innerHTML = ''; $('flSum').innerHTML = ''; $('flProg').classList.add('on');
+  const t0 = performance.now();
+  log('flash okunuyor (0x2000–0x1FFFF)');
+  const img = await client.readFlash(f => progress('flBar', 'flTxt', f, t0));
+  log('flash okundu (' + ((performance.now() - t0) / 1000).toFixed(0) + ' s)');
+  const name = 'aselsan_flash_' + stamp();
+  download($('flDl'), name + '.HEX', S.toSrec(img), 'text/plain', 'HEX indir');
+  download($('flDl'), name + '.bin', img, 'application/octet-stream', '128 KB BIN indir');
+  const sum = S.romSum(img), stored = img[0x10003] << 8 | img[0x10004];
+  const id = S.identify(img, FW, B.parseHex), best = id[0];
+  let h = '<div class="kv" style="margin-top:12px">' +
+    '<div>ROM sağlama toplamı</div><div class="' + (sum === stored ? 'ok' : 'bad') + '">' + (sum === stored ? '✓ tutuyor' : '✗ tutmuyor') +
+      ' <span class="mono">(hesap 0x' + sum.toString(16).toUpperCase() + ', kayıtlı 0x' + stored.toString(16).toUpperCase() + ')</span></div>' +
+    '<div>Tanıma</div><div>' + (best.diff + best.extra === 0
+      ? '<span class="ok">✓ ' + esc(best.name) + ' ile birebir aynı</span>'
+      : '<span class="warn">Bilinen dosyalardan hiçbiriyle aynı değil.</span> En yakını ' + esc(best.name) + ': ' + best.diff + ' bayt farklı, ' + best.extra + ' bayt fazla') + '</div>' +
+    '<div>Diğer adaylar</div><div class="note">' + id.slice(1, 4).map(x => esc(x.name) + ' (' + (x.diff + x.extra) + ')').join(' · ') + '</div></div>';
+  if (sum !== stored) h += '<p class="note bad">Sağlama toplamı tutmuyor: okuma hatalı olabilir, bir kez daha okuyun. (Telsiz bu durumda açılışta "ERR FLSH" verirdi.)</p>';
+  $('flSum').innerHTML = h;
+  log('tanıma: ' + best.name + ' (' + (best.diff + best.extra) + ' fark)');
+});
+
+refresh();
+
+/* headless check: yukle.html#otomatik-test runs the whole flow on the simulator and marks the page */
+if (location.hash === '#otomatik-test') (async () => {
+  document.querySelector('input[value=sim]').checked = true; onMode();
+  const until = c => new Promise(r => { const t = setInterval(() => { if (c()) { clearInterval(t); r(); } }, 50); });
+  $('connectBtn').click(); await until(() => client && !busy);
+  $('eeBtn').click(); await until(() => !busy);
+  $('flashBtn').click(); await until(() => !busy);
+  document.body.dataset.test = 'bitti';
+})();
+</script>
+</body>
+</html>

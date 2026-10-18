@@ -72,6 +72,10 @@ sim: ozel
 	    ../YA4000P.HEX ../YA4000R.HEX ../YA4000V.HEX ../YA4000Y.HEX \
 	    ../ozel_firmware/YA4000S_MERHABA.HEX $(ORNEKLER) > sim/firmware.js
 
+# read-only serial client (yukle.html) against the simulated radio
+test-yukle:
+	cd sim && $(JSRUN) yukle_test.js $(JSSEP) ../../YA4000S.HEX ../../ozel_firmware/YA4000S_FREKANS_YATOLYE.HEX
+
 test-sim:
 	cd sim && $(JSRUN) selftest.js $(JSSEP) ../$(HEX)
 

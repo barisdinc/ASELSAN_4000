@@ -94,4 +94,7 @@ Açılışta (0x00E3FA–0x00E48C) **0x2000–0xFFFF** baytlarının 16 bit topl
 
 ## Simülatör
 
+`sim/seri_istemci.js` + `sim/yukle.html`: aynı protokolle gerçek telsizden okuma (Web Serial). Yalnızca `01`, `0C`, `03 01 01` (EEPROM) ve `03 01 02` (bellek, 128 baytlık bloklar) kullanır; flash'ın tamamı 9600 baud'da ≈ 184 s. `make test-yukle`.
+
+
 `sim/updater.js` PC tarafını uygular (Seri port sekmesi → Firmware güncelleme). `make test-sim`, değiştirilmiş bir görüntüyü (0x2DE9 "CH" → "KN") seri porttan yükleyip yeni kodun açıldığını doğrular: silme 1,3 s, 817 blok × 128 bayt ≈ 140 s (9600 baud), doğrulama ≈ 165 s.
