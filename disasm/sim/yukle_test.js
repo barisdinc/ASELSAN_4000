@@ -75,13 +75,126 @@ async function noRadio() {
   check('telsiz yokken anlaşılır hata', /cevap vermiyor/.test(msg), msg);
 }
 
-const V = globalThis.RadioView;
+/* ------------------------------------------------------------------ writing */
+function bootText(b, sec) {
+  const font = V.buildFont(b.rom), seen = [];
+  for (let t = 0; t < sec; t += 0.5) { b.run(FCLK * 0.5); const l = V.decodeLcd(b, font).text; if (seen[seen.length - 1] !== l) seen.push(l); }
+  return seen;
+}
+function sameFlash(b, image) {
+  let bad = 0; for (let a = 0x2000; a < 0x20000; a++) { const v = image.has(a) ? image.get(a) : 0xFF; if (b.rom[a] !== v) bad++; }
+  return bad;
+}
+
+async function write(basePath, newPath) {
+  const ref = parseHex(readFile(basePath));
+  const b = radio(basePath), eeBefore = b.eeprom.mem.slice();
+  const port = new S.SimPort(b, FCLK);
+  const logs = [];
+  let c = new S.RadioClient(port, { log: s => logs.push(s) });
+  await c.connect();
+  const chk = S.checkImage(parseHex(readFile(newPath)), ref);
+  check('denetim: ' + newPath.split('/').pop() + ' kabul', chk.ok, chk.errors.join('; ') + ' ' + chk.notes.join('; '));
+  const t0 = port.now();
+  await c.writeFirmware(chk.image);
+  check('yükleme tamamlandı', true, ((port.now() - t0) / 1000).toFixed(0) + ' s');
+  check('flash dosyayla aynı', sameFlash(b, chk.image) === 0, sameFlash(b, chk.image) + ' fark');
+  check('EEPROM\'a dokunulmadı', b.eeprom.mem.every((v, i) => v === eeBefore[i]));
+  const seen = bootText(b, 9);
+  check('yeni firmware açıldı: yATOLYE, sonra kanal', seen.includes('yATOLYE ') && /KANAL 01|CH 01/.test(seen[seen.length - 1]), seen.join('|'));
+
+  /* the new firmware must keep the loader: write the original back */
+  c = new S.RadioClient(port, { log: s => logs.push(s) });
+  await c.connect();
+  const back = S.checkImage(ref, ref);
+  await c.writeFirmware(back.image);
+  check('yeni firmware de güncellenebiliyor: orijinal geri yüklendi', sameFlash(b, back.image) === 0);
+  const seen2 = bootText(b, 4);
+  check('orijinal açıldı', !seen2.includes('yATOLYE ') && /CH 01|KANAL 01/.test(seen2[seen2.length - 1]), seen2.join('|'));
+}
+
+/* the link breaks in the middle: the loader keeps running from RAM; reconnect and start again */
+async function interrupted(basePath, newPath) {
+  const ref = parseHex(readFile(basePath));
+  const b = radio(basePath);
+  const port = new S.SimPort(b, FCLK);
+  const chk = S.checkImage(parseHex(readFile(newPath)), ref);
+  let c = new S.RadioClient(port, {});
+  await c.connect();
+  let msg = '';
+  try { await c.writeFirmware(chk.image, { onProgress: f => { if (f > 0.3) throw new Error('kablo çekildi'); } }); } catch (e) { msg = e.message; }
+  b.run(FCLK * 3);                                   // a pause; the radio stays powered
+  check('yarıda kesildi', msg === 'kablo çekildi', msg);
+  c = new S.RadioClient(port, {});                   // a fresh page: new client, sequence numbers from 1
+  await c.connect();
+  await c.writeFirmware(chk.image);
+  check('yeniden bağlanıp tamamlandı', sameFlash(b, chk.image) === 0);
+  const seen = bootText(b, 9);
+  check('açıldı', seen.includes('yATOLYE '), seen.join('|'));
+}
+
+/* no checksum on the link: a byte lost inside a write frame is programmed shifted.  Two bytes are lost
+ * in the first attempt; the final read-back must catch it and the client must start over by itself. */
+async function lossyWrite(basePath, newPath) {
+  const ref = parseHex(readFile(basePath));
+  const b = radio(basePath);
+  const port = new S.SimPort(b, FCLK);
+  let n = 0, lost = 0;
+  const w = port.write.bind(port);
+  port.write = async bytes => { n++; if ((n === 120 || n === 900) && bytes.length > 40) { lost++; bytes = Array.from(bytes); bytes.splice(30, 1); } return w(bytes); };
+  const logs = [];
+  const c = new S.RadioClient(port, { log: s => logs.push(s) });
+  await c.connect();
+  const chk = S.checkImage(parseHex(readFile(newPath)), ref);
+  await c.writeFirmware(chk.image);
+  check('kayıplı hat: doğrulama yakaladı, kendiliğinden baştan yazıldı', sameFlash(b, chk.image) === 0 && logs.some(s => /deneme 2/.test(s)),
+        lost + ' bayt kayboldu; ' + logs.filter(s => /doğrulama|deneme/.test(s)).join(' / '));
+  const seen = bootText(b, 9);
+  check('açıldı', seen.includes('yATOLYE '), seen.join('|'));
+
+  /* a line that keeps losing bytes: a clear error after 3 attempts, the radio stays in the loader */
+  const b2 = radio(basePath), p2 = new S.SimPort(b2, FCLK);
+  let m = 0; const w2 = p2.write.bind(p2);
+  p2.write = async bytes => { m++; if (m % 50 === 7 && bytes.length > 40) { bytes = Array.from(bytes); bytes.splice(30, 1); } return w2(bytes); };
+  const c2 = new S.RadioClient(p2, {});
+  await c2.connect();
+  let msg = '';
+  try { await c2.writeFirmware(chk.image); } catch (e) { msg = e.message; }
+  check('sürekli bozuk hat: 3 denemeden sonra anlaşılır hata', /3 denemede de/.test(msg) && /KAPATMAYIN/.test(msg), msg.slice(0, 90));
+  p2.write = w2;                                         // the cable is fixed: reconnect, write again
+  const c3 = new S.RadioClient(p2, {});
+  await c3.connect();
+  await c3.writeFirmware(chk.image);
+  check('kablo düzelince aynı telsize yükleme tamamlandı', sameFlash(b2, chk.image) === 0);
+}
+
+function refusals(basePath) {
+  const ref = parseHex(readFile(basePath));
+  const noLoader = new Map(ref); for (let a = S.LOADER_LO; a < S.LOADER_HI; a++) noLoader.delete(a);
+  const badLoader = new Map(ref); badLoader.set(S.LOADER_LO + 10, badLoader.get(S.LOADER_LO + 10) ^ 1);
+  const noVec = new Map(ref); noVec.delete(0xFFFE); noVec.delete(0xFFFF);
+  const r1 = S.checkImage(noLoader, ref), r2 = S.checkImage(badLoader, ref), r3 = S.checkImage(noVec, ref);
+  check('reddedilir: yükleyici eksik', !r1.ok && /eksik/.test(r1.errors[0]), r1.errors[0]);
+  check('reddedilir: yükleyici değiştirilmiş', !r2.ok && /farklı/.test(r2.errors[0]), r2.errors[0]);
+  check('reddedilir: reset vektörü yok', !r3.ok && /reset/.test(r3.errors[0]), r3.errors[0]);
+  const patched = new Map(ref); patched.set(0x2DE9, 0x4B);   // a byte in the checksummed area, sum not fixed
+  const r4 = S.checkImage(patched, ref);
+  check('sağlama toplamı düzeltilir', r4.ok && r4.notes.some(s => /düzeltildi/.test(s)) && U2.checkRomChecksum(r4.image).ok, r4.notes.join('; '));
+}
+
+const V = globalThis.RadioView, U2 = globalThis.Updater;
 (async () => {
   try {
     await full(args[0] || '../../YA4000S.HEX', (args[0] || 'YA4000S.HEX').split('/').pop());
     if (args[1]) await full(args[1], args[1].split('/').pop());
     await lossy(args[0] || '../../YA4000S.HEX');
     await noRadio();
+    refusals(args[0] || '../../YA4000S.HEX');
+    if (args[1]) {
+      await write(args[0], args[1]);
+      await interrupted(args[0], args[1]);
+      await lossyWrite(args[0], args[1]);
+    }
   } catch (e) { check('istisna', false, e.message + ' ' + (e.stack || '')); }
   print(fails ? fails + ' test başarısız' : 'tüm seri istemci testleri geçti');
 })();

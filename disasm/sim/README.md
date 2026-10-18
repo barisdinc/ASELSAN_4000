@@ -23,8 +23,8 @@ Orijinal makine kodunu (ya da yeni derlenen bir HEX'i) tarayıcıda, K3 kontrol 
 | `board.js` | Kart modeli: portlar, Timer A0–A4 / B0–B2 (zamanlayıcı, tek darbe, PWM, darbe ölçme, olay sayacı), kesme önceliği, UART0/1, A-D, WDT, yazılım reseti, 29F010 flash, I²C (24C16, PCF8576, 2×PCF8574), MB1502, giriş sinyal üreteçleri. Ayrıca EEPROM düzeni ve varsayılan görüntü |
 | `radio_view.js` | LCD çözümü (ROM'daki yazı tiplerinden ters arama), TX ses analizi (Goertzel / sıfır geçiş), ton tabloları |
 | `app.js`, `index.html` | Arayüz |
-| `yukle.html`, `seri_istemci.js` | Gerçek telsizden yedekleme sayfası (Web Serial, Chrome / Edge): bağlantı, sürüm, EEPROM ve flash yedeği, firmware tanıma. Telsize yazmaz. Simülatör moduyla donanımsız denenir |
-| `yukle_test.js` | Seri istemcinin simülatöre karşı testi (`make test-yukle`): okunan her bayt, kayıplı hat, telsize hiçbir şey yazılmadığı |
+| `yukle.html`, `seri_istemci.js` | Gerçek telsizle yedekleme ve firmware yükleme sayfası (Web Serial, Chrome / Edge): bağlantı, sürüm, EEPROM ve flash yedeği, firmware tanıma; yükleme yalnızca yedekler alındıktan sonra açılır. Simülatör moduyla donanımsız denenir (`yukle.html#otomatik-test` bütün akışı kendisi yürütür) |
+| `yukle_test.js` | Seri istemcinin simülatöre karşı testi (`make test-yukle`): okunan her bayt, okumada telsize yazılmadığı, yükleme + yeni firmware'in açılması, geri yükleme, yarıda kesilip tamamlama, kayıplı hatta otomatik yeniden deneme, tehlikeli dosyaların reddi |
 | `selftest.js` | Orijinal firmware ile regresyon testi (`make test-sim`) |
 | `test_ozel.js` | Özel firmware örneklerinin testi (`make test-ozel`): tuş senaryoları, orijinalle karşılaştırma, seri yükleyiciyle yazma |
 | `ram_kullanim.js` | Firmware'in yazdığı RAM adreslerini ölçer (örnekler için boş RAM aramak) |

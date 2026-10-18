@@ -1,6 +1,6 @@
-/* seri_istemci.js - PC side of the radio's serial service protocol (../seri_protokol.md),
- * read-only operations: link, ROM header, EEPROM backup, flash backup, firmware identification.
- * Nothing here writes to the radio.
+/* seri_istemci.js - PC side of the radio's serial service protocol (../seri_protokol.md):
+ * link, ROM header, EEPROM backup, flash backup, firmware identification (read only), and
+ * writeFirmware() (flash update through the radio's loader; checkImage() first).
  *
  * One client, two ports:
  *   WebSerialPort  a real radio through a USB-RS232 adapter (Chrome / Edge, Web Serial API)
@@ -117,15 +117,21 @@ class RadioClient {
 
   /* 03 01 01 00 aH aL n -> 03 04 01 00 aH aL <data> */
   async readEepromBlock(addr, n) {
-    const r = await this.request([3, 1, 1, 0, addr >> 8 & 0xFF, addr & 0xFF, n], true);
-    if (r[0] !== 3 || r[1] !== 4 || r[2] !== 1 || (r[4] << 8 | r[5]) !== addr || r.length - 6 < n) throw new Error('beklenmeyen EEPROM cevabı @' + addr.toString(16));
-    return r.slice(6, 6 + n);
+    for (let t = 0; ; t++) {
+      const r = await this.request([3, 1, 1, 0, addr >> 8 & 0xFF, addr & 0xFF, n], true);
+      if (r[0] === 3 && r[1] === 4 && r[2] === 1 && (r[4] << 8 | r[5]) === addr && r.length - 6 >= n) return r.slice(6, 6 + n);
+      if (t >= 3) throw new Error('beklenmeyen EEPROM cevabı @' + addr.toString(16));
+      this.log('beklenmeyen cevap, tekrar');
+    }
   }
   /* 03 01 02 bb hh ll n -> 03 04 02 bb hh ll <data> */
   async readMemoryBlock(addr, n) {
-    const r = await this.request([3, 1, 2, addr >> 16 & 0xFF, addr >> 8 & 0xFF, addr & 0xFF, n], true);
-    if (r[0] !== 3 || r[1] !== 4 || r[2] !== 2 || (r[3] << 16 | r[4] << 8 | r[5]) !== addr || r.length - 6 < n) throw new Error('beklenmeyen bellek cevabı @' + addr.toString(16));
-    return r.slice(6, 6 + n);
+    for (let t = 0; ; t++) {
+      const r = await this.request([3, 1, 2, addr >> 16 & 0xFF, addr >> 8 & 0xFF, addr & 0xFF, n], true);
+      if (r[0] === 3 && r[1] === 4 && r[2] === 2 && (r[3] << 16 | r[4] << 8 | r[5]) === addr && r.length - 6 >= n) return r.slice(6, 6 + n);
+      if (t >= 3) throw new Error('beklenmeyen bellek cevabı @' + addr.toString(16));
+      this.log('beklenmeyen cevap, tekrar');
+    }
   }
 
   async readEeprom(onProgress, size = 2048, chunk = 64) {
@@ -146,6 +152,113 @@ class RadioClient {
     return img;
   }
   async readHeader() { return parseHeader(await this.readMemoryBlock(0x10000, 128)); }
+
+  /* Firmware update through the radio's own loader (../seri_protokol.md, "Firmware güncelleme"):
+   *   0D 03     the firmware copies the loader to RAM 0x0080 and runs it; it erases the whole flash
+   *   poll      03 01 02 00 20 00 16 until the flash reads 0xFF (status bytes while erasing)
+   *   program   03 03 02 bb hh ll <128 bytes> per non-empty block; ACK after programming
+   *   verify    read every block back
+   *   04 01     software reset into the new firmware
+   * image: a Map addr->byte that passed checkImage().  If anything breaks after the erase, the radio
+   * keeps running the loader from RAM as long as it stays powered: reconnect and call this again
+   * (0D 03 in the loader erases again and starts over). */
+  async writeFirmware(image, opts = {}) {
+    const chunk = 128, verify = opts.verify !== false;
+    const phase = opts.onPhase || (() => {});
+    const blks = U.blocks(image, chunk);
+    const attempts = opts.attempts || 3;
+    this.log('yükleme: ' + blks.length + ' blok × ' + chunk + ' bayt' + (verify ? ', doğrulamalı' : ''));
+    /* the link has no checksum: a byte lost inside a write frame is programmed shifted. The final
+     * read-back finds it; flash bits cannot be set back without an erase, so start over (0D 03
+     * in the loader erases again). */
+    for (let attempt = 1; ; attempt++) {
+      try { await this.writeOnce(blks, verify, phase, opts, attempt); break; }
+      catch (e) {
+        if (!/^doğrulama/.test(e.message)) throw e;
+        if (attempt >= attempts) throw new Error(e.message + ' (' + attempts + ' denemede de). Telsizi KAPATMAYIN: yükleyici RAM\'de çalışıyor; kabloyu kontrol edip yeniden bağlanın ve yüklemeyi tekrar başlatın');
+        this.log(e.message + ' → baştan (deneme ' + (attempt + 1) + '/' + attempts + ')');
+      }
+    }
+    phase('reset');
+    await this.request([4, 1], false);
+    this.log('reset gönderildi: yeni firmware açılıyor');
+  }
+
+  async writeOnce(blks, verify, phase, opts, attempt) {
+    const chunk = 128, prog = opts.onProgress || (() => {});
+    const total = blks.length * (verify ? 2 : 1);
+    let done = 0;
+    phase(attempt > 1 ? 'silme (deneme ' + attempt + ')' : 'silme');
+    await this.request([0x0D, 0x03], false);
+    this.log('0D 03 gönderildi: yükleyici RAM\'de, flash siliniyor');
+    await this.port.sleep(300);
+    const t0 = this.port.now();
+    for (;;) {
+      const d = await this.readMemoryBlock(0x2000, 16);
+      if (d.every(x => x === 0xFF)) break;
+      if (this.port.now() - t0 > (opts.eraseTimeout || 30000)) throw new Error('flash silinmedi (30 s)');
+      await this.port.sleep(250);
+    }
+    this.log('flash silindi (' + ((this.port.now() - t0) / 1000 + 0.3).toFixed(1) + ' s)');
+
+    phase('yazma');
+    for (const b of blks) {
+      await this.request([3, 3, 2, b.addr >> 16 & 0xFF, b.addr >> 8 & 0xFF, b.addr & 0xFF].concat(Array.from(b.data)), false);
+      prog(++done / total);
+    }
+    this.log('yazıldı: ' + blks.length + ' blok');
+
+    if (verify) {
+      phase('doğrulama');
+      let bad = 0;
+      for (const b of blks) {
+        const d = await this.readMemoryBlock(b.addr, chunk);
+        for (let i = 0; i < chunk; i++) if (d[i] !== b.data[i]) { if (bad < 5) this.log('fark 0x' + (b.addr + i).toString(16) + ': ' + d[i].toString(16) + ' ≠ ' + b.data[i].toString(16)); bad++; }
+        prog(++done / total);
+      }
+      if (bad) throw new Error('doğrulama: ' + bad + ' bayt farklı');
+      this.log('doğrulandı');
+    }
+  }
+}
+
+/* ------------------------------------------------------------------ image checks before writing */
+const LOADER_LO = 0x010100, LOADER_HI = 0x0105C8;     // copied to RAM 0x0080 by 0D 03 (F_0105C9)
+/* image: Map addr->byte (parseHex).  ref: Map of a known original (YA4000S) for the loader block.
+ * Returns { ok, errors, notes, image (copy, ROM checksum fixed), header, blocks } */
+function checkImage(image, ref) {
+  const errors = [], notes = [];
+  const img = new Map();
+  let outside = 0;
+  for (const [a, v] of image) { if (a >= 0x2000 && a < 0x20000) img.set(a, v); else outside++; }
+  if (outside) notes.push(outside + ' bayt 0x2000–0x1FFFF dışında, yazılmayacak');
+  const lo = img.get(0xFFFE), hi = img.get(0xFFFF);
+  if (lo === undefined || hi === undefined) errors.push('reset vektörü (0xFFFE) yok');
+  else if ((hi << 8 | lo) < 0x2000) errors.push('reset vektörü geçersiz: 0x' + (hi << 8 | lo).toString(16));
+  let missing = 0, differ = 0;
+  for (let a = LOADER_LO; a < LOADER_HI; a++) {
+    if (!img.has(a)) missing++;
+    else if (ref && ref.get(a) !== img.get(a)) differ++;
+  }
+  if (missing) errors.push('seri yükleyici (0x010100–0x0105C7) eksik: ' + missing + ' bayt. Bu dosya yüklenirse telsiz bir daha seri porttan güncellenemez');
+  else if (differ) errors.push('seri yükleyici bilinen yükleyiciden farklı (' + differ + ' bayt). Güvenlik için reddedildi');
+  for (let a = 0x10000; a < 0x10010; a++) if (!img.has(a)) { errors.push('sürüm başlığı (0x010000) eksik'); break; }
+  let header = null;
+  if (!errors.length) {
+    const h = []; for (let a = 0x10000; a < 0x10080; a++) h.push(img.has(a) ? img.get(a) : 0xFF);
+    header = parseHeader(h);
+    const c = U.checkRomChecksum(img);
+    if (!c.ok) { U.fixRomChecksum(img); notes.push('ROM sağlama toplamı düzeltildi: 0x' + c.sum.toString(16).toUpperCase() + ' (dosyada 0x' + (c.stored < 0 ? 'yok' : c.stored.toString(16).toUpperCase()) + '); yoksa telsiz "ERR FLSH" verirdi'); }
+    if (header) header.romSum = U.checkRomChecksum(img).sum;
+  }
+  return { ok: !errors.length, errors, notes, image: img, header, blocks: errors.length ? 0 : U.blocks(img, 128).length };
+}
+
+/* bytes that would change on the radio (img = flash backup Uint8Array, image = Map after checkImage) */
+function diffCount(img, image) {
+  let n = 0;
+  for (let a = 0x2000; a < 0x20000; a++) { const v = image.has(a) ? image.get(a) : 0xFF; if (img[a] !== v) n++; }
+  return n;
 }
 
 /* ------------------------------------------------------------------ helpers */
@@ -203,7 +316,7 @@ function toSrec(img, lo = 0x2000, hi = 0x20000, header = 'radio') {
   return lines.join('\r\n') + '\r\n';
 }
 
-const api = { WebSerialPort, SimPort, RadioClient, parseHeader, romSum, identify, toSrec };
+const api = { WebSerialPort, SimPort, RadioClient, parseHeader, romSum, identify, toSrec, checkImage, diffCount, LOADER_LO, LOADER_HI };
 if (typeof module !== 'undefined' && module.exports) module.exports = api;
 else root.SeriIstemci = api;
 })(typeof window !== 'undefined' ? window : globalThis);

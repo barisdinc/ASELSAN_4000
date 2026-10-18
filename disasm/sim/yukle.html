@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ASELSAN 4000 Seri Yedekleme</title>
+<title>ASELSAN 4000 Seri Yükleyici</title>
 <style>
 :root {
   --bg: #f3f2ee; --panel: #ffffff; --ink: #1d1f22; --muted: #6b6f76; --line: #dcdad3;
@@ -48,6 +48,12 @@ progress { width: 100%; height: 10px; accent-color: var(--accent); }
 .dl { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
 .dl a { color: var(--accent); font-size: 13px; font-weight: 600; text-decoration: none; border: 1px solid var(--line); border-radius: 6px; padding: 5px 10px; }
 .dl a:hover { border-color: var(--accent); }
+.checks { display: grid; gap: 6px; margin: 12px 0; font-size: 13px; }
+.checks label { display: flex; gap: 8px; align-items: flex-start; }
+.errs { margin: 8px 0 0; padding-left: 18px; font-size: 13px; }
+button.danger { background: var(--bad); color: #fff; border-color: var(--bad); }
+.locked { opacity: .55; }
+#wrPhase { font-weight: 600; font-size: 13px; }
 table { border-collapse: collapse; width: 100%; font-size: 12.5px; }
 th, td { text-align: left; padding: 3px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
 th { color: var(--muted); font-weight: 600; }
@@ -60,11 +66,11 @@ label.mode { display: flex; gap: 6px; align-items: center; }
 </head>
 <body>
 <header>
-  <h1>ASELSAN 4000 · Seri Yedekleme</h1>
+  <h1>ASELSAN 4000 · Seri Yedekleme ve Yükleme</h1>
   <nav><a href="./">Simülatör</a><a href="https://github.com/barisdinc/ASELSAN_4000">GitHub</a><button id="themeBtn" title="Açık / koyu tema">◐</button></nav>
 </header>
 <main>
-  <div class="banner">Bu sayfa telsizden yalnızca <b>okur</b>: sürüm bilgisi, EEPROM ve flash yedeği. Telsize hiçbir şey yazmaz. Yükleme ayrı bir adım olacak ve önce burada alınan yedekleri gerektirecek.</div>
+  <div class="banner">1–4. adımlar telsizden yalnızca <b>okur</b>. Telsize yalnızca 5. adım (firmware yükleme) yazar; o adım bu oturumda EEPROM ve flash yedeği alınmadan açılmaz.</div>
 
   <section class="card">
     <h2>1 · Bağlantı</h2>
@@ -105,6 +111,27 @@ label.mode { display: flex; gap: 6px; align-items: center; }
     <div id="flSum"></div>
   </section>
 
+  <section class="card" id="wrCard">
+    <h2>5 · Firmware yükleme</h2>
+    <div class="banner warn">Yükleme telsizin flash'ını <b>önce tamamen siler</b>, sonra yeni firmware'i yazar (≈ 5 dakika). Bu sürede telsizin gücü kesilirse telsiz açılmaz ve flash harici programlayıcıyla yazılmalıdır. Kablo koparsa ya da hata olursa <b>telsizi kapatmayın</b>: yükleyici telsizin RAM'inde çalışmaya devam eder; yeniden bağlanıp yüklemeyi tekrar başlatın.</div>
+    <p class="note" id="wrGate">Önce bağlanın, EEPROM ve flash yedeklerini alın (3. ve 4. adım).</p>
+    <label class="note" style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="wrRecover"> Kurtarma: önceki yükleme yarıda kaldı, telsiz hâlâ açık (yedek istenmez)</label>
+    <div id="wrBody" class="locked">
+      <div class="row" style="margin-top:10px">
+        <select id="wrSel" title="Yüklenecek firmware"></select>
+        <label class="row"><input type="file" id="wrFile" accept=".hex,.HEX,.s19,.s28,.srec,.mot" hidden><button id="wrFileBtn">Dosya seç…</button></label>
+      </div>
+      <div id="wrInfo"></div>
+      <div class="checks">
+        <label><input type="checkbox" id="wrC1"> Telsizin gücü yükleme bitene kadar kesilmeyecek (sabit güç kaynağı ya da dolu akü).</label>
+        <label><input type="checkbox" id="wrC2"> EEPROM ve flash yedeklerini indirdim ve sakladım.</label>
+      </div>
+      <button class="danger" id="wrBtn" disabled>Yüklemeyi başlat</button>
+    </div>
+    <div class="prog" id="wrProg"><span id="wrPhase"></span><progress id="wrBar" max="1" value="0"></progress><span class="note" id="wrTxt"></span></div>
+    <div id="wrResult"></div>
+  </section>
+
   <section class="card">
     <h2>Günlük</h2>
     <pre id="log" class="mono"></pre>
@@ -124,6 +151,8 @@ const $ = id => document.getElementById(id);
 const B = window.Board, S = window.SeriIstemci;
 const FW = window.FIRMWARE_HEX || {};
 let port = null, client = null, busy = false, header = null;
+let eeDone = false, flashImg = null, wr = null;          // backups of this session, checked image to write
+const REF = FW['YA4000S.HEX'] ? B.parseHex(FW['YA4000S.HEX']) : null;   // known loader block
 
 /* ---------------------------------------------------------------- ui helpers */
 function log(s) {
@@ -144,6 +173,7 @@ function refresh() {
   $('eeBtn').disabled = !on || busy; $('flashBtn').disabled = !on || busy;
   document.querySelectorAll('input[name=mode]').forEach(r => r.disabled = on || busy);
   $('simFw').disabled = on || busy;
+  updateWrite();
 }
 function mode() { return document.querySelector('input[name=mode]:checked').value; }
 function progress(barId, txtId, frac, t0) {
@@ -227,6 +257,7 @@ $('eeBtn').onclick = () => run(async () => {
   const ee = await client.readEeprom(f => progress('eeBar', 'eeTxt', f, t0));
   log('EEPROM okundu (' + ee.length + ' bayt, ' + ((performance.now() - t0) / 1000).toFixed(1) + ' s)');
   download($('eeDl'), 'aselsan_eeprom_' + stamp() + '.bin', ee, 'application/octet-stream', 'EEPROM yedeğini indir');
+  eeDone = true;
   showEeprom(ee);
 });
 
@@ -266,6 +297,8 @@ $('flashBtn').onclick = () => run(async () => {
   const name = 'aselsan_flash_' + stamp();
   download($('flDl'), name + '.HEX', S.toSrec(img), 'text/plain', 'HEX indir');
   download($('flDl'), name + '.bin', img, 'application/octet-stream', '128 KB BIN indir');
+  flashImg = img;
+  if (lastSel) loadImage(lastSel[0], lastSel[1]);
   const sum = S.romSum(img), stored = img[0x10003] << 8 | img[0x10004];
   const id = S.identify(img, FW, B.parseHex), best = id[0];
   let h = '<div class="kv" style="margin-top:12px">' +
@@ -280,6 +313,92 @@ $('flashBtn').onclick = () => run(async () => {
   log('tanıma: ' + best.name + ' (' + (best.diff + best.extra) + ' fark)');
 });
 
+/* ---------------------------------------------------------------- write */
+for (const name of Object.keys(FW)) { const o = document.createElement('option'); o.value = o.textContent = name; $('wrSel').appendChild(o); }
+$('wrSel').value = FW['YA4000S_FREKANS_YATOLYE.HEX'] ? 'YA4000S_FREKANS_YATOLYE.HEX' : 'YA4000S.HEX';
+$('wrSel').onchange = () => loadImage($('wrSel').value, FW[$('wrSel').value]);
+$('wrFileBtn').onclick = () => $('wrFile').click();
+$('wrFile').onchange = async () => {
+  const f = $('wrFile').files[0]; if (!f) return;
+  const o = document.createElement('option'); o.value = o.textContent = 'dosya: ' + f.name; $('wrSel').appendChild(o); $('wrSel').value = o.value;
+  loadImage(f.name, await f.text());
+};
+['wrC1', 'wrC2', 'wrRecover'].forEach(id => $(id).onchange = updateWrite);
+
+let lastSel = null;
+function loadImage(name, text) {
+  lastSel = [name, text];
+  let r;
+  try { r = S.checkImage(B.parseHex(text), REF); } catch (e) { r = { ok: false, errors: ['dosya okunamadı: ' + e.message], notes: [] }; }
+  wr = r.ok ? Object.assign(r, { name }) : null;
+  let h = '<div class="kv" style="margin-top:12px"><div>Dosya</div><div class="mono">' + esc(name) + '</div>';
+  if (r.ok) {
+    const opt = r.header.texts.find(t => /VERSIYON|OPSIYON/i.test(t)) || '—';
+    const sec = Math.round(r.blocks * 0.37 + 3);
+    h += '<div>Sürüm</div><div>' + esc(r.header.version) + ', ' + esc(r.header.date) + ', ' + esc(opt) + '</div>' +
+         '<div>Yazılacak</div><div>' + r.blocks + ' blok × 128 bayt, yazma + doğrulama ≈ ' + Math.floor(sec / 60) + ' dk ' + (sec % 60) + ' sn</div>' +
+         '<div>Denetim</div><div class="ok">✓ reset vektörü ve seri yükleyici yerinde' + (r.notes.length ? '<br><span class="note">' + r.notes.map(esc).join('<br>') + '</span>' : '') + '</div>';
+    if (flashImg) {
+      const d = S.diffCount(flashImg, r.image);
+      h += '<div>Telsizdekine göre</div><div>' + (d ? d + ' bayt değişecek' : '<span class="ok">telsizdeki firmware ile aynı</span> <span class="note">(gerçek telsizde ilk yükleme denemesi için en güvenli seçim)</span>') + '</div>';
+    }
+    h += '</div>';
+  } else {
+    h += '</div><ul class="errs bad">' + r.errors.map(e => '<li>' + esc(e) + '</li>').join('') + '</ul>';
+  }
+  $('wrInfo').innerHTML = h;
+  updateWrite();
+}
+
+function updateWrite() {
+  if (!$('wrBtn')) return;
+  const gate = !!client && ($('wrRecover').checked || (eeDone && !!flashImg));
+  $('wrBody').classList.toggle('locked', !gate);
+  ['wrSel', 'wrFileBtn', 'wrC1', 'wrC2'].forEach(id => $(id).disabled = !gate || busy);
+  $('wrRecover').disabled = busy;
+  $('wrGate').hidden = gate;
+  $('wrGate').textContent = !client ? 'Önce bağlanın, sonra EEPROM ve flash yedeklerini alın (3. ve 4. adım).'
+    : !eeDone ? 'Önce EEPROM yedeğini alın (3. adım).' : !flashImg ? 'Önce flash yedeğini alın (4. adım).' : '';
+  $('wrBtn').disabled = !(gate && wr && $('wrC1').checked && $('wrC2').checked && !busy);
+}
+
+function guard(e) { e.preventDefault(); e.returnValue = ''; }
+$('wrBtn').onclick = () => {
+  if (!wr) return;
+  if (!confirm(wr.name + ' telsize yüklenecek.\n\nFlash önce tamamen silinir. Yükleme bitene kadar (≈ 5 dk) telsizin gücünü kesmeyin, kabloyu çıkarmayın, bu sayfayı kapatmayın.\n\nDevam edilsin mi?')) return;
+  run(async () => {
+    $('wrResult').innerHTML = ''; $('wrProg').classList.add('on');
+    addEventListener('beforeunload', guard);
+    const t0 = performance.now();
+    log('YÜKLEME BAŞLADI: ' + wr.name);
+    try {
+      await client.writeFirmware(wr.image, {
+        onPhase: p => { $('wrPhase').textContent = p[0].toUpperCase() + p.slice(1); log('aşama: ' + p); },
+        onProgress: f => progress('wrBar', 'wrTxt', f, t0),
+      });
+    } catch (e) {
+      $('wrResult').innerHTML = '<p class="bad"><b>Yükleme tamamlanmadı:</b> ' + esc(e.message) + '</p>' +
+        '<p class="note">Telsizi <b>kapatmayın</b>. Kabloyu kontrol edin; gerekirse "Bağlantıyı kes", sonra yeniden "Bağlan" ve yüklemeyi tekrar başlatın. Kurtarma kutusu işaretlendi: yedek istenmeden yeniden yükleyebilirsiniz.</p>';
+      $('wrRecover').checked = true;
+      throw e;
+    } finally { removeEventListener('beforeunload', guard); }
+    log('yükleme bitti (' + Math.round((performance.now() - t0) / 1000) + ' s); telsiz yeniden açılıyor');
+    $('wrPhase').textContent = 'Telsiz yeniden açılıyor';
+    await port.sleep(12000);                               // boot (≈ 8 s with the yATOLYE screen)
+    await client.connect();
+    const h = await client.readHeader();
+    showHeader(h);
+    const ok = h.romSum === wr.header.romSum;
+    $('wrResult').innerHTML = ok
+      ? '<p class="ok"><b>✓ Yükleme tamamlandı.</b> Telsiz yeni firmware ile açıldı (' + esc(h.version) + ', ROM toplamı 0x' + h.romSum.toString(16).toUpperCase() + ').</p>'
+      : '<p class="warn">Yükleme ve doğrulama tamamlandı, ancak telsizin bildirdiği ROM toplamı beklenenden farklı (0x' + h.romSum.toString(16) + ' ≠ 0x' + wr.header.romSum.toString(16) + '). Flash yedeğini yeniden alıp karşılaştırın.</p>';
+    $('wrPhase').textContent = ok ? 'Bitti' : 'Kontrol edin';
+    $('wrRecover').checked = false; flashImg = null;        // the old backup no longer describes the radio
+    log(ok ? 'yeni firmware doğrulandı' : 'ROM toplamı farklı');
+  });
+};
+loadImage($('wrSel').value, FW[$('wrSel').value]);
+
 refresh();
 
 /* headless check: yukle.html#otomatik-test runs the whole flow on the simulator and marks the page */
@@ -289,7 +408,11 @@ if (location.hash === '#otomatik-test') (async () => {
   $('connectBtn').click(); await until(() => client && !busy);
   $('eeBtn').click(); await until(() => !busy);
   $('flashBtn').click(); await until(() => !busy);
-  document.body.dataset.test = 'bitti';
+  window.confirm = () => true;
+  $('wrSel').value = 'YA4000S_FREKANS_YATOLYE.HEX'; $('wrSel').onchange();
+  $('wrC1').checked = $('wrC2').checked = true; updateWrite();
+  $('wrBtn').click(); await until(() => !busy);
+  document.body.dataset.test = /Yükleme tamamlandı/.test($('wrResult').textContent) ? 'bitti' : 'hata';
 })();
 </script>
 </body>

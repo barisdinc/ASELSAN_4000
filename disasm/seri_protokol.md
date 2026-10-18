@@ -94,7 +94,11 @@ Açılışta (0x00E3FA–0x00E48C) **0x2000–0xFFFF** baytlarının 16 bit topl
 
 ## Simülatör
 
-`sim/seri_istemci.js` + `sim/yukle.html`: aynı protokolle gerçek telsizden okuma (Web Serial). Yalnızca `01`, `0C`, `03 01 01` (EEPROM) ve `03 01 02` (bellek, 128 baytlık bloklar) kullanır; flash'ın tamamı 9600 baud'da ≈ 184 s. `make test-yukle`.
+`sim/seri_istemci.js` + `sim/yukle.html`: aynı protokolle gerçek telsizle çalışan sayfa (Web Serial). Okuma `01`, `0C`, `03 01 01` (EEPROM) ve `03 01 02` (bellek, 128 baytlık bloklar) ile; flash'ın tamamı 9600 baud'da ≈ 184 s. **Okuma gerçek telsizde doğrulandı (2026-10-18).** Yükleme yukarıdaki yükleyici akışıyla (≈ 313 s, doğrulamalı); şimdilik yalnızca simülatörde doğrulandı. `make test-yukle`.
+
+- Bağlantı katmanında sağlama yok: yazma çerçevesinde kaybolan bir bayt, kaymış veri olarak flash'a yazılır. İstemci sonda bütün blokları geri okur; tutmazsa yükleyicide `0D 03` ile yeniden silip baştan yazar (en çok 3 deneme). Silinmiş flash'a yeniden yazmak için silme şart olduğundan blok bazında düzeltme yapılamaz.
+- Yazmadan önce `checkImage`: reset vektörü (0xFFFE) olmalı, 0x010100–0x0105C7 yükleyici bloğu tam ve bilinen yükleyiciyle aynı olmalı (yoksa telsiz bir daha seri porttan güncellenemez), ROM sağlama toplamı gerekirse düzeltilir.
+- Yükleme yarıda kalırsa telsiz açık olduğu sürece yükleyici RAM'de çalışır: yeniden bağlanıp (`01`) yükleme baştan başlatılabilir.
 
 
 `sim/updater.js` PC tarafını uygular (Seri port sekmesi → Firmware güncelleme). `make test-sim`, değiştirilmiş bir görüntüyü (0x2DE9 "CH" → "KN") seri porttan yükleyip yeni kodun açıldığını doğrular: silme 1,3 s, 817 blok × 128 bayt ≈ 140 s (9600 baud), doğrulama ≈ 165 s.
