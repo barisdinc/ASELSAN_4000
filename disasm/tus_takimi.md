@@ -48,7 +48,7 @@ m s  m m s  m m s  0 5 m m s  m s   p
 
 ### SUB MENU / ALT MENU (doğrulandı)
 
-Menüde yalnızca **EE[0x018] bit 5** (0x20) açıksa görünür; T4000 programındaki seçenek bu bit. EE[0x018] bit 7 dili seçer (0 = İngilizce, 1 = Türkçe: ALT MENU / ISIK / UYARI / GOSTERGE / PAROLA). EEPROM elle değiştirilirse 0x018–0x534 bloğunun sağlama toplamı (0x535–0x536) da düzeltilmeli, yoksa açılışta `ARZ PRG` (simülatörde "EEPROM / kanallar" sekmesindeki **Düzelt** düğmesi, `eeFixSums`). Cihazdan okunan EEPROM'da EE[0x018] = 0x01 olduğu için alt menü görünmüyor.
+Menüde yalnızca **EE[0x018] bit 5** (0x20) açıksa görünür (PC'deki programlama yazılımıyla ayarlanan bir seçenek; P4000'de mi T4000'de mi olduğu doğrulanmadı). EE[0x018] bit 7 dili seçer (0 = İngilizce, 1 = Türkçe: ALT MENU / ISIK / UYARI / GOSTERGE / PAROLA). EEPROM elle değiştirilirse 0x018–0x534 bloğunun sağlama toplamı (0x535–0x536) da düzeltilmeli, yoksa açılışta `ARZ PRG` (simülatörde "EEPROM / kanallar" sekmesindeki **Düzelt** düğmesi, `eeFixSums`). Cihazdan okunan EEPROM'da EE[0x018] = 0x01 olduğu için alt menü görünmüyor.
 
 `s` ile girilir, `m` ile öğeler arasında:
 
@@ -57,7 +57,7 @@ Menüde yalnızca **EE[0x018] bit 5** (0x20) açıksa görünür; T4000 program�
 | LIGHT / ISIK | Arka ışık aç `*` / kapa `-` (0x023C bit 12) |
 | ALERT / UYARI | Uyarı sesi aç / kapa (0x023A bit 11) |
 | DISPLAY / GOSTERGE | `s` → INVERT ↔ NORMAL (TR TERS ↔ NORMAL) (`m` ile), ekran ters / normal |
-| PASSWORD / PAROLA | `s` → `NP` (TR `YP`) yeni parola: rakamlar, `s` kaydeder. EEPROM 0x54E–0x551 (boş = FF); kaydederken 0x552–0x553 de değişiyor (kontrol değeri, formülü çözülmedi). Parola varsa telsiz açılışta `PASSWORD` / `PAROLA` gösterir, `PR ----` ile 4 hane ve `s` ister; yanlışsa yeniden sorar |
+| PASSWORD / PAROLA | `s` → `NP` (TR `YP`) yeni parola: rakamlar, `s` kaydeder. EEPROM 0x54E–0x551 (boş = FF); kaydederken 0x552–0x553 de değişiyor (kontrol değeri, formülü çözülmedi). Parola varsa telsiz açılışta `PASSWORD` / `PAROLA` gösterir, `PR ----` ile 4 hane ve `s` ister; yanlışsa yeniden sorar. Kılavuz (1.9.8.3.3): parolayı silmek için eski parola girilir, yeni parola istenince 5 kez `0` yazılır |
 | MSR RSSI | `s` → sinyal gücü ölçümü (e80 … e120 dBm); 0x01EB ≥ 3 gerekir |
 
 ## `#` — seçmeli çağrı ile arama (doğrulandı)
