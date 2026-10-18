@@ -3,6 +3,10 @@
 ; 1) Açılış ekranı. F_00E0E1 açılışta bir kez çağrılır (F_00E305, 0x00E431): bip sesini
 ;    çalıp "AS V2-3" sürüm yazısını gösterir. Girişine bank 1'deki ACILIS'e bir JMPL koyuyoruz;
 ;    ACILIS aynı bip sesini çalar, "yATOLYE" yazar, 5 s bekler ve F_00E0E1'i çağırana döner.
+;    Yazı görünürken arka ışıklar yanar: firmware'in kendi ışık yordamı F_008156 (Y = 1:
+;    RAM $0242 bit 6 / 7 / 8 ve çıkışlar; tip B'de I2C 0x46 genişletici, tip A'da F_00755E).
+;    Açılışın sonunda firmware ışığı kendisi söndürür (0x00E4A7, Y = 0) ve sonra ISIK
+;    ayarına göre yönetir.
 ;    Ardından açılış olduğu gibi sürer (EEPROM'dan PN / SN / CN, kanal).
 ;    Yazı flash'ta durduğu için T4000 / EEPROM programlayıcısı onu değiştiremez.
 ;
@@ -18,6 +22,7 @@
 
 Y_SEGMENT   .EQU $2546
 ACILIS_MS   .EQU 5000
+F_ISIK      .EQU $008156        ; Y = 1 arka ışıklar açık, 0 kapalı (tip A / B çıkışları)
 
 ; ---------------------------------------------------------------------------------------------
 ; Orijinal koda iki atlama
@@ -39,6 +44,8 @@ ACILIS:
         .ASSUME M=0,X=0
         LDA   A,$04,S
         PHA                             ; çağırdığımız NC77 fonksiyonları için çerçeve
+        LDY   #$0001                    ; arka ışıklar açık
+        JSRL  F_ISIK
         LDY   #$0023                    ; F_00E0E1'in açılış bip sesi
         JSRL  $003310
         LDX   #$0000

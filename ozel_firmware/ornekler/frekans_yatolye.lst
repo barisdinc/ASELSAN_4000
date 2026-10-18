@@ -1475,45 +1475,47 @@
 00E0E5                               .ORG $00854C                    ; F_00828C: CMP A,#$5B / BCS L_008575 (harf mi?)
 00854C                               .EXPECT $C9,$5B,$B0,$25
 00854C                               .ASSUME M=1,X=0
-00854C  5C 31 20 01                  JMPL  Y_DENETIM
+00854C  5C 38 20 01                  JMPL  Y_DENETIM
 008550  00 00 00 00 00 00 …          .ORG $012000
 012000                               .ASSUME M=0,X=0
 012000  A3 04                        LDA   A,$04,S
 012002  48                           PHA                             ; çağırdığımız NC77 fonksiyonları için çerçeve
-012003  A0 23 00                     LDY   #$0023                    ; F_00E0E1'in açılış bip sesi
-012006  22 10 33 00                  JSRL  $003310
-01200A  A2 00 00                     LDX   #$0000
-01200D  F8                   AC_YAZ: SEM
-01200E                               .ASSUME M=1,X=0
-01200E  BF 29 20 01                  LDA   A,>ACILIS_METNI,X
-012012  9D 52 02                     STA   A,LCD,X
-012015  D8                           CLM
-012016                               .ASSUME M=0,X=0
-012016  E8                           INX
-012017  E0 08 00                     CPX   #$0008
-01201A  D0 F1                        BNE   AC_YAZ
-01201C  22 8C 82 00                  JSRL  F_LCD
-012020  A0 88 13                     LDY   #ACILIS_MS
-012023  22 7F 7D 00                  JSRL  F_DELAY                   ; bekler, bekçi köpeğini besler
-012027  68                           PLA
-012028  6B                           RTL
-012029  79 41 54 4F 4C 59 …          .TEXT8 "yATOLYE"
-012031                               .ASSUME M=1,X=0
-012031  C9 79                        CMP   A,#$79                    ; 'y'
-012033  F0 0C                        BEQ   Y_CIZ
-012035  C9 5B                        CMP   A,#$5B                    ; orijinal: CMP A,#$5B / BCS L_008575
-012037  90 04                        BCC   Y_HARF_MI
-012039  5C 75 85 00                  JMPL  $008575                   ; harf değil: rakam / işaret denetimleri
-01203D  5C 50 85 00                  JMPL  $008550                   ; orijinal: CMP A,#$41 ...
-012041  D8                   Y_CIZ:  CLM                             ; harf yolundaki gibi: $02 + 2*konum = segment sözcüğü
-012042                               .ASSUME M=0,X=0
-012042  A5 00                        LDA   A,$00
-012044  29 FF 00                     AND   A,#$00FF
-012047  0A                           ASL   A
-012048  AA                           TAX
-012049  A9 46 25                     LDA   A,#Y_SEGMENT
-01204C  95 02                        STA   A,$02,X
-01204E  5C F5 86 00                  JMPL  $0086F5                   ; sonraki karaktere (orijinal yol da M = 0 ile gelir)
+012003  A0 01 00                     LDY   #$0001                    ; arka ışıklar açık
+012006  22 56 81 00                  JSRL  F_ISIK
+01200A  A0 23 00                     LDY   #$0023                    ; F_00E0E1'in açılış bip sesi
+01200D  22 10 33 00                  JSRL  $003310
+012011  A2 00 00                     LDX   #$0000
+012014  F8                   AC_YAZ: SEM
+012015                               .ASSUME M=1,X=0
+012015  BF 30 20 01                  LDA   A,>ACILIS_METNI,X
+012019  9D 52 02                     STA   A,LCD,X
+01201C  D8                           CLM
+01201D                               .ASSUME M=0,X=0
+01201D  E8                           INX
+01201E  E0 08 00                     CPX   #$0008
+012021  D0 F1                        BNE   AC_YAZ
+012023  22 8C 82 00                  JSRL  F_LCD
+012027  A0 88 13                     LDY   #ACILIS_MS
+01202A  22 7F 7D 00                  JSRL  F_DELAY                   ; bekler, bekçi köpeğini besler
+01202E  68                           PLA
+01202F  6B                           RTL
+012030  79 41 54 4F 4C 59 …          .TEXT8 "yATOLYE"
+012038                               .ASSUME M=1,X=0
+012038  C9 79                        CMP   A,#$79                    ; 'y'
+01203A  F0 0C                        BEQ   Y_CIZ
+01203C  C9 5B                        CMP   A,#$5B                    ; orijinal: CMP A,#$5B / BCS L_008575
+01203E  90 04                        BCC   Y_HARF_MI
+012040  5C 75 85 00                  JMPL  $008575                   ; harf değil: rakam / işaret denetimleri
+012044  5C 50 85 00                  JMPL  $008550                   ; orijinal: CMP A,#$41 ...
+012048  D8                   Y_CIZ:  CLM                             ; harf yolundaki gibi: $02 + 2*konum = segment sözcüğü
+012049                               .ASSUME M=0,X=0
+012049  A5 00                        LDA   A,$00
+01204B  29 FF 00                     AND   A,#$00FF
+01204E  0A                           ASL   A
+01204F  AA                           TAX
+012050  A9 46 25                     LDA   A,#Y_SEGMENT
+012053  95 02                        STA   A,$02,X
+012055  5C F5 86 00                  JMPL  $0086F5                   ; sonraki karaktere (orijinal yol da M = 0 ile gelir)
 
 ; semboller
 N_YUKSEK                 $000000
@@ -1606,6 +1608,7 @@ TERS_TABLO               $002B06
 VFO_IMZA_D               $004656
 F_DELAY                  $007D7F
 F_BEEP                   $0080AA
+F_ISIK                   $008156
 F_LCD                    $00828C
 F_RADYO_SON              $00E626
 MENU_NEXT                $011000
@@ -1807,8 +1810,8 @@ TXT_FR_HATA              $011ED2
 TXT_FR_TX                $011EDA
 TXT_FR_GONDER            $011EE2
 ACILIS                   $012000
-AC_YAZ                   $01200D
-ACILIS_METNI             $012029
-Y_DENETIM                $012031
-Y_HARF_MI                $01203D
-Y_CIZ                    $012041
+AC_YAZ                   $012014
+ACILIS_METNI             $012030
+Y_DENETIM                $012038
+Y_HARF_MI                $012044
+Y_CIZ                    $012048
