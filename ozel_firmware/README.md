@@ -196,6 +196,7 @@ Ad geçersizse ekranda `CAGRI -`, `ENLEM -` ya da `BOYLAM -` (İngilizce `CALL -
 | 0x00EDA2 (durum 4) | PTT'de kimlik gönderilecek mi? (5 ya da doğrudan 8) | APRS menüsündeyse 5'e geçer; gecikme 4 × 32 ms (EEPROM'daki ton gönderme gecikmesi değil: senin telsizinde 1,5 s) |
 | 0x00F4E4 (durum 5) | `JSRL F_00E65B` (seçmeli çağrı kimliği) | `APRS_PTT`: APRS menüsündeyse paketi gönderir, değilse hiçbir şey |
 | 0x00E9FE (`F_00E9D2`) | susturma açıldı → `SEB #$40,P4` (hoparlör açık) | `APRS_HOPARLOR`: APRS menüsündeyse P46 = 0 |
+| 0x00CC44, 0x00CC92 (`F_00CB52`) | ses kapalı mı kararı; squelch kapalıysa FX806'ya sessiz ayar (L_00CD3F) | `APRS_SUS_KARAR` / `APRS_SUS_FX806`: APRS menüsünde ses hep kapalı, FX806'ya hep sessiz ayar (`C8 00`, `08 A0`). Tip B kartta hoparlörü asıl bu keser; P46 kesmiyor. APRS'e girişte `F_00CB52` bir kez çağrılır |
 | 0x0080AA `F_0080AA` | bip (tuş, onay, hata) | `APRS_BIP`: APRS menüsündeyse çalmadan döner |
 | 0x008084 `F_008084` | uyarı tonu (TA0 → P50) | `APRS_UYARI`: APRS menüsündeyse başlatmaz |
 | `VFO_KANCA` (0x00F84D) | | `APRS_KANCA`: menü zaman aşımını yeniler, hoparlörü kapalı tutar, menüden çıkılınca sentezör kaydını geri yükler; otomatik gönderim zamanı gelince PTT isteği kurar |

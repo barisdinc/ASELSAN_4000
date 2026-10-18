@@ -42,6 +42,10 @@
 ;            hoparlör kapalı kalır (kanaldaki paketler kullanıcıyı rahatsız etmesin); uyarı ve tuş
 ;            sesleri (P50) etkilenmez. APRS'e girerken hoparlör hemen kapatılır, çıkışta
 ;            RX'e yeniden girilince firmware susturmaya göre yeniden açar
+;   0x00CC44 / 0x00CC92 F_00CB52 (FX806 ses ayarı): APRS menüsündeyken ses her zaman kapalı
+;            sayılır ($00 = 1 -> RAM 0x0240 bit 0, tip A'da ses yükselteci kapalı) ve FX806'ya
+;            squelch kapalıyken yazılan ayar (L_00CD3F) yazılır. Tip B kartta hoparlörü asıl bu
+;            keser (P46 değil). APRS'e girişte F_00CB52 bir kez çağrılır.
 ;   0x0080AA F_0080AA (bip) ve 0x008084 F_008084 (uyarı tonu): APRS menüsündeyken hiç ses
 ;            çalınmaz (TA0 / P50 başlatılmaz). Böylece APRS'te hoparlör tamamen sessiz.
 ;   VFO_KANCA (frekans.inc) her turda APRS_KANCA'yı çağırır: menü zaman aşımını yeniler,
@@ -147,6 +151,12 @@ AP_KOD_ADRES .EQU *
         .ORG $008084                    ; F_008084 (uyarı tonu aç: TA0 -> P50)
         .EXPECT $A3,$04,$48,$F8         ; LDA A,$04,S / PHA / SEM
         JMPL  APRS_UYARI
+        .ORG $00CC44                    ; F_00CB52: ses kapalı mı ($00) kararı -> APRS'te hep kapalı
+        .EXPECT $D8,$A5,$00,$F8         ; CLM / LDA A,$00 / SEM
+        JMPL  APRS_SUS_KARAR
+        .ORG $00CC92                    ; F_00CB52: squelch kapalı FX806 ayarına (L_00CD3F) gidilsin mi
+        .EXPECT $A5,$00,$F0,$0F         ; LDA A,$00 / BEQ L_00CCA5
+        JMPL  APRS_SUS_FX806
         .ORG $00F4E4                    ; durum 5 -> 6: seçmeli çağrı kimliği yerine APRS
         .EXPECT $22,$5B,$E6,$00
         JSRL  APRS_PTT
@@ -286,6 +296,29 @@ APRS_HOPARLOR:
         JMPL  $00EA0E
 AH_AC:  SEB   #$40,R_P4                 ; orijinal
         JMPL  $00EA0E
+
+; F_00CB52, L_00CC44 (M bilinmiyor, D = F_00CB52'nin çerçevesi; $00 = 1 ses kapalı)
+APRS_SUS_KARAR:
+        SEM
+        .ASSUME M=1,X=0
+        JSR   AP_ETKIN
+        BNE   SSK_1
+        LDM   #1,$00                    ; APRS: ses kapalı
+SSK_1:  CLM                             ; orijinal: CLM / LDA A,$00 / SEM
+        LDA   A,$00
+        SEM
+        JMPL  $00CC48
+
+; F_00CB52, L_00CC92 (M = 1): APRS'teyse squelch açık olsa da sessiz FX806 ayarı
+APRS_SUS_FX806:
+        .ASSUME M=1,X=0
+        JSR   AP_ETKIN
+        BNE   SSF_1
+        JMPL  $00CD3F
+SSF_1:  LDA   A,$00                     ; orijinal: LDA A,$00 / BEQ L_00CCA5
+        BNE   SSF_2
+        JMPL  $00CCA5
+SSF_2:  JMPL  $00CC96
 
 ; Bip (F_0080AA girişi, JMPL ile: yığın girişteki gibi): APRS'te sessiz döner
 APRS_BIP:
@@ -483,6 +516,9 @@ APRS_GIR:
         JSR   AP_KUR
         SEM
         BBC   #F_AP_KURULU,AP_DURUM,AG_1
+        CLM                             ; FX806 ses ayarını hemen yenile: APRS'te sessiz
+        JSRL  F_FX806
+        SEM
         CLM
         JSR   AP_HAZIRLA
         SEM
