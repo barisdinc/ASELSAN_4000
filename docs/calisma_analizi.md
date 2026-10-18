@@ -365,6 +365,21 @@ Alma sesi FX806'nın filtresinden (TD3-17) ve TD12 sıfır-geçiş algılayıcı
 
 Son adımın ayrıntıları (tablo karşılaştırma toleransı, hane zamanlama kuralları) henüz satır satır okunmadı; davranış, kılavuzun 1.6.3 ve 1.7 bölümleriyle birleştirilerek yazıldı.
 
+### Kod haritası (kaldırmak için)
+
+Çağrı grafiğinden (giriş noktaları: gönderme `F_00E65B`, alma kurulumu `F_007C46` / `L_007CAE`, karar kesmesi TA1 `L_01C6C0`) yalnız seçmeli çağrının ulaştığı kod:
+
+| Kod | Adres | Komut | Görev |
+|---|---|---|---|
+| `F_00E65B` | 0x00E65B–0x00E9D1 | 395 | Gönderme: kimlik / çağrı / transpond tonları (TB1 DDS + TA1 PWM, TA4 süre) |
+| `F_007C46` + `L_007CAE` | 0x007C46–0x007CF5 | 76 | Alma çözücüsünü başlatır: TB1 periyot ölçme (TB1MOD=0x42), TA1 pencere kesmesi |
+| TA1 kesmesi `L_01C6C0` | 0x01C6C0– | 252 | Pencere sonu: periyotları ortalar, haneyi bulur |
+| `F_01BBE4` | 0x01BBE4– | 1177 | Hane dizisi, çağrı / grup / transpond kararı, çağrı ekranı ve uyarı |
+
+Toplam ~1850 komut. TB1 kesmesinin (`L_01C627`) TX dalı DTMF için de kullanıldığından kalır; RX dalı (0x023E bit 4) yalnız çözücü içindir. Çözücü, telsizin kendi seçmeli çağrı numarası programlıysa (0x0066B9, 0x015118: 0x023A bit 15) alma kurulumunda (0x00EBF2) başlatılır.
+
+APRS (ozel_firmware/ornekler/aprs.inc) PTT'deki kimlik gönderimini (0x00F4E4) kendisi kullanıyor; orada seçmeli çağrı artık hiç gönderilmiyor.
+
 ## 10. Veri, C-BUS, ses kaydı, PC bağlantısı ve flash yükleme
 
 Ses işleme ve modem işleri CML (Consumer Microcircuits) FX serisi yongalara bırakılmış; işlemci onları C-BUS'tan yönetiyor. PC ile bağlantı RS232 üzerinden. Aynı hat hem EEPROM programlama ve klonlama için, hem de flash'ı yeniden yazmak için kullanılıyor.

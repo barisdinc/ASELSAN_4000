@@ -8,15 +8,16 @@ Orijinal YA4000S yazılımına eklenen özellikler. Her örnek önce simülatör
 | `YA4000S_SAYI.HEX` | Menüde **SAYI** öğesi: girilen sayıyı yazar, `s` ile tersini gösterir | `ornekler/sayi_ters.asm` |
 | `YA4000S_HESAP.HEX` | SAYI + **HESAP**: dört işlemli hesap makinesi | `ornekler/hesap.asm` |
 | `YA4000S_OYUN.HEX` | SAYI + HESAP + **OYUN**: sayı tahmin oyunu (rastgele sayı, sesler) | `ornekler/oyun.asm` |
-| `YA4000S_FREKANS.HEX` | Önceki üçü + **FREKANS**: tuş takımından alma ve gönderme frekansı girip telsizi ayarlama (VFO modu; PTT'de ekranda gönderme frekansı) | `ornekler/frekans.asm` |
-| `YA4000S_FREKANS_YATOLYE.HEX` | FREKANS'ın tamamı + açılışta 5 saniye **yATOLYE** (flash'a gömülü, EEPROM / programlayıcı değiştiremez; sürüm yazısı "AS V2-3" yerine) | `ornekler/frekans_yatolye.asm` |
+| `YA4000S_FREKANS.HEX` | Önceki üçü + **FREKANS**: tuş takımından alma ve gönderme frekansı girip telsizi ayarlama (VFO modu; PTT'de ekranda gönderme frekansı) + **APRS**: PTT'de 144,800 MHz'de sabit konum paketi (1200 baud AFSK, AX.25). Seçmeli çağrı kimliğinin PTT'de gönderilmesi kaldırıldı | `ornekler/frekans.asm` |
+| `YA4000S_FREKANS_YATOLYE.HEX` | FREKANS ve APRS'in tamamı + açılışta 5 saniye **yATOLYE** (flash'a gömülü, EEPROM / programlayıcı değiştiremez; sürüm yazısı "AS V2-3" yerine) | `ornekler/frekans_yatolye.asm` |
 
 Kaynak düzeni (`ornekler/`):
 
 | Dosya | İçerik |
 |---|---|
 | `menu_altyapi.inc` | Ortak: firmware'in menü değişkenleri, sabitler, menü tablolarını bank 1'e taşıyan 18 yama |
-| `sayi_ters.inc`, `hesap.inc`, `oyun.inc`, `frekans.inc` | Her örneğin işleyicileri |
+| `sayi_ters.inc`, `hesap.inc`, `oyun.inc`, `frekans.inc`, `aprs.inc` | Her örneğin işleyicileri |
+| `aprs_paket.inc` | APRS paketinin ton dizisi; `disasm/tools/aprs_paket.py` derlemede üretir (çağrı işareti, konum ve metin oradadır) |
 | `sayi_ters.asm`, `hesap.asm`, `oyun.asm`, `frekans.asm` | Bir firmware = altyapı + menü tabloları (hangi öğeler, hangi sırada) + örneklerin `.inc` dosyaları |
 | `acilis_yatolye.inc` | Açılış ekranı: F_00E0E1'e (sürüm yazısı) JMPL, 5 s "yATOLYE"; LCD fontunda olmayan küçük `y` için F_00828C'ye segment yaması (0x2546) |
 | `frekans_yatolye.asm` | `frekans.asm` + `acilis_yatolye.inc` |
@@ -142,6 +143,53 @@ Nasıl çalışıyor:
 **Gerçek cihazda dikkat.** Kabul edilen aralık (VHF tabanı 136 MHz ise 136–176,95 MHz) kılavuzdaki donanım bandından (146–174 MHz) geniştir. Bant dışında VCO kilitlenmeyebilir ve TX filtreleri uygun değildir. Ayrıca yalnızca izinli frekanslarda gönderme yapın. İlk denemeleri yapay yükle (dummy load) ve bant içindeki bilinen bir frekansla yapın. İstenirse VFO'da TX kapatılabilir ya da aralık kılavuzdaki banda daraltılabilir.
 
 Telsiz bu modlarda da çalışır: işleyici her tuşta bir kez çağrılır ve hemen döner, ana döngü (alma, kanal anahtarı, PTT) sürer. Firmware'in menü zaman aşımı burada da geçerli. Bir süre tuşa basılmazsa normal ekrana döner.
+
+## APRS kullanımı
+
+Menüde FREKANS'tan sonra gelir (`m` ile **APRS** başlığına gelip `s`).
+
+| Ekran / tuş | Ne olur |
+|---|---|
+| `s` (APRS başlığında) | Telsiz alma ve gönderme **144,800 MHz**'e geçer, TKS kapanır. Ekranda `APRS PTT` |
+| PTT | ~130 ms sonra paket gider (0,75 s): ekranda `APRS TX`, bitince `APRS OK`. PTT basılı tutulursa telsiz 144,800'de göndermeye (konuşmaya) devam eder |
+| `m` | Çık: telsiz önceki kanalına / frekansına döner. Menüdeyken kanal anahtarı çevrildiyse yeni kanal kalır |
+
+FREKANS'taki gibi APRS açıkken firmware'in ~4 s'lik menü zaman aşımı kapalıdır. Bant dışıysa (bant tabanı 144 MHz'in üstünde) ekranda `HATA` / `ERROR` yazar ve frekans değişmez.
+
+**Paket** (sabit, flash'ta):
+
+```
+TA7W-7>APZ001,WIDE1-1,WIDE2-1:!4050.63N/03109.39Eb ASELSAN 4000
+```
+
+- Konum Düzce merkezi: 40° 50,63' K, 031° 09,39' D. Simge `/b` (bisiklet).
+- `APZ001` deneysel yazılımlar için ayrılmış hedef adı. Yol `WIDE1-1,WIDE2-1`.
+- Değiştirmek için `disasm/tools/aprs_paket.py`'nin başındaki `CAGRI`, `BILGI`, `YOL` değerleri; `make -C disasm ozel` paketi yeniden üretir.
+
+**Ton üretimi.** Seçmeli çağrının donanım yolu kullanılır (bkz. `docs/calisma_analizi.md` bölüm 9):
+
+- TB1 zamanlayıcı modunda örnekleme saati: 4,032 MHz / 420 = **9600 Hz**, kesme önceliği 6.
+- Her TB1 kesmesinde TA1 tek atım darbesi tetiklenir; darbe genişliği o anki örnek. Çıkış P52 SÇ_TON → TD14 süzgeci → FX806 modülatör girişi.
+- Örnek: 16 bit faz sayacı + ROM'daki seçmeli çağrı sinüs tablosu (0x28FA). Artım 1200 Hz için 8192, 2200 Hz için 15019. Ton değişirken faz kesintisiz. Bit başına 8 örnek = 1200 baud.
+- Ton dizisi derlemede hazırlanır (`aprs_paket.py`): AX.25 adresleri, kontrol 0x03, PID 0xF0, CRC-16-CCITT FCS, bit doldurma, başta 45 bayrak (300 ms), NRZI. Kesme yalnızca bitleri sırayla okur.
+- FX806 ayarı `F_00E65B`'nin (seçmeli çağrı gönderme) başındakiyle aynı: `$029A` / `$029B` ve `F_00CB52`. Ton yolunu açar, mikrofonu kapatır.
+
+**Bağlantılar (yamalar).**
+
+| Adres | Orijinal | Yeni |
+|---|---|---|
+| 0x002028 `VEC_TB1` | `JMPL $01C627` | `AFSK_TB1`: paket gidiyorsa örnek üretir, yoksa orijinal kesmeye geçer (DTMF, alma) |
+| 0x00EDA2 (durum 4) | PTT'de kimlik gönderilecek mi? (5 ya da doğrudan 8) | APRS menüsündeyse 5'e geçer; gecikme 4 × 32 ms (EEPROM'daki ton gönderme gecikmesi değil: senin telsizinde 1,5 s) |
+| 0x00F4E4 (durum 5) | `JSRL F_00E65B` (seçmeli çağrı kimliği) | `APRS_PTT`: APRS menüsündeyse paketi gönderir, değilse hiçbir şey |
+| `VFO_KANCA` (0x00F84D) | | `APRS_KANCA`: menü zaman aşımını yeniler, menüden çıkılınca sentezör kaydını geri yükler |
+
+**Simülatörde doğrulama** (`test_ozel.js`, `disasm/sim/afsk.js`): TA1'e yazılan örnekler firmware'den bağımsız bir çözücüden geçirilir (1200/2200 Hz enerjisi, bit saati, NRZI, bit doldurma, CRC). Paket bayt bayt çözülür, FCS doğru, süre 0,754 s, örnekleme 9600 Hz. Tip B kart ve gerçek telsizin EEPROM'uyla da çözüldü.
+
+**Gerçek cihazda dikkat.**
+
+- FX806'nın ön vurgusu 2200 Hz'i 1200 Hz'den daha yüksek verebilir. Alıcıda (direwolf, APRSdroid) çözülmezse iki ton için ayrı genlik gerekebilir.
+- 144,800 MHz kılavuzdaki donanım bandının (146–174 MHz) altında. VCO kilitlenmeyebilir; ilk deneme yapay yükle.
+- Paket yalnızca lisanslı çağrı işaretiyle, izinli frekansta gönderilmelidir.
 
 ## Yeni bir örnek yazmak
 

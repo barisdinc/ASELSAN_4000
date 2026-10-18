@@ -554,6 +554,7 @@ VFO_KANCA:
         PHA
         PHX
         PHY                             ; yığında 8 bayt: çerçeve göstericisi $0C,S
+        JSR   APRS_KANCA                ; aprs.inc: APRS menüsünün zaman aşımı / çıkışı
         SEM                             ; FREKANS açıkken menü zaman aşımı yok (çıkış m ile):
         LDA   A,MENU                    ; firmware ~4 s tuşa basılmazsa normal ekrana atıyor,
         CMP   A,#ST_FREKANS_ON          ; ikinci frekansı girmeye vakit kalmıyordu

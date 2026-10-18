@@ -9,12 +9,12 @@
 const isNode = typeof process !== 'undefined' && process.versions && process.versions.node;
 let B, V, hexText, origText, ringArg, out;
 if (isNode) {
-  B = require('./board.js'); V = require('./radio_view.js'); globalThis.UPD = require('./updater.js');
+  B = require('./board.js'); V = require('./radio_view.js'); globalThis.UPD = require('./updater.js'); globalThis.AFSK = require('./afsk.js');
   hexText = require('fs').readFileSync(process.argv[2], 'utf8'); out = s => console.log(s);
   origText = process.argv[3] && require('fs').readFileSync(process.argv[3], 'utf8');
   ringArg = process.argv[4];
 } else {
-  load('m7700.js'); load('board.js'); load('radio_view.js'); load('updater.js');
+  load('m7700.js'); load('board.js'); load('radio_view.js'); load('updater.js'); load('afsk.js');
   B = globalThis.Board; V = globalThis.RadioView; globalThis.UPD = globalThis.Updater;
   const args = typeof scriptArgs !== 'undefined' ? scriptArgs : arguments;
   hexText = readFile(args[0]); out = s => print(s);
@@ -277,6 +277,51 @@ if (RING.includes('FREQ')) {
   const g = keys(t, enter + '1#');
   check('Türkçe: 2. adımda GONDERME', keys(t, '*s156525#')[8] === 'GONDERME', lcd(t));
   check('Türkçe: FREKANS / HATA', g[RING.indexOf('FREQ') + 1] === 'FREKANS ' && g[g.length - 1] === 'HATA    ', g.join('|'));
+}
+
+/* APRS (ozel_firmware/ornekler/aprs.inc): PTT'de 144,800 MHz'de AFSK konum paketi */
+if (RING.includes('APRS')) {
+  const PAKET = 'TA7W-7>APZ001,WIDE1-1,WIDE2-1:!4050.63N/03109.39Eb ASELSAN 4000';
+  const vco = b => (b.radioState().vco / 1e6).toFixed(4);
+  const enter = 'mm' + 'm'.repeat(RING.indexOf('APRS')) + 's';
+  const b = radio();
+  boot(b, 2.5);
+  const vco0 = vco(b), t0 = b.now;
+  scenario(b, 'APRS: gir', enter, ['LIST', ...RING.slice(0, RING.indexOf('APRS') + 1), 'APRS PTT'].join('|'));
+  b.run(FCLK * 0.3);
+  check('APRS: alma 144,800 (VCO 189,800)', vco(b) === '189.8000', vco(b));
+  /* PTT: örnekleri toplayıp çöz */
+  const log = [], push = b.pushAudio.bind(b);
+  b.pushAudio = (buf, v) => { if (buf === b.audio.ta1) log.push(b.now, v); push(buf, v); };
+  b.inputs.P4 = 0x7F; b.run(FCLK * 0.3);
+  check('APRS: PTT: TX 144,800, ekranda APRS TX', vco(b) === '144.8000' && lcd(b) === 'APRS TX ', vco(b) + ' ' + lcd(b));
+  b.run(FCLK * 1.2);
+  const fr = AFSK.decode(log, FCLK);
+  check('APRS: paket çözüldü, FCS doğru', fr.length === 1 && fr[0].fcsOk && fr[0].text === PAKET, fr.map(f => f.text + (f.fcsOk ? '' : ' (FCS yanlış)')).join(' / ') || 'çerçeve yok');
+  const dur = log.length ? (log[log.length - 2] - log[0]) / FCLK : 0;
+  check('APRS: süre ~0,75 s, örnekleme 9600 Hz', Math.abs(dur - 905 / 1200) < 0.01 && Math.abs((log.length / 2 - 1) / dur - 9600) < 30, dur.toFixed(3) + ' s, ' + ((log.length / 2 - 1) / dur).toFixed(0) + ' Hz');
+  check('APRS: paketten sonra ekranda APRS OK, hâlâ gönderiyor', lcd(b) === 'APRS OK ' && vco(b) === '144.8000', lcd(b) + ' ' + vco(b));
+  b.inputs.P4 = 0xFF; b.run(FCLK * 0.5);
+  check('APRS: PTT bırakıldı: alma 144,800', vco(b) === '189.8000', vco(b));
+  scenario(b, 'APRS: m ile çık', 'm', 'KANAL 01');
+  b.run(FCLK * 0.3);
+  check('APRS: çıkınca kanala dönüş', vco(b) === vco0, vco(b) + ' / ' + vco0);
+  log.length = 0;
+  b.inputs.P4 = 0x7F; b.run(FCLK * 1.0);
+  check('APRS menüsü dışında PTT: paket yok (seçmeli çağrı kimliği de yok)', AFSK.decode(log, FCLK).length === 0 && log.length === 0, log.length / 2 + ' örnek');
+  b.inputs.P4 = 0xFF; b.run(FCLK * 0.5);
+  /* menü zaman aşımı: APRS'te kalır */
+  const halka = []; for (let k = 0; k < 14 && lcd(b) !== 'APRS    '; k++) halka.push(keys(b, 'm')[0]);   // halka son konumdan devam eder
+  keys(b, 's'); b.run(FCLK * 8);
+  check('APRS açıkken menü zaman aşımı yok (8 s)', lcd(b) === 'APRS PTT' && vco(b) === '189.8000', lcd(b) + ' ' + vco(b) + ' halka ' + halka.join('|'));
+  b.inputs.P4 = 0x7F; b.run(FCLK * 1.4); b.inputs.P4 = 0xFF; b.run(FCLK * 0.4);
+  check('ikinci paket de gitti', lcd(b) === 'APRS OK ', lcd(b));
+  /* kanal anahtarı APRS'teyken çevrilirse çıkışta yeni kanal korunur */
+  b.panel.setExt(((16 - 3) & 15) << 4 | 0x0F, b); b.run(FCLK * 0.6);
+  keys(b, 'm'); b.run(FCLK * 0.3);
+  check('APRS\'te kanal değişti: çıkınca yeni kanal kalır', vco(b) === '201.0500', vco(b));
+  const kotu = b.events.filter(e => e[0] > t0 && /WATCHDOG|RESET/.test(e[1]));   // (açılıştakiler hariç)
+  check('APRS: bekçi köpeği / yeniden başlama yok', kotu.length === 0, kotu.map(e => (e[0] / FCLK).toFixed(2) + ' ' + e[1]).join(', '));
 }
 
 /* boot screen built into the ROM (acilis_yatolye.inc): 5 s, independent of the EEPROM */
