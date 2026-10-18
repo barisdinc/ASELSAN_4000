@@ -114,7 +114,7 @@ Telsiz 1–999 arasında bir sayı tutar.
 
 Örnek: `156525#160650#` → alma 156,525 MHz, gönderme 160,650 MHz. `156525##` → ikisi de 156,525 MHz.
 
-**VFO modunda ekran:** Normal ekranda almadayken alma frekansı (`156 5250`), PTT'ye basılıyken gönderme frekansı (`160 6500`) görünür; PTT bırakılınca alma frekansına döner. Menüdeyken ekran değiştirilmez, yalnız kanal adı güncellenir.
+**VFO modunda ekran:** Almadayken alma frekansı (`156 5250`), PTT'ye basılıyken gönderme frekansı (`160 6500`) görünür; PTT bırakılınca alma frekansına döner. Bu, normal ekranda da ayardan sonra açık kalan FREKANS menüsünde de olur. Başka bir menüdeyken ekran değiştirilmez, yalnız kanal adı güncellenir. İki haneli kanal numarası yerine almada **VR**, gönderirken **VT** yazar. 7 parçalı hanelerde V `U`, R `r`, T `t` biçiminde görünür. Kanala dönünce kanal numarası geri gelir.
 
 FREKANS açıkken firmware'in menü zaman aşımı (yaklaşık 4 s tuşa basılmazsa normal ekrana dönme) kapalıdır; çıkış yalnız `m` ile. İlk sürümde bu yoktu: gerçek telsizde 1. adımdan sonra 4 s beklenince ana ekrana dönülüyor, girilen frekans kayboluyordu.
 
@@ -133,9 +133,10 @@ Nasıl çalışıyor:
   - VFO modunda mı, bakar: imza `'VF'` olmalı, sentezör kaydı da hâlâ bizim baytlarımızı taşımalı.
   - Radyo durumunu okur: 4–12 gönderme, diğerleri alma.
   - Yalnız geçişte kanal adını (0x024A) diğer frekansın metniyle değiştirir.
-  - Normal ekran açıksa (menü 0 ve ekranda eski metin) LCD'yi hemen yeniler.
+  - Ekranda eski metin duruyorsa (normal ekran ya da ayardan sonraki FREKANS menüsü) LCD'yi hemen yeniler.
 
   Sonra `F_00E626`'ya aynı yığınla devam eder; yazmaçlar korunur.
+- **Kanal numarası kancası.** `F_00828C` normal ekranda kanal numarasını 0x0376'dan okur (0x008332, `LDA A,$0376 / SEM`). Bu iki komut `JSRL VFO_KNO`'ya çevrildi. VFO modunda değilse `VFO_KNO` aynı iki komutu yapıp döner. VFO modundaysa "VR" ya da "VT"nin 7 parçalı kelimesini `F_00828C`'nin yerel değişkenine ($04) koyar ve kanal numarası hesabının sonrasına (0x00835A) atlar. İki cam tipinin parça düzeni farklı olduğundan (RAM 0x023C bit 8; ROM 0x2D62 / 0x2D00) iki tablo kullanılır.
 - **Bölme.** 32 bit bölmeler kaydır-çıkar yordamıyla (`FR_BOL`) yapılır; işlemcinin DIV komutunun 32 bitlik bölünen davranışına güvenilmedi.
 
 **Gerçek cihazda dikkat.** Kabul edilen aralık (VHF tabanı 136 MHz ise 136–176,95 MHz) kılavuzdaki donanım bandından (146–174 MHz) geniştir. Bant dışında VCO kilitlenmeyebilir ve TX filtreleri uygun değildir. Ayrıca yalnızca izinli frekanslarda gönderme yapın. İlk denemeleri yapay yükle (dummy load) ve bant içindeki bilinen bir frekansla yapın. İstenirse VFO'da TX kapatılabilir ya da aralık kılavuzdaki banda daraltılabilir.

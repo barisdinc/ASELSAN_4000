@@ -193,6 +193,7 @@ if (RING.includes('FREQ')) {
   const enter = 'mm' + 'm'.repeat(RING.indexOf('FREQ')) + 's';
   const UHF = ee => { ee[0x58C] = 16000 >> 8; ee[0x58D] = 16000 & 255; B.eeSetChannel(ee, 1, 433e6, 433e6, { name: 'UHF' }); };
   const vco = b => (b.radioState().vco / 1e6).toFixed(4);
+  const chan = b => V.decodeLcd(b, b.font).chan;
   const rec = b => Array.from(b.ram.slice(0x370, 0x37D));
   const synthBytes = r => r.slice(0, 5).concat(r.slice(7, 12)).map(x => x.toString(16).padStart(2, '0')).join(' ');
   /* the firmware's own words for a frequency: put it into EEPROM channel 1 of the original image */
@@ -216,13 +217,17 @@ if (RING.includes('FREQ')) {
   check('RX VCO = 156,525 + 45', vco(b) === '201.5250', vco(b));
   check('sentezör baytları firmware ile aynı (RX 156,525 / TX 160,650)', synthBytes(rec(b)) === reference(156.525e6, false, 160.65e6), synthBytes(rec(b)) + ' / ' + reference(156.525e6, false, 160.65e6));
   b.inputs.P4 = 0x7F; b.run(FCLK * 0.6);
-  check('menüdeyken PTT: TX 160,650, ekran menüde kalır', vco(b) === '160.6500' && lcd(b) === '156 5250', vco(b) + ' ' + lcd(b));
+  check('FREKANS menüsündeyken PTT: ekranda gönderme frekansı', vco(b) === '160.6500' && lcd(b) === '160 6500', vco(b) + ' ' + lcd(b));
   b.inputs.P4 = 0xFF; b.run(FCLK * 0.4);
+  check('menüde PTT bırakıldı: ekranda alma frekansı', vco(b) === '201.5250' && lcd(b) === '156 5250', vco(b) + ' ' + lcd(b));
   scenario(b, 'normal ekranda alma frekansı', 'm', '156 5250');
+  check('kanal numarası yerine VR (U r)', chan(b) === 'Ur', '"' + chan(b) + '"');
   b.inputs.P4 = 0x7F; b.run(FCLK * 0.6);
   check('PTT: TX VCO 160,650, ekranda gönderme frekansı', vco(b) === '160.6500' && lcd(b) === '160 6500', vco(b) + ' ' + lcd(b));
+  check('gönderirken kanal numarası yerine VT (U t)', chan(b) === 'Ut', '"' + chan(b) + '"');
   b.inputs.P4 = 0xFF; b.run(FCLK * 0.4);
   check('PTT bırakıldı: RX 201,525, ekranda alma frekansı', vco(b) === '201.5250' && lcd(b) === '156 5250', vco(b) + ' ' + lcd(b));
+  check('bırakınca yine VR', chan(b) === 'Ur', '"' + chan(b) + '"');
   b.inputs.P4 = 0x7F; b.run(FCLK * 0.3); b.inputs.P4 = 0xFF; b.run(FCLK * 0.4);
   check('ikinci PTT de aynı', lcd(b) === '156 5250' && vco(b) === '201.5250', vco(b) + ' ' + lcd(b));
   keys(b, enter + '156525#160650');
@@ -251,6 +256,7 @@ if (RING.includes('FREQ')) {
   keys(b, '*m');
   b.panel.setExt(((16 - 3) & 15) << 4 | 0x0F, b); b.run(FCLK * 0.6);
   check('kanal anahtarı: kanala dönüş', vco(b) === '201.0500' && lcd(b) === 'KANAL 03', vco(b) + ' ' + lcd(b));
+  check('kanalda kanal numarası geri geldi', chan(b) === ' 3' || chan(b) === '03', '"' + chan(b) + '"');
   b.inputs.P4 = 0x7F; b.run(FCLK * 0.6);
   check('kanaldayken PTT: ekranda kanal adı kalır (VFO modu bitti)', lcd(b) === 'KANAL 03' && vco(b) !== '201.0500', vco(b) + ' ' + lcd(b));
   b.inputs.P4 = 0xFF; b.run(FCLK * 0.4);

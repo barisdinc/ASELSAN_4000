@@ -15,8 +15,10 @@
 ;   m        çık (telsiz yeni frekanslarda kalır; kanal anahtarı çevrilince kanala döner)
 ; FREKANS açıkken firmware'in ~4 s'lik menü zaman aşımı kapalıdır (VFO_KANCA sayacı yeniler).
 ;
-; VFO modunda normal ekran almada alma frekansını, gönderirken (PTT) gönderme frekansını
-; gösterir: VFO_KANCA telsiz durum makinesinin her turunda (0x00F84D) radyo durumuna bakar.
+; VFO modunda ekran almada alma frekansını, gönderirken (PTT) gönderme frekansını gösterir
+; (normal ekranda ve ayardan sonra açık kalan FREKANS menüsünde): VFO_KANCA telsiz durum
+; makinesinin her turunda (0x00F84D) radyo durumuna bakar. Kanal numarası yerine almada "VR",
+; gönderirken "VT" yazar (VFO_KNO, 0x008332).
 ;
 ; Hatalar ("ERROR" / "HATA" + bip): 6 haneden az, 2,5 kHz ızgarasında değil, bandın dışında,
 ; telsiz göndermedeyken. Hatadan sonraki tuş girişe döner (aynı adımda kalınır).
@@ -87,6 +89,9 @@ FR_KOD_ADRES .EQU *
         .ORG $00F84D
         .EXPECT $22,$26,$E6,$00
         JSRL  VFO_KANCA
+        .ORG $008332                    ; normal ekranın kanal numarası: VFO'da "VR" / "VT"
+        .EXPECT $AD,$76,$03,$F8
+        JSRL  VFO_KNO
         .ORG FR_KOD_ADRES
 
 ; ---------------------------------------------------------------------------------------------
@@ -538,7 +543,8 @@ FU_3:   LDA   A,VFO_METIN,X
 ; ---------------------------------------------------------------------------------------------
 ; VFO_KANCA: telsiz durum makinesinin her turunda (0x00F84D'den JSRL ile), sonra F_00E626'ya
 ; devam eder. VFO modundaysa ve almadan göndermeye (ya da tersine) geçildiyse kanal adını
-; diğer frekansın metniyle değiştirir; ekranda normal ekran duruyorsa onu da hemen yeniler.
+; diğer frekansın metniyle değiştirir; ekranda eski frekans duruyorsa (normal ekran ya da
+; ayardan sonra açık kalan FREKANS menüsü) ekranı da hemen yeniler.
 ; Kanal anahtarı / LIST / tarama sentezör kaydını değiştirince VFO modu kendiliğinden biter.
 ; Tüm yazmaçlar korunur; F_00E626 aynı yığınla çağrılmış olur.
 VFO_KANCA:
@@ -557,23 +563,10 @@ VFO_KANCA:
         BNE   VK_ZA
         LDM   #$3F,MENU_SAYAC
 VK_ZA:  CLM
-        LDA   A,VFO_IMZA
-        CMP   A,#VFO_IMZA_D
+        JSR   VFO_ETKIN
         BEQ   VK_VFO
-        JMP   VK_SON
-VK_VFO:
-        LDX   #0                        ; sentezör kaydı hâlâ bizim mi?
-        SEM
-VK_KAYIT:
-        LDA   A,SYN_KAYIT,X
-        CMP   A,VFO_RX_KAYIT,X
-        BNE   VK_BITTI
-        LDA   A,SYN_KAYIT+7,X
-        CMP   A,VFO_TX_KAYIT,X
-        BNE   VK_BITTI
-        INX
-        CPX   #5
-        BNE   VK_KAYIT
+        JMP   VK_BITTI
+VK_VFO: SEM
         LDY   #0                        ; istenen: 0 alma, 1 gönderme (durum 4..12)
         LDA   A,RADYO_DURUM
         CMP   A,#4
@@ -594,10 +587,8 @@ VK_ISTENEN:
         TAX                             ; X = yeni metin (0 / 8)
         EOR   A,#8
         TAY                             ; Y = eski metin
-        SEM
-        LDA   A,MENU                    ; menüdeyken ekrana dokunma
-        BNE   VK_AD
-        PHX                             ; ekranda eski metin (normal ekran) mı?
+        SEM                             ; ekranda eski metin mi? (normal ekran ya da
+        PHX                             ; ayardan sonra FREKANS menüsü)
         LDX   #0
 VK_KARS:
         LDA   A,VFO_METIN,Y
@@ -626,7 +617,7 @@ VK_YAZ: LDA   A,VFO_METIN,X             ; kanal adı ve ekran tamponu
 VK_BASKA:
         .ASSUME M=1,X=0
         PLX                             ; ekranda başka bir şey var: yalnız kanal adı
-VK_AD:  LDY   #0
+        LDY   #0
 VK_AD1: LDA   A,VFO_METIN,X
         STA   A,KANAL_ADI,Y
         INX
@@ -635,8 +626,7 @@ VK_AD1: LDA   A,VFO_METIN,X
         BNE   VK_AD1
         BRA   VK_SON
 VK_BITTI:
-        .ASSUME M=1,X=0
-        CLM
+        .ASSUME M=0,X=0
         LDM   #0,VFO_IMZA               ; kanala dönülmüş: VFO modu bitti
 VK_SON: CLM
         PLY
@@ -644,6 +634,69 @@ VK_SON: CLM
         PLA
         PLP
         JMPL  F_RADYO_SON
+
+;  VFO modu kurulu ve sentezör kaydı hâlâ bizim mi? Z = 1: evet (M=0 giriş ve çıkış, X bozulur)
+VFO_ETKIN:
+        .ASSUME M=0,X=0
+        LDA   A,VFO_IMZA
+        CMP   A,#VFO_IMZA_D
+        BNE   VE_SON
+        LDX   #0
+        SEM
+VE_1:   LDA   A,SYN_KAYIT,X
+        CMP   A,VFO_RX_KAYIT,X
+        BNE   VE_2
+        LDA   A,SYN_KAYIT+7,X
+        CMP   A,VFO_TX_KAYIT,X
+        BNE   VE_2
+        INX
+        CPX   #5
+        BNE   VE_1
+VE_2:   CLM                             ; Z korunur
+VE_SON: RTS
+
+; ---------------------------------------------------------------------------------------------
+; VFO_KNO: normal ekranda kanal numarası yerine VFO modunda "VR" (alma) / "VT" (gönderme).
+; F_00828C kanal numarasını $0376'dan okuduğu yerden (0x008332) JSRL ile gelinir, M=0.
+; VFO modunda değilse oradaki iki komutu yapıp döner; VFO modundaysa 7 parçalı iki haneyi
+; F_00828C'nin yerel değişkenine ($04, doğrudan sayfa) koyar ve hesaplamanın sonrasına
+; (0x00835A) atlar. 7 parçalı ekranda V = 'U', R = 'r', T = 't'.
+VFO_KNO:
+        .ASSUME M=0,X=0
+        PHX
+        JSR   VFO_ETKIN
+        BEQ   VN_VFO
+        PLX
+        LDA   A,$0376                   ; orijinal: LDA A,$0376 / SEM
+        SEM
+        RTL
+VN_VFO: LDX   #0                        ; tablo: [cam A/B][alma/gönderme]
+        SEM
+        LDA   A,VFO_DURUM
+        CLM
+        BEQ   VN_1
+        LDX   #2
+VN_1:   BBS   #$0100,$023C,VN_2         ; cam B (bit 8 = 0): 7 parça bit düzeni farklı
+        INX
+        INX
+        INX
+        INX
+VN_2:   LDA   A,>VN_TABLO,X
+        STA   A,$04
+        PLX
+        SEM                             ; JSRL'nin dönüş adresini (3 bayt) at
+        PLA
+        CLM
+        PLA
+        JMPL  $00835A
+
+; F_008209'un düzeni: cam A (ROM $2D62) onlar << 8 | birler, parçalar a8 b4 c2 d10 e20 f80 g40;
+; cam B ($2D00) birler << 8 | onlar, a10 b20 c80 d8 e4 f2 g40
+VN_TABLO:
+        .WORD $B660                     ; A: U r
+        .WORD $B6F0                     ; A: U t
+        .WORD $44AE                     ; B: U r
+        .WORD $4EAE                     ; B: U t
 
 ; ekran (M=0)
 FR_EKRAN:
