@@ -281,10 +281,20 @@ if (RING.includes('FREQ')) {
 
 /* APRS (ozel_firmware/ornekler/aprs.inc): PTT'de 144,800 MHz'de AFSK konum paketi */
 if (RING.includes('APRS')) {
-  const PAKET = 'TA7W-7>APIZCI,WIDE1-1,WIDE2-1:!4050.63N/03109.39Eb ASELSAN 4000';
+  /* ayarlar kanal 50..54'ün adlarında (programlayıcı nokta ve küçük harf kabul etmez) */
+  const adlar = a => ee => a.forEach((ad, i) => B.eeSetChannel(ee, 50 + i, 144.8e6, 144.8e6, { name: ad }));
+  const AYAR = ['TA7W-7', '4050 63N', '0310939E', 'ASELSAN', '/B'];
+  const PAKET = 'TA7W-7>APIZCI,WIDE1-1,WIDE2-1:!4050.63N/03109.39EbASELSAN';
   const vco = b => (b.radioState().vco / 1e6).toFixed(4);
   const enter = 'mm' + 'm'.repeat(RING.indexOf('APRS')) + 's';
-  const b = radio();
+  const paketGonder = (b, sure) => {
+    const log = [], push = b.pushAudio;
+    b.pushAudio = (buf, v) => { if (buf === b.audio.ta1) log.push(b.now, v); push.call(b, buf, v); };
+    b.inputs.P4 = 0x7F; b.run(FCLK * (sure || 1.4)); b.inputs.P4 = 0xFF; b.run(FCLK * 0.5);
+    b.pushAudio = push;
+    return AFSK.decode(log, FCLK);
+  };
+  const b = radio(adlar(AYAR));
   boot(b, 2.5);
   const vco0 = vco(b), t0 = b.now;
   scenario(b, 'APRS: gir', enter, ['LIST', ...RING.slice(0, RING.indexOf('APRS') + 1), 'APRS PTT'].join('|'));
@@ -303,7 +313,7 @@ if (RING.includes('APRS')) {
   const fr = AFSK.decode(log, FCLK);
   check('APRS: paket çözüldü, FCS doğru', fr.length === 1 && fr[0].fcsOk && fr[0].text === PAKET, fr.map(f => f.text + (f.fcsOk ? '' : ' (FCS yanlış)')).join(' / ') || 'çerçeve yok');
   const dur = log.length ? (log[log.length - 2] - log[0]) / FCLK : 0;
-  check('APRS: süre ~0,75 s, örnekleme 9600 Hz', Math.abs(dur - 905 / 1200) < 0.01 && Math.abs((log.length / 2 - 1) / dur - 9600) < 30, dur.toFixed(3) + ' s, ' + ((log.length / 2 - 1) / dur).toFixed(0) + ' Hz');
+  check('APRS: süre ~0,7 s, örnekleme 9600 Hz', dur > 0.6 && dur < 0.8 && Math.abs((log.length / 2 - 1) / dur - 9600) < 30, dur.toFixed(3) + ' s, ' + ((log.length / 2 - 1) / dur).toFixed(0) + ' Hz');
   check('APRS: paketten sonra ekranda APRS OK, hâlâ gönderiyor', lcd(b) === 'APRS OK ' && vco(b) === '144.8000', lcd(b) + ' ' + vco(b));
   b.inputs.P4 = 0xFF; b.run(FCLK * 0.5);
   check('APRS: PTT bırakıldı: alma 144,800', vco(b) === '189.8000', vco(b));
@@ -328,6 +338,24 @@ if (RING.includes('APRS')) {
   b.panel.setExt(((16 - 3) & 15) << 4 | 0x0F, b); b.run(FCLK * 0.6);
   keys(b, 'm'); b.run(FCLK * 0.3);
   check('APRS\'te kanal değişti: çıkınca yeni kanal kalır', vco(b) === '201.0500', vco(b));
+  /* başka ayarlar: paket gerçekten kanal adlarından kuruluyor */
+  for (const [ad, ayar, bek] of [
+    ['başka çağrı, SSID 12, 6 haneli boylam, yorum yok, tek karakter simge',
+      ['TA1AB-12', '3958-20N', '325120E', '', 'K'], 'TA1AB-12>APIZCI,WIDE1-1,WIDE2-1:!3958.20N/03251.20Ek'],
+    ['SSID yok, güney / batı, simge tablosu ve kod', ['N0CALL', '3352 10S', '1512345W', 'TEST 123', '/-'],
+      'N0CALL>APIZCI,WIDE1-1,WIDE2-1:!3352.10S/15123.45W-TEST 123']]) {
+    const r = radio(adlar(ayar)); boot(r, 2.5); keys(r, enter); r.run(FCLK * 0.3);
+    const f = paketGonder(r);
+    check('APRS ayar: ' + ad, f.length === 1 && f[0].fcsOk && f[0].text === bek, f.map(x => x.text + (x.fcsOk ? '' : ' (FCS yanlış)')).join(' / ') || lcd(r));
+  }
+  for (const [ad, ayar, ekran] of [['çağrı işareti boş', ['', '4050 63N', '0310939E', '', ''], 'CALL -'],
+                                   ['çağrı işaretinde geçersiz SSID', ['TA7W-16', '4050 63N', '0310939E', '', ''], 'CALL -'],
+                                   ['enlemde harf yok', ['TA7W-7', '405063', '0310939E', '', ''], 'LAT -'],
+                                   ['boylamda eksik rakam', ['TA7W-7', '4050 63N', '31093E', '', ''], 'LON -']]) {
+    const r = radio(adlar(ayar)); boot(r, 2.5); const g = keys(r, enter); r.run(FCLK * 0.3);
+    const f = paketGonder(r);
+    check('APRS hatalı ayar: ' + ad + ' -> ' + ekran + ', paket yok', g[g.length - 1] === ekran.padEnd(8) && f.length === 0, g[g.length - 1] + ' / ' + f.length + ' paket');
+  }
   const kotu = b.events.filter(e => e[0] > t0 && /WATCHDOG|RESET/.test(e[1]));   // (açılıştakiler hariç)
   check('APRS: bekçi köpeği / yeniden başlama yok', kotu.length === 0, kotu.map(e => (e[0] / FCLK).toFixed(2) + ' ' + e[1]).join(', '));
 }

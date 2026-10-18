@@ -493,6 +493,11 @@ class Asm:
                 s.x = 1 if name == 'SEP' else 0
 
     def pick(s, name, avail, exprs, reg):
+        if s.final and avail and set(avail) <= {'dpy', 'absy'}:
+            # ör. LDA A,>tablo,Y: uzun adres + Y modu yok; sessizce kısaltmak başka banka okur
+            v = s.value(exprs[0], need=False)
+            if exprs[0].strip()[:1] == '>' or (v.v is not None and v.v > 0xFFFF):
+                raise AsmError('%s: bu indeksle uzun adres yok (%r); X kullanın' % (name, exprs[0]))
         if len(avail) == 1:
             return avail[0]
         for md in ('rel8', 'rel16', 'jabs', 'jlong', 'jind', 'jindx', 'jlind', 'imp', 'brk'):

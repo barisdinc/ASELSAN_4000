@@ -17,7 +17,6 @@ Kaynak düzeni (`ornekler/`):
 |---|---|
 | `menu_altyapi.inc` | Ortak: firmware'in menü değişkenleri, sabitler, menü tablolarını bank 1'e taşıyan 18 yama |
 | `sayi_ters.inc`, `hesap.inc`, `oyun.inc`, `frekans.inc`, `aprs.inc` | Her örneğin işleyicileri |
-| `aprs_paket.inc` | APRS paketinin ton dizisi; `disasm/tools/aprs_paket.py` derlemede üretir (çağrı işareti, konum ve metin oradadır) |
 | `sayi_ters.asm`, `hesap.asm`, `oyun.asm`, `frekans.asm` | Bir firmware = altyapı + menü tabloları (hangi öğeler, hangi sırada) + örneklerin `.inc` dosyaları |
 | `acilis_yatolye.inc` | Açılış ekranı: F_00E0E1'e (sürüm yazısı) JMPL, 5 s "yATOLYE"; LCD fontunda olmayan küçük `y` için F_00828C'ye segment yaması (0x2546) |
 | `frekans_yatolye.asm` | `frekans.asm` + `acilis_yatolye.inc` |
@@ -156,22 +155,33 @@ Menüde FREKANS'tan sonra gelir (`m` ile **APRS** başlığına gelip `s`).
 
 FREKANS'taki gibi APRS açıkken firmware'in ~4 s'lik menü zaman aşımı kapalıdır. Bant dışıysa (bant tabanı 144 MHz'in üstünde) ekranda `HATA` / `ERROR` yazar ve frekans değişmez.
 
-**Paket** (sabit, flash'ta):
+**Ayarlar kanal adlarında.** APRS'e her girişte kanal 50–54'ün adları EEPROM'dan okunur ve paket bunlardan kurulur. Kanalın frekansı olması gerekmez: boş kanalların adları da EEPROM'da durur. Adlar PC programlayıcısıyla yazılır; telsiz 8 karakteri ve yalnızca `A-Z 0-9 boşluk _ - /` karakterlerini kabul ettiği için nokta ve küçük harf kullanılmaz.
+
+| Kanal | Ne | Ad örneği | Pakette |
+|---|---|---|---|
+| 50 | Çağrı işareti ve SSID (1–6 harf/rakam, isteğe bağlı `-0`..`-15`) | `TA7W-7` | `TA7W-7` |
+| 51 | Enlem: 6 rakam (DDMMmm) + `N`/`S`; aradaki boşluk, `-`, `_`, `/` atlanır | `4050 63N` | `4050.63N` |
+| 52 | Boylam: 7 rakam (DDDMMmm) + `E`/`W`; 6 rakamsa başa 0 eklenir | `0310939E` | `03109.39E` |
+| 53 | Yorum (sondaki boşluklar atılır; boş olabilir) | `ASELSAN` | `ASELSAN` |
+| 54 | Simge: tablo + kod. Koddaki harf küçük harfe çevrilir; tek karakterse tablo `/`; boşsa `/b` | `/B` | `/b` (bisiklet) |
+
+Paket:
 
 ```
-TA7W-7>APIZCI,WIDE1-1,WIDE2-1:!4050.63N/03109.39Eb ASELSAN 4000
+<50>>APIZCI,WIDE1-1,WIDE2-1:!<51><tablo><52><kod><53>
+TA7W-7>APIZCI,WIDE1-1,WIDE2-1:!4050.63N/03109.39EbASELSAN
 ```
 
-- Konum Düzce merkezi: 40° 50,63' K, 031° 09,39' D. Simge `/b` (bisiklet).
+Ad geçersizse ekranda `CAGRI -`, `ENLEM -` ya da `BOYLAM -` (İngilizce `CALL -`, `LAT -`, `LON -`) yazar ve paket gönderilmez; PTT normal gönderme yapar.
+
 - `APIZCI` hedef alanı (tocall): APRS haritalarında cihaz / yazılım adı olarak görünür. APRS tocall listesine kayıtlı değil; bilinmeyen kimliği çoğu hizmet "bilinmeyen cihaz" olarak gösterir. Yol `WIDE1-1,WIDE2-1`.
-- Değiştirmek için `disasm/tools/aprs_paket.py`'nin başındaki `CAGRI`, `BILGI`, `YOL` değerleri; `make -C disasm ozel` paketi yeniden üretir.
 
 **Ton üretimi.** Seçmeli çağrının donanım yolu kullanılır (bkz. `docs/calisma_analizi.md` bölüm 9):
 
 - TB1 zamanlayıcı modunda örnekleme saati: 4,032 MHz / 420 = **9600 Hz**, kesme önceliği 6.
 - Her TB1 kesmesinde TA1 tek atım darbesi tetiklenir; darbe genişliği o anki örnek. Çıkış P52 SÇ_TON → TD14 süzgeci → FX806 modülatör girişi.
 - Örnek: 16 bit faz sayacı + ROM'daki seçmeli çağrı sinüs tablosu (0x28FA). Artım 1200 Hz için 8192, 2200 Hz için 15019. Ton değişirken faz kesintisiz. Bit başına 8 örnek = 1200 baud.
-- Ton dizisi derlemede hazırlanır (`aprs_paket.py`): AX.25 adresleri, kontrol 0x03, PID 0xF0, CRC-16-CCITT FCS, bit doldurma, başta 45 bayrak (300 ms), NRZI. Kesme yalnızca bitleri sırayla okur.
+- Çerçeve APRS'e girişte RAM'de kurulur (`AP_HAZIRLA`): AX.25 adresleri, kontrol 0x03, PID 0xF0, bilgi alanı, CRC-16-CCITT FCS. Kesme her 8 örnekte sıradaki biti üretir: başta 45 bayrak (300 ms), çerçeve baytları LSB önce, beş 1'den sonra doldurma biti, 3 bayrak, NRZI. Kanal adları firmware'in kendi EEPROM okuma yordamıyla (`F_0072EE`) okunur.
 - FX806 ayarı `F_00E65B`'nin (seçmeli çağrı gönderme) başındakiyle aynı: `$029A` / `$029B` ve `F_00CB52`. Ton yolunu açar, mikrofonu kapatır.
 
 **Bağlantılar (yamalar).**
@@ -184,7 +194,7 @@ TA7W-7>APIZCI,WIDE1-1,WIDE2-1:!4050.63N/03109.39Eb ASELSAN 4000
 | 0x00E9FE (`F_00E9D2`) | susturma açıldı → `SEB #$40,P4` (hoparlör açık) | `APRS_HOPARLOR`: APRS menüsündeyse P46 = 0 |
 | `VFO_KANCA` (0x00F84D) | | `APRS_KANCA`: menü zaman aşımını yeniler, menüden çıkılınca sentezör kaydını geri yükler |
 
-**Simülatörde doğrulama** (`test_ozel.js`, `disasm/sim/afsk.js`): TA1'e yazılan örnekler firmware'den bağımsız bir çözücüden geçirilir (1200/2200 Hz enerjisi, bit saati, NRZI, bit doldurma, CRC). Paket bayt bayt çözülür, FCS doğru, süre 0,754 s, örnekleme 9600 Hz. Tip B kart ve gerçek telsizin EEPROM'uyla da çözüldü.
+**Simülatörde doğrulama** (`test_ozel.js`, `disasm/sim/afsk.js`): TA1'e yazılan örnekler firmware'den bağımsız bir çözücüden geçirilir (1200/2200 Hz enerjisi, bit saati, NRZI, bit doldurma, CRC). Üç farklı ayarla paket bayt bayt çözülür (SSID'siz, iki haneli SSID, güney / batı, 6 haneli boylam, boş yorum, tek karakterli simge); dört hatalı ayarda hata ekranı çıkar ve paket gitmez. Örnekleme 9600 Hz.
 
 **Gerçek cihazda dikkat.**
 
