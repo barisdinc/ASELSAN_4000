@@ -1,0 +1,705 @@
+000000  00 00 00 00 00 00 …          .ORG $005591
+005591                               .EXPECT $BF,$88,$31,$00
+005591                               .ASSUME M=0,X=0
+005591  BF 00 10 01                  LDA   A,>MENU_NEXT,X
+005595  00 00 00 00 00 00 …          .ORG $005641
+005641                               .EXPECT $BF,$88,$31,$00
+005641  BF 00 10 01                  LDA   A,>MENU_NEXT,X
+005645  00 00 00 00 00 00 …          .ORG $0056B9
+0056B9                               .EXPECT $BF,$88,$31,$00
+0056B9  BF 00 10 01                  LDA   A,>MENU_NEXT,X
+0056BD                               .ORG $005664
+005664                               .EXPECT $BF,$9E,$31,$00
+005664  BF 1A 10 01                  LDA   A,>MENU_S+2,X
+005668  00 00 00 00 00 00 …          .ORG $005693
+005693                               .EXPECT $BF,$9E,$31,$00
+005693  BF 1A 10 01                  LDA   A,>MENU_S+2,X
+005697  00 00 00 00 00 00 …          .ORG $0056CE
+0056CE                               .EXPECT $BF,$9E,$31,$00
+0056CE  BF 1A 10 01                  LDA   A,>MENU_S+2,X
+0056D2                               .ORG $00566D
+00566D                               .EXPECT $BF,$9C,$31,$00
+00566D  BF 18 10 01                  LDA   A,>MENU_S,X
+005671  00 00 00 00 00 00 …          .ORG $00569C
+00569C                               .EXPECT $BF,$9C,$31,$00
+00569C  BF 18 10 01                  LDA   A,>MENU_S,X
+0056A0  00 00 00 00 00 00 …          .ORG $0056AC
+0056AC                               .EXPECT $BF,$9C,$31,$00
+0056AC  BF 18 10 01                  LDA   A,>MENU_S,X
+0056B0  00 00 00 00 00 00 …          .ORG $0056D7
+0056D7                               .EXPECT $BF,$9C,$31,$00
+0056D7  BF 18 10 01                  LDA   A,>MENU_S,X
+0056DB                               .ORG $0033C4
+0033C4                               .ASSUME M=0,X=0
+0033C4                               .EXPECT $69,$86,$2E
+0033C4  69 38 11                     ADC   A,#TITLES_TR & $FFFF
+0033C7  00 00 00                     .ORG $0033CA
+0033CA                               .ASSUME M=1,X=0
+0033CA                               .EXPECT $64,$05,$00
+0033CA  64 05 01                     LDM   #bank(TITLES_TR),$05
+0033CD  00 00 00 00 00 00 …          .ORG $0033DA
+0033DA                               .ASSUME M=0,X=0
+0033DA                               .EXPECT $69,$E6,$2D
+0033DA  69 78 10                     ADC   A,#TITLES_EN & $FFFF
+0033DD  00 00 00                     .ORG $0033E0
+0033E0                               .ASSUME M=1,X=0
+0033E0                               .EXPECT $64,$05,$00
+0033E0  64 05 01                     LDM   #bank(TITLES_EN),$05
+0033E3  00 00 00 00 00 00 …          .ORG $00348A
+00348A                               .ASSUME M=0,X=0
+00348A                               .EXPECT $69,$86,$2E
+00348A  69 38 11                     ADC   A,#TITLES_TR & $FFFF
+00348D  00 00 00                     .ORG $003490
+003490                               .ASSUME M=1,X=0
+003490                               .EXPECT $64,$05,$00
+003490  64 05 01                     LDM   #bank(TITLES_TR),$05
+003493  00 00 00 00 00 00 …          .ORG $0034A0
+0034A0                               .ASSUME M=0,X=0
+0034A0                               .EXPECT $69,$E6,$2D
+0034A0  69 78 10                     ADC   A,#TITLES_EN & $FFFF
+0034A3  00 00 00                     .ORG $0034A6
+0034A6                               .ASSUME M=1,X=0
+0034A6                               .EXPECT $64,$05,$00
+0034A6  64 05 01                     LDM   #bank(TITLES_EN),$05
+0034A9                               .ASSUME M=0,X=0
+0034A9  00 00 00 00 00 00 …          .ORG $011000
+011000  01 02                        .COPY $003188, 2                ; durum 0, 1
+011002  14                           .BYTE ST_SAYI                   ; durum 2 (LIST) -> SAYI
+011003  03 08 06 07 04 00 …          .COPY $00318B, N_OLD-3          ; durum 3..$13
+011014  16                           .BYTE ST_HESAP                  ; $14 SAYI  -> HESAP
+011015  00                           .BYTE $00                       ; $15 etkin -> m = normal ekran
+011016  11                           .BYTE $11                       ; $16 HESAP -> RADIO (eskiden LIST'ten sonra gelen)
+011017  00                           .BYTE $00                       ; $17 etkin -> m = normal ekran
+011018  00 4A 37 00 01 9A …          .COPY $00319C, 4*N_OLD
+011068  15                           .BYTE ST_SAYI_ON                ; $14
+011069  F8 11 01                     .LONG SAYI_GIR
+01106C  15                           .BYTE ST_SAYI_ON                ; $15
+01106D  10 12 01                     .LONG SAYI_TUS
+011070  17                           .BYTE ST_HESAP_ON               ; $16
+011071  B0 12 01                     .LONG HESAP_GIR
+011074  17                           .BYTE ST_HESAP_ON               ; $17
+011075  C4 12 01                     .LONG HESAP_TUS
+011078  20 20 20 43 48 20 …          .COPY $002DE6, 8*N_OLD
+011118  4E 55 4D 42 45 52 …          .TEXT8 "NUMBER"
+011120  20 20 20 20 20 20 …          .TEXT8 ""
+011128  43 41 4C 43 20 20 …          .TEXT8 "CALC"
+011130  20 20 20 20 20 20 …          .TEXT8 ""
+011138  4B 41 4E 41 4C 20 …          .COPY $002E86, 8*N_OLD
+0111D8  53 41 59 49 20 20 …          .TEXT8 "SAYI"
+0111E0  20 20 20 20 20 20 …          .TEXT8 ""
+0111E8  48 45 53 41 50 20 …          .TEXT8 "HESAP"
+0111F0  20 20 20 20 20 20 …          .TEXT8 ""
+0111F8                               .ASSUME M=0,X=0
+0111F8  A3 04                        LDA   A,$04,S
+0111FA  48                           PHA
+0111FB  9C DF 02 10 12               LDM   #SAYI_TUS & $FFFF,HANDLER
+011200  F8                           SEM
+011201  9C E1 02 01                  LDM   #bank(SAYI_TUS),HANDLER_BK
+011205  9C 93 02 00                  LDM   #0,NDIGIT
+011209  9C 92 02 00                  LDM   #0,REVFLAG
+01120D  4C 61 12                     JMP   CIZ
+011210                               .ASSUME M=0,X=0
+011210  A3 04                        LDA   A,$04,S
+011212  48                           PHA
+011213  F8                           SEM
+011214  AD 26 02                     LDA   A,KEY
+011217  C9 64                        CMP   A,#'d'
+011219  F0 16                        BEQ   RAKAM
+01121B  C9 2A                        CMP   A,#'*'
+01121D  F0 2C                        BEQ   SIL
+01121F  C9 23                        CMP   A,#'#'
+011221  F0 36                        BEQ   TEMIZLE
+011223  C9 73                        CMP   A,#'s'
+011225  D0 3A                        BNE   CIZ
+011227  AD 92 02                     LDA   A,REVFLAG                 ; s: ters / düz
+01122A  49 01                        EOR   A,#1
+01122C  8D 92 02                     STA   A,REVFLAG
+01122F  80 30                        BRA   CIZ
+011231  9C 92 02 00          RAKAM:  LDM   #0,REVFLAG
+011235  AD 93 02                     LDA   A,NDIGIT
+011238  C9 09                        CMP   A,#9                      ; 9. hane geldiyse geri al ve bip
+01123A  90 25                        BCC   CIZ
+01123C  9C 93 02 08                  LDM   #8,NDIGIT
+011240  D8                           CLM
+011241  A0 0D 00                     LDY   #13
+011244  22 AA 80 00                  JSRL  F_BEEP
+011248  F8                           SEM
+011249  80 16                        BRA   CIZ
+01124B  9C 92 02 00          SIL:    LDM   #0,REVFLAG
+01124F  AD 93 02                     LDA   A,NDIGIT
+011252  F0 0D                        BEQ   CIZ
+011254  CE 93 02                     DEC   NDIGIT
+011257  80 08                        BRA   CIZ
+011259  9C 93 02 00                  LDM   #0,NDIGIT
+01125D  9C 92 02 00                  LDM   #0,REVFLAG
+011261                       CIZ:    .ASSUME M=1,X=0
+011261  A2 00 00                     LDX   #0
+011264  A9 20                        LDA   A,#' '
+011266  9D 52 02             BOSLUK: STA   A,LCD,X
+011269  E8                           INX
+01126A  E0 08 00                     CPX   #8
+01126D  D0 F7                        BNE   BOSLUK
+01126F  D8                           CLM                             ; Y = rakam sayısı (16 bit)
+011270  AD 93 02                     LDA   A,NDIGIT
+011273  29 FF 00                     AND   A,#$00FF
+011276  A8                           TAY
+011277  F8                           SEM
+011278  A2 00 00                     LDX   #0
+01127B  AD 92 02                     LDA   A,REVFLAG
+01127E  D0 1B                        BNE   TERS
+011280  C0 00 00                     CPY   #0                        ; düz: LCD[i] = DIGITS[i]
+011283  F0 0A                        BEQ   IMLEC
+011285  BD 83 02             DUZ:    LDA   A,DIGITS,X
+011288  9D 52 02                     STA   A,LCD,X
+01128B  E8                           INX
+01128C  88                           DEY
+01128D  D0 F6                        BNE   DUZ
+01128F  E0 08 00             IMLEC:  CPX   #8                        ; yer varsa imleç
+011292  F0 19                        BEQ   BITTI
+011294  A9 5F                        LDA   A,#'_'
+011296  9D 52 02                     STA   A,LCD,X
+011299  80 12                        BRA   BITTI
+01129B  C0 00 00             TERS:   CPY   #0                        ; ters: LCD[i] = DIGITS[n-1-i]
+01129E  F0 0D                        BEQ   BITTI
+0112A0  88                   TLOOP:  DEY
+0112A1  B9 83 02                     LDA   A,DIGITS,Y
+0112A4  9D 52 02                     STA   A,LCD,X
+0112A7  E8                           INX
+0112A8  C0 00 00                     CPY   #0
+0112AB  D0 F3                        BNE   TLOOP
+0112AD  D8                   BITTI:  CLM
+0112AE  68                           PLA
+0112AF  6B                           RTL
+0112B0                               .ASSUME M=0,X=0
+0112B0  A3 04                        LDA   A,$04,S
+0112B2  48                           PHA
+0112B3  9C DF 02 C4 12               LDM   #HESAP_TUS & $FFFF,HANDLER
+0112B8  F8                           SEM
+0112B9  9C E1 02 01                  LDM   #bank(HESAP_TUS),HANDLER_BK
+0112BD  D8                           CLM
+0112BE  20 29 14                     JSR   HS_TEMIZLE
+0112C1  4C EA 12                     JMP   HK_SON
+0112C4                               .ASSUME M=0,X=0
+0112C4  A3 04                        LDA   A,$04,S
+0112C6  48                           PHA
+0112C7  F8                           SEM
+0112C8  AD 26 02                     LDA   A,KEY
+0112CB  C9 73                        CMP   A,#'s'
+0112CD  F0 17                        BEQ   HK_S
+0112CF  2C 12 05 04 16               BBS   #F_HATA,HS_FLG,HK_SON     ; hata gösterilirken yalnız s
+0112D4  C9 64                        CMP   A,#'d'
+0112D6  F0 18                        BEQ   HK_RAKAM
+0112D8  C9 2A                        CMP   A,#'*'
+0112DA  D0 03                        BNE   HK_1
+0112DC  4C 85 13                     JMP   HK_OP
+0112DF  C9 23                HK_1:   CMP   A,#'#'
+0112E1  D0 07                        BNE   HK_SON
+0112E3  4C E0 13                     JMP   HK_ESIT
+0112E6  D8                   HK_S:   CLM
+0112E7  20 29 14                     JSR   HS_TEMIZLE
+0112EA  D8                   HK_SON: CLM
+0112EB  20 A8 15                     JSR   HS_EKRAN
+0112EE  68                           PLA
+0112EF  6B                           RTL
+0112F0                               .ASSUME M=1,X=0
+0112F0  AD 93 02                     LDA   A,NDIGIT
+0112F3  1A                           DEC   A
+0112F4  D8                           CLM
+0112F5  29 0F 00                     AND   A,#$000F
+0112F8  AA                           TAX
+0112F9  F8                           SEM
+0112FA  BD 83 02                     LDA   A,DIGITS,X
+0112FD  38                           SEC
+0112FE  E9 30                        SBC   A,#'0'
+011300  8D 14 05                     STA   A,HS_DIG
+011303  9C 93 02 00                  LDM   #0,NDIGIT
+011307  3C 12 05 02 11               BBC   #F_SONUC,HS_FLG,HR_1      ; sonuç gösterilirken rakam: yeni hesap
+01130C  AD 10 05                     LDA   A,HS_OP
+01130F  D0 0C                        BNE   HR_1
+011311  D8                           CLM
+011312  9C 00 05 00 00               LDM   #0,HS_ACC
+011317  9C 02 05 00 00               LDM   #0,HS_ACC+2
+01131C  F8                           SEM
+01131D  AD 11 05             HR_1:   LDA   A,HS_NDIG
+011320  C9 08                        CMP   A,#8
+011322  90 0A                        BCC   HR_2
+011324  D8                           CLM                             ; 9. hane: bip, yok say
+011325  A0 0D 00                     LDY   #13
+011328  22 AA 80 00                  JSRL  F_BEEP
+01132C  80 BC                        BRA   HK_SON
+01132E  D8                   HR_2:   CLM                             ; CUR = CUR*10 + rakam  (10x = 8x + 2x)
+01132F  AD 04 05                     LDA   A,HS_CUR
+011332  0A                           ASL   A
+011333  8D 08 05                     STA   A,HS_T
+011336  AD 06 05                     LDA   A,HS_CUR+2
+011339  2A                           ROL   A
+01133A  8D 0A 05                     STA   A,HS_T+2                  ; T = 2*CUR
+01133D  AD 08 05                     LDA   A,HS_T
+011340  0A                           ASL   A
+011341  8D 0C 05                     STA   A,HS_R
+011344  AD 0A 05                     LDA   A,HS_T+2
+011347  2A                           ROL   A
+011348  8D 0E 05                     STA   A,HS_R+2
+01134B  0E 0C 05                     ASL   HS_R
+01134E  2E 0E 05                     ROL   HS_R+2                    ; R = 8*CUR
+011351  18                           CLC
+011352  AD 0C 05                     LDA   A,HS_R
+011355  6D 08 05                     ADC   A,HS_T
+011358  8D 04 05                     STA   A,HS_CUR
+01135B  AD 0E 05                     LDA   A,HS_R+2
+01135E  6D 0A 05                     ADC   A,HS_T+2
+011361  8D 06 05                     STA   A,HS_CUR+2
+011364  AD 14 05                     LDA   A,HS_DIG
+011367  29 FF 00                     AND   A,#$00FF
+01136A  18                           CLC
+01136B  6D 04 05                     ADC   A,HS_CUR
+01136E  8D 04 05                     STA   A,HS_CUR
+011371  AD 06 05                     LDA   A,HS_CUR+2
+011374  69 00 00                     ADC   A,#0
+011377  8D 06 05                     STA   A,HS_CUR+2
+01137A  F8                           SEM
+01137B  EE 11 05                     INC   HS_NDIG
+01137E  1C 12 05 03                  CLB   #F_SONISLEM|F_SONUC,HS_FLG
+011382  4C EA 12                     JMP   HK_SON
+011385                       HK_OP:  .ASSUME M=1,X=0
+011385  3C 12 05 01 23               BBC   #F_SONISLEM,HS_FLG,HO_YENI
+01138A  AD 10 05                     LDA   A,HS_OP                   ; art arda: + -> - -> * -> / -> +
+01138D  C9 2B                        CMP   A,#'+'
+01138F  D0 04                        BNE   HO_1
+011391  A9 2D                        LDA   A,#'-'
+011393  80 12                        BRA   HO_YAZ
+011395  C9 2D                HO_1:   CMP   A,#'-'
+011397  D0 04                        BNE   HO_2
+011399  A9 2A                        LDA   A,#'*'
+01139B  80 0A                        BRA   HO_YAZ
+01139D  C9 2A                HO_2:   CMP   A,#'*'
+01139F  D0 04                        BNE   HO_3
+0113A1  A9 2F                        LDA   A,#'/'
+0113A3  80 02                        BRA   HO_YAZ
+0113A5  A9 2B                HO_3:   LDA   A,#'+'
+0113A7  8D 10 05             HO_YAZ: STA   A,HS_OP
+0113AA  4C EA 12                     JMP   HK_SON
+0113AD  AD 11 05                     LDA   A,HS_NDIG
+0113B0  F0 1A                        BEQ   HO_KUR                    ; yeni sayı yok: ACC üzerinde işlem seç
+0113B2  AD 10 05                     LDA   A,HS_OP
+0113B5  F0 07                        BEQ   HO_KOPYA
+0113B7  D8                           CLM
+0113B8  20 4C 14                     JSR   HS_ISLEM                  ; zincirleme: önce bekleyen işlemi yap
+0113BB  F8                           SEM
+0113BC  80 0E                        BRA   HO_KUR
+0113BE  D8                           CLM
+0113BF  AD 04 05                     LDA   A,HS_CUR
+0113C2  8D 00 05                     STA   A,HS_ACC
+0113C5  AD 06 05                     LDA   A,HS_CUR+2
+0113C8  8D 02 05                     STA   A,HS_ACC+2
+0113CB  F8                           SEM
+0113CC  9C 10 05 2B          HO_KUR: LDM   #'+',HS_OP
+0113D0  20 18 14                     JSR   HS_GIRDI_BITIR
+0113D3  AD 12 05                     LDA   A,HS_FLG
+0113D6  29 FC                        AND   A,#~(F_SONISLEM|F_SONUC)
+0113D8  09 01                        ORA   A,#F_SONISLEM
+0113DA  8D 12 05                     STA   A,HS_FLG
+0113DD  4C EA 12                     JMP   HK_SON
+0113E0                               .ASSUME M=1,X=0
+0113E0  AD 10 05                     LDA   A,HS_OP
+0113E3  F0 0C                        BEQ   HE_YOK
+0113E5  AD 11 05                     LDA   A,HS_NDIG
+0113E8  F0 1A                        BEQ   HE_BITIR                  ; ikinci sayı girilmedi: işlemi bırak
+0113EA  D8                           CLM
+0113EB  20 4C 14                     JSR   HS_ISLEM
+0113EE  F8                           SEM
+0113EF  80 13                        BRA   HE_BITIR
+0113F1  AD 11 05             HE_YOK: LDA   A,HS_NDIG                 ; işlem yok: girilen sayı sonuç olur
+0113F4  F0 0E                        BEQ   HE_BITIR
+0113F6  D8                           CLM
+0113F7  AD 04 05                     LDA   A,HS_CUR
+0113FA  8D 00 05                     STA   A,HS_ACC
+0113FD  AD 06 05                     LDA   A,HS_CUR+2
+011400  8D 02 05                     STA   A,HS_ACC+2
+011403  F8                           SEM
+011404  9C 10 05 00                  LDM   #0,HS_OP
+011408  20 18 14                     JSR   HS_GIRDI_BITIR
+01140B  AD 12 05                     LDA   A,HS_FLG
+01140E  29 FC                        AND   A,#~(F_SONISLEM|F_SONUC)
+011410  09 02                        ORA   A,#F_SONUC
+011412  8D 12 05                     STA   A,HS_FLG
+011415  4C EA 12                     JMP   HK_SON
+011418                               .ASSUME M=1,X=0
+011418  9C 11 05 00                  LDM   #0,HS_NDIG
+01141C  D8                           CLM
+01141D  9C 04 05 00 00               LDM   #0,HS_CUR
+011422  9C 06 05 00 00               LDM   #0,HS_CUR+2
+011427  F8                           SEM
+011428  60                           RTS
+011429                               .ASSUME M=0,X=0
+011429  9C 00 05 00 00               LDM   #0,HS_ACC
+01142E  9C 02 05 00 00               LDM   #0,HS_ACC+2
+011433  9C 04 05 00 00               LDM   #0,HS_CUR
+011438  9C 06 05 00 00               LDM   #0,HS_CUR+2
+01143D  F8                           SEM
+01143E  9C 10 05 00                  LDM   #0,HS_OP
+011442  9C 11 05 00                  LDM   #0,HS_NDIG
+011446  9C 12 05 00                  LDM   #0,HS_FLG
+01144A  D8                           CLM
+01144B  60                           RTS
+01144C                               .ASSUME M=0,X=0
+01144C  F8                           SEM
+01144D  AD 10 05                     LDA   A,HS_OP
+011450  C9 2D                        CMP   A,#'-'
+011452  F0 1F                        BEQ   HI_CIKAR
+011454  C9 2A                        CMP   A,#'*'
+011456  F0 32                        BEQ   HI_CARP
+011458  C9 2F                        CMP   A,#'/'
+01145A  F0 32                        BEQ   HI_BOL
+01145C  D8                           CLM                             ; '+'
+01145D  18                           CLC
+01145E  AD 00 05                     LDA   A,HS_ACC
+011461  6D 04 05                     ADC   A,HS_CUR
+011464  8D 00 05                     STA   A,HS_ACC
+011467  AD 02 05                     LDA   A,HS_ACC+2
+01146A  6D 06 05                     ADC   A,HS_CUR+2
+01146D  8D 02 05                     STA   A,HS_ACC+2
+011470  4C 78 15                     JMP   HS_ARALIK
+011473  D8                           CLM
+011474  38                           SEC
+011475  AD 00 05                     LDA   A,HS_ACC
+011478  ED 04 05                     SBC   A,HS_CUR
+01147B  8D 00 05                     STA   A,HS_ACC
+01147E  AD 02 05                     LDA   A,HS_ACC+2
+011481  ED 06 05                     SBC   A,HS_CUR+2
+011484  8D 02 05                     STA   A,HS_ACC+2
+011487  4C 78 15                     JMP   HS_ARALIK
+01148A  D8                           CLM
+01148B  4C 92 14                     JMP   HS_CARP
+01148E  D8                   HI_BOL: CLM
+01148F  4C F9 14                     JMP   HS_BOL
+011492                               .ASSUME M=0,X=0
+011492  20 42 15                     JSR   HS_MUTLAK
+011495  AD 00 05                     LDA   A,HS_ACC
+011498  8D 08 05                     STA   A,HS_T
+01149B  AD 02 05                     LDA   A,HS_ACC+2
+01149E  8D 0A 05                     STA   A,HS_T+2
+0114A1  9C 0C 05 00 00               LDM   #0,HS_R
+0114A6  9C 0E 05 00 00               LDM   #0,HS_R+2
+0114AB  AD 04 05             HC_DON: LDA   A,HS_CUR
+0114AE  0D 06 05                     ORA   A,HS_CUR+2
+0114B1  F0 2F                        BEQ   HC_BITTI
+0114B3  4E 06 05                     LSR   HS_CUR+2
+0114B6  6E 04 05                     ROR   HS_CUR                    ; en düşük bit -> C
+0114B9  90 15                        BCC   HC_KAYDIR
+0114BB  18                           CLC
+0114BC  AD 0C 05                     LDA   A,HS_R
+0114BF  6D 08 05                     ADC   A,HS_T
+0114C2  8D 0C 05                     STA   A,HS_R
+0114C5  AD 0E 05                     LDA   A,HS_R+2
+0114C8  6D 0A 05                     ADC   A,HS_T+2
+0114CB  8D 0E 05                     STA   A,HS_R+2
+0114CE  B0 26                        BCS   HC_TASMA
+0114D0  AD 04 05                     LDA   A,HS_CUR
+0114D3  0D 06 05                     ORA   A,HS_CUR+2
+0114D6  F0 0A                        BEQ   HC_BITTI
+0114D8  0E 08 05                     ASL   HS_T                      ; çarpan bitmediyse çarpılan 32 biti aşamaz
+0114DB  2E 0A 05                     ROL   HS_T+2
+0114DE  B0 16                        BCS   HC_TASMA
+0114E0  80 C9                        BRA   HC_DON
+0114E2  AD 0E 05                     LDA   A,HS_R+2
+0114E5  30 0F                        BMI   HC_TASMA                  ; >= 2^31
+0114E7  8D 02 05                     STA   A,HS_ACC+2
+0114EA  AD 0C 05                     LDA   A,HS_R
+0114ED  8D 00 05                     STA   A,HS_ACC
+0114F0  20 57 15                     JSR   HS_ISARET
+0114F3  4C 78 15                     JMP   HS_ARALIK
+0114F6  4C 9D 15                     JMP   HS_HATA
+0114F9                               .ASSUME M=0,X=0
+0114F9  AD 04 05                     LDA   A,HS_CUR
+0114FC  0D 06 05                     ORA   A,HS_CUR+2
+0114FF  D0 03                        BNE   HB_1
+011501  4C 9D 15                     JMP   HS_HATA                   ; sıfıra bölme
+011504  20 42 15             HB_1:   JSR   HS_MUTLAK
+011507  9C 0C 05 00 00               LDM   #0,HS_R
+01150C  9C 0E 05 00 00               LDM   #0,HS_R+2
+011511  A2 20 00                     LDX   #32
+011514  0E 00 05             HB_DON: ASL   HS_ACC                    ; R:ACC sola kaydır
+011517  2E 02 05                     ROL   HS_ACC+2
+01151A  2E 0C 05                     ROL   HS_R
+01151D  2E 0E 05                     ROL   HS_R+2
+011520  38                           SEC                             ; R >= CUR ise R -= CUR, bölüm bitini 1 yap
+011521  AD 0C 05                     LDA   A,HS_R
+011524  ED 04 05                     SBC   A,HS_CUR
+011527  A8                           TAY
+011528  AD 0E 05                     LDA   A,HS_R+2
+01152B  ED 06 05                     SBC   A,HS_CUR+2
+01152E  90 09                        BCC   HB_2
+011530  8D 0E 05                     STA   A,HS_R+2
+011533  8C 0C 05                     STY   HS_R
+011536  EE 00 05                     INC   HS_ACC                    ; kaydırmadan sonra bit 0 boş
+011539  CA                   HB_2:   DEX
+01153A  D0 D8                        BNE   HB_DON
+01153C  20 57 15                     JSR   HS_ISARET
+01153F  4C 78 15                     JMP   HS_ARALIK
+011542                               .ASSUME M=0,X=0
+011542  F8                           SEM
+011543  9C 13 05 00                  LDM   #0,HS_NEG
+011547  D8                           CLM
+011548  AD 02 05                     LDA   A,HS_ACC+2
+01154B  10 09                        BPL   HM_1
+01154D  F8                           SEM
+01154E  9C 13 05 01                  LDM   #1,HS_NEG
+011552  D8                           CLM
+011553  20 5E 15                     JSR   HS_EKSI_ACC
+011556  60                   HM_1:   RTS
+011557                               .ASSUME M=0,X=0
+011557  F8                           SEM
+011558  AD 13 05                     LDA   A,HS_NEG
+01155B  D8                           CLM
+01155C  F0 F8                        BEQ   HM_1
+01155E  AD 00 05                     LDA   A,HS_ACC
+011561  49 FF FF                     EOR   A,#$FFFF
+011564  18                           CLC
+011565  69 01 00                     ADC   A,#1
+011568  8D 00 05                     STA   A,HS_ACC
+01156B  AD 02 05                     LDA   A,HS_ACC+2
+01156E  49 FF FF                     EOR   A,#$FFFF
+011571  69 00 00                     ADC   A,#0
+011574  8D 02 05                     STA   A,HS_ACC+2
+011577  60                           RTS
+011578                               .ASSUME M=0,X=0
+011578  AD 02 05                     LDA   A,HS_ACC+2
+01157B  30 10                        BMI   HA_EKSI
+01157D  C9 F5 05                     CMP   A,#99999999 >> 16
+011580  90 0A                        BCC   HA_TAMAM
+011582  D0 19                        BNE   HS_HATA
+011584  AD 00 05                     LDA   A,HS_ACC
+011587  C9 00 E1                     CMP   A,#(99999999 + 1) & $FFFF
+01158A  B0 11                        BCS   HS_HATA
+01158C  60                           RTS
+01158D  C9 67 FF                     CMP   A,#(-9999999 >> 16) & $FFFF
+011590  90 0B                        BCC   HS_HATA
+011592  D0 F8                        BNE   HA_TAMAM
+011594  AD 00 05                     LDA   A,HS_ACC
+011597  C9 81 69                     CMP   A,#-9999999 & $FFFF
+01159A  90 01                        BCC   HS_HATA
+01159C  60                           RTS
+01159D  F8                           SEM
+01159E  AD 12 05                     LDA   A,HS_FLG
+0115A1  09 04                        ORA   A,#F_HATA
+0115A3  8D 12 05                     STA   A,HS_FLG
+0115A6  D8                           CLM
+0115A7  60                           RTS
+0115A8                               .ASSUME M=0,X=0
+0115A8  F8                           SEM
+0115A9  3C 12 05 04 28               BBC   #F_HATA,HS_FLG,HY_SAYI
+0115AE  A2 00 00                     LDX   #0
+0115B1  2C 40 03 80 10               BBS   #$80,OPTIONS,HY_TR
+0115B6  BF C3 16 01          HY_EN:  LDA   A,>TXT_ERROR,X
+0115BA  9D 52 02                     STA   A,LCD,X
+0115BD  E8                           INX
+0115BE  E0 08 00                     CPX   #8
+0115C1  D0 F3                        BNE   HY_EN
+0115C3  4C A1 16                     JMP   HY_SON
+0115C6  BF CB 16 01          HY_TR:  LDA   A,>TXT_HATA,X
+0115CA  9D 52 02                     STA   A,LCD,X
+0115CD  E8                           INX
+0115CE  E0 08 00                     CPX   #8
+0115D1  D0 F3                        BNE   HY_TR
+0115D3  4C A1 16                     JMP   HY_SON
+0115D6  AD 11 05                     LDA   A,HS_NDIG                 ; R = gösterilecek sayı
+0115D9  D8                           CLM
+0115DA  F0 0E                        BEQ   HY_ACC
+0115DC  AD 04 05                     LDA   A,HS_CUR
+0115DF  8D 0C 05                     STA   A,HS_R
+0115E2  AD 06 05                     LDA   A,HS_CUR+2
+0115E5  8D 0E 05                     STA   A,HS_R+2
+0115E8  80 0C                        BRA   HY_ISARET
+0115EA  AD 00 05             HY_ACC: LDA   A,HS_ACC
+0115ED  8D 0C 05                     STA   A,HS_R
+0115F0  AD 02 05                     LDA   A,HS_ACC+2
+0115F3  8D 0E 05                     STA   A,HS_R+2
+0115F6  F8                           SEM
+0115F7  9C 13 05 00                  LDM   #0,HS_NEG
+0115FB  9C 15 05 00                  LDM   #0,HS_BAS
+0115FF  D8                           CLM
+011600  AD 0E 05                     LDA   A,HS_R+2
+011603  10 1F                        BPL   HY_BASLA
+011605  F8                           SEM
+011606  9C 13 05 01                  LDM   #1,HS_NEG
+01160A  D8                           CLM
+01160B  AD 0C 05                     LDA   A,HS_R                    ; R = -R
+01160E  49 FF FF                     EOR   A,#$FFFF
+011611  18                           CLC
+011612  69 01 00                     ADC   A,#1
+011615  8D 0C 05                     STA   A,HS_R
+011618  AD 0E 05                     LDA   A,HS_R+2
+01161B  49 FF FF                     EOR   A,#$FFFF
+01161E  69 00 00                     ADC   A,#0
+011621  8D 0E 05                     STA   A,HS_R+2
+011624  A2 00 00                     LDX   #0
+011627  A0 00 00                     LDY   #0
+01162A  F8                           SEM
+01162B  9C 14 05 30                  LDM   #'0',HS_DIG
+01162F  D8                           CLM
+011630  38                           SEC
+011631  AD 0C 05                     LDA   A,HS_R
+011634  FF A3 16 01                  SBC   A,>POW10,X
+011638  8D 08 05                     STA   A,HS_T
+01163B  AD 0E 05                     LDA   A,HS_R+2
+01163E  FF A5 16 01                  SBC   A,>POW10+2,X
+011642  90 10                        BCC   HY_HANE
+011644  8D 0E 05                     STA   A,HS_R+2
+011647  AD 08 05                     LDA   A,HS_T
+01164A  8D 0C 05                     STA   A,HS_R
+01164D  F8                           SEM
+01164E  EE 14 05                     INC   HS_DIG
+011651  D8                           CLM
+011652  80 DC                        BRA   HY_CIKAR
+011654  F8                           SEM
+011655  AD 14 05                     LDA   A,HS_DIG
+011658  C9 30                        CMP   A,#'0'
+01165A  D0 0E                        BNE   HY_GOSTER
+01165C  AD 15 05                     LDA   A,HS_BAS
+01165F  D0 09                        BNE   HY_GOSTER
+011661  C0 07 00                     CPY   #7                        ; son hane her zaman gösterilir
+011664  F0 04                        BEQ   HY_GOSTER
+011666  A9 20                        LDA   A,#' '                    ; baştaki sıfır
+011668  80 16                        BRA   HY_KOY
+01166A  AD 15 05                     LDA   A,HS_BAS
+01166D  D0 0E                        BNE   HY_G2
+01166F  9C 15 05 01                  LDM   #1,HS_BAS                 ; ilk anlamlı hane: önüne eksi
+011673  AD 13 05                     LDA   A,HS_NEG
+011676  F0 05                        BEQ   HY_G2
+011678  A9 2D                        LDA   A,#'-'
+01167A  99 51 02                     STA   A,LCD-1,Y                 ; negatif en çok 7 hane: Y >= 1
+01167D  AD 14 05             HY_G2:  LDA   A,HS_DIG
+011680  99 52 02             HY_KOY: STA   A,LCD,Y
+011683  D8                           CLM
+011684  E8                           INX
+011685  E8                           INX
+011686  E8                           INX
+011687  E8                           INX
+011688  C8                           INY
+011689  C0 08 00                     CPY   #8
+01168C  D0 9C                        BNE   HY_KONUM
+01168E  F8                           SEM                             ; bekleyen işlem en soldaki boş haneye
+01168F  AD 10 05                     LDA   A,HS_OP
+011692  F0 0D                        BEQ   HY_SON
+011694  AD 52 02                     LDA   A,LCD
+011697  C9 20                        CMP   A,#' '
+011699  D0 06                        BNE   HY_SON
+01169B  AD 10 05                     LDA   A,HS_OP
+01169E  8D 52 02                     STA   A,LCD
+0116A1  D8                   HY_SON: CLM
+0116A2  60                           RTS
+0116A3  80 96 98 00 40 42 …  POW10:  .DWORD 10000000, 1000000, 100000, 10000, 1000, 100, 10, 1
+0116C3  45 52 52 4F 52 20 …          .TEXT8 "ERROR"
+0116CB  48 41 54 41 20 20 …          .TEXT8 "HATA"
+
+; semboller
+F_SONISLEM               $000001
+F_SONUC                  $000002
+F_HATA                   $000004
+N_OLD                    $000014
+ST_SAYI                  $000014
+ST_SAYI_ON               $000015
+ST_HESAP                 $000016
+ST_HESAP_ON              $000017
+TA0                      $000046
+TB2                      $000054
+BEEP_SURE                $000214
+KEY                      $000226
+MENU                     $000227
+LCD                      $000252
+DIGITS                   $000283
+REVFLAG                  $000292
+NDIGIT                   $000293
+HANDLER                  $0002DF
+HANDLER_BK               $0002E1
+OPTIONS                  $000340
+OZEL_RAM                 $000500
+HS_ACC                   $000500
+HS_CUR                   $000504
+HS_T                     $000508
+HS_R                     $00050C
+HS_OP                    $000510
+HS_NDIG                  $000511
+HS_FLG                   $000512
+HS_NEG                   $000513
+HS_DIG                   $000514
+HS_BAS                   $000515
+F_DELAY                  $007D7F
+F_BEEP                   $0080AA
+F_LCD                    $00828C
+MENU_NEXT                $011000
+MENU_S                   $011018
+TITLES_EN                $011078
+TITLES_TR                $011138
+SAYI_GIR                 $0111F8
+SAYI_TUS                 $011210
+RAKAM                    $011231
+SIL                      $01124B
+TEMIZLE                  $011259
+CIZ                      $011261
+BOSLUK                   $011266
+DUZ                      $011285
+IMLEC                    $01128F
+TERS                     $01129B
+TLOOP                    $0112A0
+BITTI                    $0112AD
+HESAP_GIR                $0112B0
+HESAP_TUS                $0112C4
+HK_1                     $0112DF
+HK_S                     $0112E6
+HK_SON                   $0112EA
+HK_RAKAM                 $0112F0
+HR_1                     $01131D
+HR_2                     $01132E
+HK_OP                    $011385
+HO_1                     $011395
+HO_2                     $01139D
+HO_3                     $0113A5
+HO_YAZ                   $0113A7
+HO_YENI                  $0113AD
+HO_KOPYA                 $0113BE
+HO_KUR                   $0113CC
+HK_ESIT                  $0113E0
+HE_YOK                   $0113F1
+HE_BITIR                 $011404
+HS_GIRDI_BITIR           $011418
+HS_TEMIZLE               $011429
+HS_ISLEM                 $01144C
+HI_CIKAR                 $011473
+HI_CARP                  $01148A
+HI_BOL                   $01148E
+HS_CARP                  $011492
+HC_DON                   $0114AB
+HC_KAYDIR                $0114D0
+HC_BITTI                 $0114E2
+HC_TASMA                 $0114F6
+HS_BOL                   $0114F9
+HB_1                     $011504
+HB_DON                   $011514
+HB_2                     $011539
+HS_MUTLAK                $011542
+HM_1                     $011556
+HS_ISARET                $011557
+HS_EKSI_ACC              $01155E
+HS_ARALIK                $011578
+HA_TAMAM                 $01158C
+HA_EKSI                  $01158D
+HS_HATA                  $01159D
+HS_EKRAN                 $0115A8
+HY_EN                    $0115B6
+HY_TR                    $0115C6
+HY_SAYI                  $0115D6
+HY_ACC                   $0115EA
+HY_ISARET                $0115F6
+HY_BASLA                 $011624
+HY_KONUM                 $01162A
+HY_CIKAR                 $011630
+HY_HANE                  $011654
+HY_GOSTER                $01166A
+HY_G2                    $01167D
+HY_KOY                   $011680
+HY_SON                   $0116A1
+POW10                    $0116A3
+TXT_ERROR                $0116C3
+TXT_HATA                 $0116CB

@@ -50,3 +50,8 @@ modules.order
 Module.symvers
 Mkfile.old
 dkms.conf
+
+# Firmware images (S-record) are tracked
+!*.HEX
+.DS_Store
+__pycache__/

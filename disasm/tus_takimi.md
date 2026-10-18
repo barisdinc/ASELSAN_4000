@@ -1,0 +1,87 @@
+# Tuş takımı ve panel düğmeleri — YA4000S (A tipi kart)
+
+Koddan çıkarıldı ve simülatörde denendi (`sim/`, `make test-sim`). "Doğrulandı" yazanlar simülatörde çalıştırıldı; diğerleri yalnızca koddan okundu.
+
+Tuşlar: `0–9 * #` ve işlev tuşları `m s p q` (ROM 0x31EC tablosu `*0#q 789p 456s 123m`). Tuş takımı EE[0x014] bit 3 ile açılır.
+
+## Normal ekranda
+
+| Tuş | İş | Koşul | Durum |
+|---|---|---|---|
+| PTT basılıyken `0–9 * #` | DTMF tonu | | Doğrulandı |
+| `m` | Menü (aşağıda) | | Doğrulandı |
+| `p` | Taramayı başlat / durdur. Ekranda **SCAN**; liste boşsa **NO LIST** | Liste dolu olmalı | Doğrulandı |
+| `#` | Seçmeli çağrı ile arama ("C …") | EE[0x014] bit 2, kanalda seçmeli çağrı açık | Doğrulandı |
+| `q` | Monitör (B tipi kartta); A tipinde etkisiz | | |
+| `s`, `*`, rakamlar | Etkisiz | | Doğrulandı |
+
+## Menü (`m` sonraki öğe, `s` gir / seç)
+
+Sıra tablosu ROM 0x3188, `s` tablosu 0x319C (4 bayt: sonraki durum + 24 bit işleyici), ekran şablonları 0x2DE6 (Türkçe 0x2E86, EE[0x018] bit 7). Menü durumu RAM 0x0227, geçerli işleyici RAM 0x02DF/0x02E1. Menüye yeni öğe ekleme örneği: `../ozel_firmware/ornekler/sayi_ters.asm` (ayrıntı `../ozel_firmware/README.md`).
+
+```
+normal ──m──▶ [CHN SCAN] ──m──▶ LIST ──m──▶ [RADIO] ──m──▶ [PRINTER] ──m──▶ [SUB MENU] ──m──▶ normal
+```
+
+- **CHN SCAN** ve **RADIO**: yalnız B tipi kartta (RADIO ayrıca EE[0x000] bit 4).
+- **PRINTER** → `s` → PRINTER / DATE / TIME: EE[0x014] bit 1 ve B tipi kart.
+- **SUB MENU**: EE[0x018] bit 5.
+
+### LIST — tarama listesi (doğrulandı)
+
+`m` (LIST) → `s` → ekranda `CH 01 -`.
+
+| Tuş | İş |
+|---|---|
+| rakamlar | Kanala git (`0 5` → `CH 05`) |
+| `m` | Seçenek: `-` (listede değil) → `EXIT` → `+` (listede) → `P1` → `P2` (öncelikli kanal 1 / 2) → `-` |
+| `s` | Seçeneği kaydet ve sonraki kanala geç; `EXIT` görünürken `s` = menüden çık |
+
+Örnek — kanal 1, 2 ve 5'i listeye ekle, çık, taramayı başlat:
+
+```
+m s  m m s  m m s  0 5 m m s  m s   p
+```
+
+**Tarama:** Liste kanallarını sırayla dinler. Susturma açılınca (kanalda sinyal, P57 = 1) o kanalda durur ve ekranda kanal adı görünür; sinyal gidince devam eder. `p` ile durur. P1/P2 öncelikli kanallarına aralıklarla bakılır (F_00EEE9). Zamanlamalar EE[0x01C] alt 4 bit ve EE[0x025].
+
+### SUB MENU (doğrulandı, EE[0x018] = 0x21 ile)
+
+`s` ile girilir, `m` ile öğeler arasında:
+
+| Öğe | `s` |
+|---|---|
+| LIGHT | Arka ışık aç `*` / kapa `-` (0x023C bit 12) |
+| ALERT | Uyarı sesi aç / kapa (0x023A bit 11) |
+| DISPLAY | `s` → INVERT ↔ NORMAL (`m` ile), ekran ters / normal |
+| PASSWORD | `s` → `NP` parola girişi (OP) |
+| MSR RSSI | `s` → sinyal gücü ölçümü (e80 … e120 dBm); 0x01EB ≥ 3 gerekir |
+
+## `#` — seçmeli çağrı ile arama (doğrulandı)
+
+EEPROM: 0x01B alt 4 bit = toplam hane, 0x01C üst 4 bit = kullanıcının girdiği hane sayısı (N); baştaki haneler sabit önek (kendi filo numarası). EE[0x014] bit 2 ve kanalda seçmeli çağrı açık olmalı.
+
+- `#` → `C GG___` (G: grup / tekrar hanesi, `_`: girilecek hane)
+- Rakamlar haneleri doldurur; `*` bir G hanesi koyar.
+- N hane girilince telsiz **kendiliğinden TX'e geçip** çağrıyı gönderir (0x0244 bit 0 → F_005E56).
+- `m` ya da birkaç saniye beklemek iptal eder.
+
+Örnek: EE[0x01B] = 5, EE[0x01C] = 0x30 → `# 1 2 3` → CCIR "00123" gönderilir.
+
+## Panel düğmeleri (genişletici 0x46, alt 4 bit)
+
+| Bit | İş | Durum |
+|---|---|---|
+| 3 | **Monitör**: ≈1 s bas → susturma ve TKS atlanır, hoparlör (P46) açılır; tekrar bas → kapanır (0x023A bit 13, F_004FF6) | Doğrulandı |
+| 2 | **Güç seviyesi** yüksek / düşük: ≈1 s bas (EE[0x014] bit 7 açıksa kısa basış) → 0x023C bit 4; F_00CEF3 güç tablosu indeksini seçer (0x0277.., 3 seviye). Kısa basış: EE[0x000] bit 2 açıksa 0x023C bit 2 (çözülmedi) | Bayrak doğrulandı; güç farkı EEPROM kalibrasyonuna bağlı, varsayılan EEPROM'da seviyeler eşit |
+| 0, 1 | Firmware'in sürdüğü çıkışlar (düğme değil) | |
+| 4–7 | Kanal anahtarı (16 − kanal) | Doğrulandı |
+
+Seri porttaki uzak tuş komutu (`0A key`, `seri_protokol.md`) aynı işlevleri çağırır: `g` = güç (b2), `n` / `o` = b3 / F_004FF6.
+
+## Simülatörde
+
+- Ekrandaki tuşlar ya da klavye: `0–9 * # m s p q`, boşluk = PTT.
+- "Güç (b2)" / "Monitör (b3)" düğmelerini ≈1 s basılı tutun.
+- Taramayı denemek için "RF ve ses" sekmesinde **Taşıyıcı var** (P57 = 1) kutusunu açıp kapatın.
+- Seçenekler "EEPROM / kanallar" sekmesinde (0x014, hex düzenleyiciyle 0x018, 0x01B, 0x01C).

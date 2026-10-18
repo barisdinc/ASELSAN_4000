@@ -1,0 +1,318 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ASELSAN 4000 Simülatörü</title>
+<style>
+:root {
+  --bg: #f3f2ee; --panel: #ffffff; --ink: #1d1f22; --muted: #6b6f76; --line: #dcdad3;
+  --accent: #2f6fdb; --accent-ink: #ffffff; --bad: #c8372d; --good: #23843b; --warn: #b7791f;
+  --radio: #2b2d31; --radio-2: #3a3d43; --radio-ink: #e9e9e6; --key: #4a4e55; --key-hi: #5b6068;
+  --lcd: #b9c7a3; --lcd-on: #1e2a17; --lcd-off: rgba(30, 42, 23, .07); --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #17181b; --panel: #202227; --ink: #e6e6e3; --muted: #9a9ea6; --line: #33363d;
+  --accent: #5b8ef0; --radio: #0f1012; --radio-2: #1c1e22; --key: #33363d; --key-hi: #41454d;
+} }
+:root[data-theme="dark"] {
+  --bg: #17181b; --panel: #202227; --ink: #e6e6e3; --muted: #9a9ea6; --line: #33363d;
+  --accent: #5b8ef0; --radio: #0f1012; --radio-2: #1c1e22; --key: #33363d; --key-hi: #41454d;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif; }
+header { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 10px 16px; border-bottom: 1px solid var(--line); background: var(--panel); position: sticky; top: 0; z-index: 5; }
+header h1 { font-size: 16px; margin: 0 12px 0 0; font-weight: 650; }
+header .stat { font-family: var(--mono); font-size: 12px; color: var(--muted); margin-left: auto; }
+button, select, input[type=text], input[type=number] { font: inherit; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 5px 9px; }
+button { cursor: pointer; }
+button:hover { border-color: var(--muted); }
+button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+main { display: grid; grid-template-columns: minmax(330px, 410px) 1fr; gap: 16px; padding: 16px; align-items: start; }
+@media (max-width: 900px) { main { grid-template-columns: 1fr; } }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; }
+.card h3 { margin: 0 0 8px; font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); font-weight: 650; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 1250px) { .grid2 { grid-template-columns: 1fr; } }
+.kv { display: grid; grid-template-columns: max-content 1fr; gap: 3px 12px; font-size: 13px; }
+.kv div:nth-child(odd) { color: var(--muted); }
+.mono { font-family: var(--mono); font-size: 12px; }
+.note { color: var(--muted); font-size: 12px; }
+
+/* radio */
+.radio { background: linear-gradient(180deg, var(--radio-2), var(--radio)); color: var(--radio-ink); border-radius: 18px; padding: 16px; box-shadow: 0 8px 24px rgba(0,0,0,.18); user-select: none; }
+.radio .brand { display: flex; justify-content: space-between; font-size: 12px; letter-spacing: .12em; opacity: .8; margin-bottom: 10px; }
+.lcd { background: var(--lcd); border-radius: 8px; padding: 10px 10px 8px; box-shadow: inset 0 2px 6px rgba(0,0,0,.35); }
+.lcd.off { filter: brightness(.6); }
+.lcd-row { display: flex; align-items: flex-end; gap: 6px; }
+.lcd svg { display: block; }
+.lcd .seg { stroke: var(--lcd-off); stroke-width: 4.2; stroke-linecap: round; }
+.lcd .seg.on { stroke: var(--lcd-on); }
+.symbols { display: flex; gap: 3px; margin-top: 6px; flex-wrap: wrap; }
+.symbols span { font: 8px var(--mono); color: var(--lcd-off); border: 1px solid var(--lcd-off); border-radius: 3px; padding: 0 3px; }
+.symbols span.on { color: var(--lcd-on); border-color: var(--lcd-on); }
+.leds { display: flex; gap: 14px; margin: 12px 2px 4px; font-size: 11px; }
+.led { display: flex; align-items: center; gap: 5px; opacity: .85; }
+.led i { width: 10px; height: 10px; border-radius: 50%; background: #555; display: inline-block; box-shadow: inset 0 1px 2px rgba(0,0,0,.5); }
+.led.tx.on i { background: #ff4b3a; box-shadow: 0 0 8px #ff4b3a; }
+.led.rx.on i { background: #3ee06a; box-shadow: 0 0 8px #3ee06a; }
+.led.lock.on i { background: #ffc93a; box-shadow: 0 0 6px #ffc93a; }
+.led.pwr.on i { background: #4aa3ff; box-shadow: 0 0 6px #4aa3ff; }
+.controls { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+.knob { display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,.04); border-radius: 10px; padding: 8px; }
+.knob .dial { width: 54px; height: 54px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #6a6e76, #2a2c30); position: relative; cursor: grab; flex: none; }
+.knob .dial::after { content: ""; position: absolute; width: 4px; height: 18px; background: #e9e9e6; left: 25px; top: 4px; border-radius: 2px; transform-origin: 2px 23px; transform: rotate(var(--rot, 0deg)); }
+.knob .lbl { font-size: 11px; opacity: .75; }
+.knob .val { font: 20px var(--mono); }
+.rbtn { background: var(--key); color: var(--radio-ink); border: none; border-radius: 8px; padding: 8px 6px; font-size: 12px; cursor: pointer; box-shadow: 0 2px 0 rgba(0,0,0,.45); }
+.rbtn:active, .rbtn.down { background: var(--key-hi); transform: translateY(1px); box-shadow: none; }
+.rbtn.latched { outline: 2px solid #ffc93a; }
+.ptt { grid-column: 1 / -1; padding: 14px; font-size: 15px; font-weight: 650; letter-spacing: .06em; background: #5a2b2b; }
+.ptt.down { background: #a8372d; }
+.keypad { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 10px; }
+.keypad .rbtn { font: 15px var(--mono); padding: 9px 0; }
+.small-btns { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 10px; }
+
+/* tabs */
+.tabs { display: flex; gap: 4px; flex-wrap: wrap; border-bottom: 1px solid var(--line); margin-bottom: 12px; }
+.tabs button { border: none; border-bottom: 2px solid transparent; border-radius: 0; background: none; padding: 8px 12px; color: var(--muted); }
+.tabs button.active { color: var(--ink); border-bottom-color: var(--accent); }
+.tab { display: none; }
+.tab.active { display: grid; gap: 12px; }
+.term { background: #0e1013; color: #c9f5c0; font: 12px/1.35 var(--mono); padding: 8px; border-radius: 6px; height: 220px; overflow: auto; white-space: pre-wrap; word-break: break-all; }
+.log { font: 12px/1.35 var(--mono); max-height: 240px; overflow: auto; white-space: pre; background: var(--bg); border-radius: 6px; padding: 6px 8px; }
+.row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.row label { display: flex; gap: 6px; align-items: center; }
+table { border-collapse: collapse; width: 100%; font-size: 12px; }
+th, td { border-bottom: 1px solid var(--line); padding: 3px 6px; text-align: left; }
+td input { width: 100%; font: 12px var(--mono); padding: 2px 4px; }
+.pill { display: inline-block; padding: 1px 7px; border-radius: 999px; font-size: 11px; border: 1px solid var(--line); }
+.pill.ok { color: var(--good); border-color: var(--good); }
+.pill.bad { color: var(--bad); border-color: var(--bad); }
+.dis { font: 12px/1.45 var(--mono); white-space: pre; background: var(--bg); padding: 6px 8px; border-radius: 6px; overflow: auto; max-height: 340px; }
+.dis .cur { background: var(--accent); color: var(--accent-ink); }
+.dis .bp { color: var(--bad); }
+.bits { display: inline-flex; gap: 2px; }
+.bits button { width: 22px; padding: 2px 0; font: 11px var(--mono); }
+.bits button.lo { background: var(--bad); color: #fff; border-color: var(--bad); }
+.bits button.out { opacity: .45; cursor: default; }
+input[type=range] { width: 160px; }
+.toneout { font: 18px var(--mono); }
+</style>
+</head>
+<body>
+<header>
+  <h1>ASELSAN 4000 Simülatörü</h1>
+  <select id="fwSel" title="Firmware"></select>
+  <label class="row"><input type="file" id="fwFile" accept=".hex,.HEX,.s19,.s28,.srec,.mot,.ihx" hidden><button id="fwBtn">HEX yükle…</button></label>
+  <button id="runBtn" class="primary">Duraklat</button>
+  <button id="resetBtn">Reset</button>
+  <select id="speed" title="Hız">
+    <option value="0.1">0,1×</option><option value="0.25">0,25×</option><option value="1" selected>1× gerçek zaman</option><option value="4">4×</option><option value="100">en hızlı</option>
+  </select>
+  <button id="themeBtn" title="Tema">◐</button>
+  <span class="stat" id="stat"></span>
+</header>
+<main>
+  <section>
+    <div class="radio">
+      <div class="brand"><span>ASELSAN</span><span id="fwName">4000</span></div>
+      <div class="lcd" id="lcd">
+        <div class="lcd-row"><div id="lcdChan"></div><div id="lcdText"></div></div>
+        <div class="symbols" id="lcdSym"></div>
+      </div>
+      <div class="leds">
+        <span class="led tx" id="ledTx"><i></i>TX</span>
+        <span class="led rx" id="ledRx"><i></i>Taşıyıcı</span>
+        <span class="led lock" id="ledLock"><i></i>Kilit</span>
+        <span class="led pwr" id="ledPwr"><i></i>Güç (P71)</span>
+      </div>
+      <div class="controls">
+        <div class="knob">
+          <div class="dial" id="dial" title="Sürükle, tekerlek ya da ok tuşları"></div>
+          <div><div class="lbl">Kanal anahtarı (0x46 b7..4)</div><div class="val" id="chanVal">1</div>
+          <div class="row"><button class="rbtn" id="chDn">−</button><button class="rbtn" id="chUp">+</button></div></div>
+        </div>
+        <div style="display:grid;gap:6px">
+          <button class="rbtn" id="btnExt" title="P47 DIS_BAS_KONUS (kalıcı)">Harici PTT (P47)</button>
+          <button class="rbtn" id="btnEmg" title="P45 ACIL_CAGRI">Acil (P45)</button>
+          <button class="rbtn" id="btnIgn" title="P44 (kılavuzda KONTAK_ANAHTARI). Bu kart tipinde (0x335 bit 1 = 0) ikinci PTT girişi; diğer tipte P44=1 TX yasağı">P44 (kontak)</button>
+        </div>
+        <button class="rbtn ptt" id="btnPtt" title="Basılı tut ya da boşluk tuşu">PTT · bas-konuş (P47)</button>
+      </div>
+      <div class="small-btns">
+        <button class="rbtn" data-pb="2" title="Panel 0x46 bit 2. Uzun bas (≈1 s): güç seviyesi yüksek/düşük (RAM 0x023C bit 4 → F_00CEF3 güç tablosu indeksi; EE 0x014 bit 7 açıksa kısa basış yeter)">Güç (b2)</button><button class="rbtn" data-pb="3" title="Panel 0x46 bit 3. ≈1 s bas: monitör (susturma ve TKS atlanır, hoparlör P46 açılır) aç / kapa">Monitör (b3)</button>
+        <button class="rbtn" data-pb="0" title="Panel 0x46 bit 0: firmware'in sürdüğü çıkış, düğme değil">b0 (çıkış)</button><button class="rbtn" data-pb="1" title="Panel 0x46 bit 1: firmware'in sürdüğü çıkış, düğme değil">b1 (çıkış)</button>
+      </div>
+      <div class="keypad" id="keypad"></div>
+    </div>
+    <p class="note">Klavye: <b>boşluk</b> = PTT, <b>0–9 * # m s p q</b> = tuş takımı, <b>←/→</b> = kanal. <b>m</b> menü / seçenek, <b>s</b> seç / onay, <b>p</b> tarama, <b>#</b> seçmeli çağrı, PTT'de rakamlar DTMF. Ayrıntı: <span class="mono">tus_takimi.md</span>.</p>
+  </section>
+
+  <section>
+    <div class="tabs" id="tabs">
+      <button data-tab="rf" class="active">RF ve ses</button>
+      <button data-tab="serial">Seri port</button>
+      <button data-tab="ee">EEPROM / kanallar</button>
+      <button data-tab="io">Analog ve pinler</button>
+      <button data-tab="dbg">Hata ayıklama</button>
+    </div>
+
+    <div class="tab active" id="tab-rf">
+      <div class="grid2">
+        <div class="card"><h3>Sentezör (MB1502)</h3>
+          <div class="kv" id="synthKv"></div>
+          <div class="row" style="margin-top:8px"><label><input type="checkbox" id="lockFault"> Kilit hatası (P67 = 0)</label></div>
+          <p class="note">RF tahmini firmware'in frekans planından: alışta VCO = f + 45 MHz (ön bölücü 64) ya da f − 45 MHz (128), gönderişte VCO = f.</p>
+        </div>
+        <div class="card"><h3>Gönderilen ses (TX)</h3>
+          <div class="kv">
+            <div>TKS (TA2 PWM)</div><div class="toneout" id="txCtcss">—</div>
+            <div>Ton (TA1)</div><div class="toneout" id="txTone">—</div>
+            <div>DTMF</div><div class="toneout" id="txDtmf">—</div>
+          </div>
+          <div class="row" style="margin-top:6px"><label><input type="checkbox" id="audioOn"> Hoparlörden çal</label><button id="clrTxLog">Temizle</button></div>
+          <div class="log" id="txLog" style="max-height:120px"></div>
+        </div>
+      </div>
+      <div class="grid2">
+        <div class="card"><h3>Alınan sinyal (RX girişleri)</h3>
+          <div class="row"><label><input type="checkbox" id="carrier"> Taşıyıcı var (P57 = 1, susturma açık)</label></div>
+          <div class="row" style="margin-top:6px"><label>RSSI (AN5) <input type="range" id="rssi" min="0" max="255" value="20"></label><span class="mono" id="rssiV">20</span></div>
+          <div class="row" style="margin-top:6px"><label>TKS girişi (P65)
+            <select id="ctcssIn"><option value="0">yok</option></select></label>
+            <label><input type="checkbox" id="noiseIn"> gürültü</label></div>
+          <div class="row" style="margin-top:10px"><label>Seçmeli çağrı girişi (P66)
+            <select id="selStd"><option>CCIR</option><option>ZVEI1</option><option>EEA</option></select></label>
+            <input type="text" id="selDigits" value="12345" size="8" class="mono">
+            <button id="selSend">Gönder</button></div>
+          <div class="kv" style="margin-top:8px"><div>Firmware'in çözdüğü</div><div class="mono" id="selRx">—</div></div>
+          <p class="note">Rakam tekrarı otomatik olarak tekrar tonuna (E) çevrilir. Çözülen rakamlar RAM 0x0264..026B'den okunur (kimlik eşleşmezse firmware tamponu siler). Alma için kanalda "Seçmeli çağrı" işaretli ve taşıyıcı açık olmalı. DTMF yalnızca gönderiliyor; firmware'de DTMF çözücü yok.</p>
+        </div>
+        <div class="card"><h3>Durum çıkışları</h3><div class="kv" id="outKv"></div></div>
+      </div>
+    </div>
+
+    <div class="tab" id="tab-serial">
+      <div class="card"><h3>UART0 · RS232 (P82 RxD0 / P83 TxD0)</h3>
+        <div class="row" style="margin-bottom:6px"><span class="mono" id="u0info"></span>
+          <label><input type="radio" name="u0v" value="hex" checked> hex</label><label><input type="radio" name="u0v" value="ascii"> ASCII</label>
+          <button id="u0clr">Temizle</button></div>
+        <div class="term" id="u0term"></div>
+        <div class="row" style="margin-top:6px">
+          <input type="text" id="u0in" class="mono" style="flex:1;min-width:200px" placeholder="16 10 02 … (hex) ya da metin">
+          <select id="u0mode"><option value="hex">hex</option><option value="text">metin</option><option value="textcr">metin + CR</option></select>
+          <button id="u0send" class="primary">Gönder</button></div>
+        <p class="note">Firmware açılışta UART0'a bir durum çerçevesi gönderir (16 10 02 …). PC programlama yazılımının protokolü buradan izlenebilir.</p>
+      </div>
+      <div class="card"><h3>Firmware güncelleme · seri port yükleyicisi</h3>
+        <div class="row" style="margin-bottom:6px">
+          <select id="updSrc"></select>
+          <input type="file" id="updFile" accept=".hex,.HEX,.s19,.s28,.mot,.txt">
+          <label><input type="checkbox" id="updVerify" checked> geri okuyup doğrula</label>
+          <label title="Açılışta 0x2000–0xFFFF bayt toplamı 0x010003'teki değerle karşılaştırılır; tutmazsa ERR FLSH"><input type="checkbox" id="updFixSum" checked> ROM sağlama toplamını düzelt</label>
+          <label><input type="checkbox" id="updFast" checked> en yüksek simülasyon hızı</label>
+          <button id="updStart" class="primary">Güncelle</button><button id="updStop">Durdur</button></div>
+        <progress id="updProg" max="1" value="0" style="width:100%"></progress>
+        <div class="log" id="updLog" style="max-height:160px"></div>
+        <p class="note">PC programlama yazılımının yaptığını yapar: bağlan → <span class="mono">0D 03</span> (firmware, ROM 0x010100–0x0105C7'deki yükleyiciyi RAM 0x0080'e kopyalayıp çalıştırır, yükleyici <b>tüm flash'ı hemen siler</b>) → silme bitene kadar okuma ile bekle → 128 baytlık bloklar <span class="mono">03 03 02 bb hh ll …</span> → doğrulama <span class="mono">03 01 02 …</span> → <span class="mono">04 01</span> reset. 9600 baud'da tam görüntü ≈ 2,5 dk (doğrulamayla ≈ 5 dk) simülasyon zamanı. Yeni firmware'in de güncellenebilmesi için 0x010100 bloğunu ve servis protokolünü taşıması gerekir; burada denenebilir. Ayrıntılar: <span class="mono">seri_protokol.md</span>.</p>
+      </div>
+      <div class="card"><h3>UART1 · C-BUS (FX806 / FX809 / FX802), TDSEC1 = P51, TDSEC2 = P53</h3>
+        <div class="row" style="margin-bottom:6px"><button id="cbclr">Temizle</button><label>Yanıt baytı <input type="text" id="cbReply" value="00" size="3" class="mono"></label><label><input type="checkbox" id="int2"> INT2 isteği (P64 = 0)</label></div>
+        <div class="log" id="cbLog"></div>
+        <p class="note">C-BUS baytları ROM 0x2B06 tablosuyla bit sırası ters çevrilerek gönderiliyor; burada gösterilen, hattaki bayt değeridir.</p>
+      </div>
+    </div>
+
+    <div class="tab" id="tab-ee">
+      <div class="card"><h3>EEPROM 24C16 (2 KB)</h3>
+        <div class="row">
+          <span>Sağlama toplamları:</span><span id="eeSums"></span>
+          <button id="eeFix">Düzelt</button><button id="eeDefault">Varsayılan</button>
+          <button id="eeDown">İndir (.bin)</button>
+          <input type="file" id="eeFile" accept=".bin,.BIN,.e2p,.eep" hidden><button id="eeUp">Yükle (.bin)</button>
+          <label><input type="checkbox" id="eeKeep" checked> Tarayıcıda sakla</label>
+        </div>
+        <p class="note">Firmware açılışta 4 bloğun toplamını kontrol eder (0x000–004, 0x008–015, 0x018–534, 0x578–5BC). Toplam tutmazsa ekranda "ARZ PRG" çıkar ve güç kapanır. Değişiklikler canlı EEPROM'a yazılır, yeniden başlatınca okunur.</p>
+      </div>
+      <div class="grid2">
+        <div class="card"><h3>Bant ve seçenekler</h3>
+          <div class="kv">
+            <div>Taban frekans</div><div class="row"><input type="number" id="eeBase" step="0.025" style="width:120px"> MHz <span class="note">(0x58C–58D, 25 kHz birim)</span></div>
+            <div>Seçmeli çağrı</div><div><select id="eeSelStd"><option value="0">0 (tanımsız)</option><option value="1">CCIR (100 ms)</option><option value="2">ZVEI1 (70 ms)</option><option value="3">EEA (40 ms)</option></select> <span class="note">0x018 bit 1..0</span></div>
+            <div>Sç. modu 0x01A</div><div><input type="text" id="eeOpt01a" size="3" class="mono"> <span class="note">üst yarım bayt; 2 veya 4 = PTT'de kimlik gönder</span></div>
+            <div>Opsiyon 0x014</div><div><input type="text" id="eeOpt014" size="3" class="mono"> <span class="note">RAM 0x033F; bit 3 = tuş takımı</span></div>
+            <div>Opsiyon 0x58B</div><div><input type="text" id="eeOpt58b" size="3" class="mono"> <span class="note">RAM 0x0335</span></div>
+            <div>Dil 0x018 b7</div><div><label><input type="checkbox" id="eeLang"> İngilizce</label></div>
+          </div>
+          <button id="eeApply" style="margin-top:8px">Uygula ve yeniden başlat</button>
+        </div>
+        <div class="card"><h3>Kanal ekle / değiştir</h3>
+          <div class="row"><label>Kanal <input type="number" id="chN" min="1" max="98" value="1" style="width:64px"></label>
+            <label>Ad <input type="text" id="chName" maxlength="8" size="9" class="mono" title="8 karakter: A–Z 0–9 boşluk _ - /"></label></div>
+          <div class="row" style="margin-top:6px"><label>RX MHz <input type="number" id="chRx" step="0.0025" style="width:110px"></label>
+            <label>TX MHz <input type="number" id="chTx" step="0.0025" style="width:110px"></label></div>
+          <div class="row" style="margin-top:6px"><label>RX TKS <select id="chRxTone"></select></label><label>TX TKS <select id="chTxTone"></select></label></div>
+          <div class="row" style="margin-top:6px"><label><input type="checkbox" id="chSel"> Seçmeli çağrı</label><label><input type="checkbox" id="chXs"> Kristal kaydırma</label>
+            <button id="chSet" class="primary">Yaz</button><button id="chDel">Sil</button></div>
+          <p class="note">Kayıt 0x02E + 13·(n−1): +0..1 TX, +2..3 RX kelimesi (14 bit, 2,5 kHz adım), +4 RX TKS / kristal kaydırma / seçmeli çağrı, +5..12 ad (8 karakter, yalnız A–Z 0–9 boşluk _ - /; aksi hâlde ekranda "CH nn"; +5..11 baytlarının 7. bitlerinde TX TKS).</p>
+        </div>
+      </div>
+      <div class="card"><h3>Programlı kanallar</h3><div style="max-height:260px;overflow:auto"><table id="chTable"></table></div></div>
+      <div class="card"><h3>Hex görünüm</h3>
+        <div class="row"><label>Adres <input type="text" id="eeAddr" value="000" size="4" class="mono"></label><span class="note">Bir bayta tıklayıp yeni değeri yazın</span></div>
+        <div class="dis" id="eeHex" style="max-height:260px"></div>
+      </div>
+    </div>
+
+    <div class="tab" id="tab-io">
+      <div class="grid2">
+        <div class="card"><h3>Analog girişler (8 bit)</h3>
+          <div id="anaRows"></div>
+          <div class="row" style="margin-top:6px"><label><input type="checkbox" id="autoPwr" checked> AN7/AN6 gönderişte güç PWM'inden (TA3) türetilsin</label></div>
+        </div>
+        <div class="card"><h3>Port pinleri</h3>
+          <div id="portRows" class="mono"></div>
+          <p class="note">Kırmızı = dışarıdan 0'a çekilmiş giriş. Soluk = firmware'in çıkış yaptığı pin (latch değeri gösterilir).</p>
+        </div>
+      </div>
+      <div class="card"><h3>Zamanlayıcılar ve kesmeler</h3><div class="mono" id="timerInfo" style="white-space:pre"></div></div>
+    </div>
+
+    <div class="tab" id="tab-dbg">
+      <div class="grid2">
+        <div class="card"><h3>CPU</h3>
+          <div class="mono" id="regs" style="white-space:pre"></div>
+          <div class="row" style="margin-top:8px">
+            <button id="stepBtn">Adım</button><button id="step100">100 adım</button><button id="stepOver">Kesme ver (1 ms)</button>
+          </div>
+          <div class="row" style="margin-top:6px"><label>Kesme noktası <input type="text" id="bpIn" class="mono" size="8" placeholder="00E305"></label><button id="bpAdd">Ekle</button><span class="mono" id="bpList"></span></div>
+          <div class="row" style="margin-top:6px"><label>RAM izleme (yazma) <input type="text" id="wpIn" class="mono" size="6" placeholder="0252"></label><button id="wpAdd">Ekle</button><span class="mono" id="wpList"></span></div>
+        </div>
+        <div class="card"><h3>Disassembly</h3>
+          <div class="row" style="margin-bottom:6px"><label>Adres <input type="text" id="disAddr" class="mono" size="8" placeholder="PC"></label><button id="disGo">Git</button><button id="disPc">PC</button></div>
+          <div class="dis" id="dis"></div>
+        </div>
+      </div>
+      <div class="grid2">
+        <div class="card"><h3>Bellek</h3>
+          <div class="row" style="margin-bottom:6px"><label>Adres <input type="text" id="memAddr" class="mono" size="8" value="0200"></label><button id="memGo">Git</button></div>
+          <div class="dis" id="mem"></div>
+        </div>
+        <div class="card"><h3>Olaylar</h3>
+          <div class="log" id="evLog"></div>
+          <h3 style="margin-top:10px">I²C (son 64 adres)</h3><div class="log mono" id="i2cLog" style="max-height:80px;white-space:normal"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+<script src="m7700.js"></script>
+<script src="board.js"></script>
+<script src="radio_view.js"></script>
+<script src="updater.js"></script>
+<script src="firmware.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,199 @@
+000000  00 00 00 00 00 00 …          .ORG $005591
+005591                               .EXPECT $BF,$88,$31,$00
+005591                               .ASSUME M=0,X=0
+005591  BF 00 10 01                  LDA   A,>MENU_NEXT,X
+005595  00 00 00 00 00 00 …          .ORG $005641
+005641                               .EXPECT $BF,$88,$31,$00
+005641  BF 00 10 01                  LDA   A,>MENU_NEXT,X
+005645  00 00 00 00 00 00 …          .ORG $0056B9
+0056B9                               .EXPECT $BF,$88,$31,$00
+0056B9  BF 00 10 01                  LDA   A,>MENU_NEXT,X
+0056BD                               .ORG $005664
+005664                               .EXPECT $BF,$9E,$31,$00
+005664  BF 18 10 01                  LDA   A,>MENU_S+2,X
+005668  00 00 00 00 00 00 …          .ORG $005693
+005693                               .EXPECT $BF,$9E,$31,$00
+005693  BF 18 10 01                  LDA   A,>MENU_S+2,X
+005697  00 00 00 00 00 00 …          .ORG $0056CE
+0056CE                               .EXPECT $BF,$9E,$31,$00
+0056CE  BF 18 10 01                  LDA   A,>MENU_S+2,X
+0056D2                               .ORG $00566D
+00566D                               .EXPECT $BF,$9C,$31,$00
+00566D  BF 16 10 01                  LDA   A,>MENU_S,X
+005671  00 00 00 00 00 00 …          .ORG $00569C
+00569C                               .EXPECT $BF,$9C,$31,$00
+00569C  BF 16 10 01                  LDA   A,>MENU_S,X
+0056A0  00 00 00 00 00 00 …          .ORG $0056AC
+0056AC                               .EXPECT $BF,$9C,$31,$00
+0056AC  BF 16 10 01                  LDA   A,>MENU_S,X
+0056B0  00 00 00 00 00 00 …          .ORG $0056D7
+0056D7                               .EXPECT $BF,$9C,$31,$00
+0056D7  BF 16 10 01                  LDA   A,>MENU_S,X
+0056DB                               .ORG $0033C4
+0033C4                               .ASSUME M=0,X=0
+0033C4                               .EXPECT $69,$86,$2E
+0033C4  69 1E 11                     ADC   A,#TITLES_TR & $FFFF
+0033C7  00 00 00                     .ORG $0033CA
+0033CA                               .ASSUME M=1,X=0
+0033CA                               .EXPECT $64,$05,$00
+0033CA  64 05 01                     LDM   #bank(TITLES_TR),$05
+0033CD  00 00 00 00 00 00 …          .ORG $0033DA
+0033DA                               .ASSUME M=0,X=0
+0033DA                               .EXPECT $69,$E6,$2D
+0033DA  69 6E 10                     ADC   A,#TITLES_EN & $FFFF
+0033DD  00 00 00                     .ORG $0033E0
+0033E0                               .ASSUME M=1,X=0
+0033E0                               .EXPECT $64,$05,$00
+0033E0  64 05 01                     LDM   #bank(TITLES_EN),$05
+0033E3  00 00 00 00 00 00 …          .ORG $00348A
+00348A                               .ASSUME M=0,X=0
+00348A                               .EXPECT $69,$86,$2E
+00348A  69 1E 11                     ADC   A,#TITLES_TR & $FFFF
+00348D  00 00 00                     .ORG $003490
+003490                               .ASSUME M=1,X=0
+003490                               .EXPECT $64,$05,$00
+003490  64 05 01                     LDM   #bank(TITLES_TR),$05
+003493  00 00 00 00 00 00 …          .ORG $0034A0
+0034A0                               .ASSUME M=0,X=0
+0034A0                               .EXPECT $69,$E6,$2D
+0034A0  69 6E 10                     ADC   A,#TITLES_EN & $FFFF
+0034A3  00 00 00                     .ORG $0034A6
+0034A6                               .ASSUME M=1,X=0
+0034A6                               .EXPECT $64,$05,$00
+0034A6  64 05 01                     LDM   #bank(TITLES_EN),$05
+0034A9                               .ASSUME M=0,X=0
+0034A9  00 00 00 00 00 00 …          .ORG $011000
+011000  01 02                        .COPY $003188, 2                ; durum 0, 1
+011002  14                           .BYTE ST_SAYI                   ; durum 2 (LIST): sonraki artık SAYI
+011003  03 08 06 07 04 00 …          .COPY $00318B, N_OLD-3          ; durum 3..$13
+011014  11                           .BYTE $11                       ; $14 SAYI   -> RADIO (A tipi kartta PRINTER/SUB MENU/normal'e atlar)
+011015  00                           .BYTE $00                       ; $15 etkin  -> m = normal ekran
+011016  00 4A 37 00 01 9A …          .COPY $00319C, 4*N_OLD
+011066  15                           .BYTE ST_SAYI_ON                ; $14: s -> etkin duruma geç, SAYI_GIR çağrılır
+011067  CE 11 01                     .LONG SAYI_GIR
+01106A  15                           .BYTE ST_SAYI_ON                ; $15: s -> aynı durumda kal, SAYI_TUS çağrılır
+01106B  E6 11 01                     .LONG SAYI_TUS
+01106E  20 20 20 43 48 20 …          .COPY $002DE6, 8*N_OLD
+01110E  4E 55 4D 42 45 52 …          .TEXT8 "NUMBER"
+011116  20 20 20 20 20 20 …          .TEXT8 ""
+01111E  4B 41 4E 41 4C 20 …          .COPY $002E86, 8*N_OLD
+0111BE  53 41 59 49 20 20 …          .TEXT8 "SAYI"
+0111C6  20 20 20 20 20 20 …          .TEXT8 ""
+0111CE                               .ASSUME M=0,X=0
+0111CE  A3 04                        LDA   A,$04,S
+0111D0  48                           PHA
+0111D1  9C DF 02 E6 11               LDM   #SAYI_TUS & $FFFF,HANDLER
+0111D6  F8                           SEM
+0111D7  9C E1 02 01                  LDM   #bank(SAYI_TUS),HANDLER_BK
+0111DB  9C 93 02 00                  LDM   #0,NDIGIT
+0111DF  9C 92 02 00                  LDM   #0,REVFLAG
+0111E3  4C 37 12                     JMP   CIZ
+0111E6                               .ASSUME M=0,X=0
+0111E6  A3 04                        LDA   A,$04,S
+0111E8  48                           PHA
+0111E9  F8                           SEM
+0111EA  AD 26 02                     LDA   A,KEY
+0111ED  C9 64                        CMP   A,#'d'
+0111EF  F0 16                        BEQ   RAKAM
+0111F1  C9 2A                        CMP   A,#'*'
+0111F3  F0 2C                        BEQ   SIL
+0111F5  C9 23                        CMP   A,#'#'
+0111F7  F0 36                        BEQ   TEMIZLE
+0111F9  C9 73                        CMP   A,#'s'
+0111FB  D0 3A                        BNE   CIZ
+0111FD  AD 92 02                     LDA   A,REVFLAG                 ; s: ters / düz
+011200  49 01                        EOR   A,#1
+011202  8D 92 02                     STA   A,REVFLAG
+011205  80 30                        BRA   CIZ
+011207  9C 92 02 00          RAKAM:  LDM   #0,REVFLAG
+01120B  AD 93 02                     LDA   A,NDIGIT
+01120E  C9 09                        CMP   A,#9                      ; 9. hane geldiyse geri al ve bip
+011210  90 25                        BCC   CIZ
+011212  9C 93 02 08                  LDM   #8,NDIGIT
+011216  D8                           CLM
+011217  A0 0D 00                     LDY   #13
+01121A  22 AA 80 00                  JSRL  F_BEEP
+01121E  F8                           SEM
+01121F  80 16                        BRA   CIZ
+011221  9C 92 02 00          SIL:    LDM   #0,REVFLAG
+011225  AD 93 02                     LDA   A,NDIGIT
+011228  F0 0D                        BEQ   CIZ
+01122A  CE 93 02                     DEC   NDIGIT
+01122D  80 08                        BRA   CIZ
+01122F  9C 93 02 00                  LDM   #0,NDIGIT
+011233  9C 92 02 00                  LDM   #0,REVFLAG
+011237                       CIZ:    .ASSUME M=1,X=0
+011237  A2 00 00                     LDX   #0
+01123A  A9 20                        LDA   A,#' '
+01123C  9D 52 02             BOSLUK: STA   A,LCD,X
+01123F  E8                           INX
+011240  E0 08 00                     CPX   #8
+011243  D0 F7                        BNE   BOSLUK
+011245  D8                           CLM                             ; Y = rakam sayısı (16 bit)
+011246  AD 93 02                     LDA   A,NDIGIT
+011249  29 FF 00                     AND   A,#$00FF
+01124C  A8                           TAY
+01124D  F8                           SEM
+01124E  A2 00 00                     LDX   #0
+011251  AD 92 02                     LDA   A,REVFLAG
+011254  D0 1B                        BNE   TERS
+011256  C0 00 00                     CPY   #0                        ; düz: LCD[i] = DIGITS[i]
+011259  F0 0A                        BEQ   IMLEC
+01125B  BD 83 02             DUZ:    LDA   A,DIGITS,X
+01125E  9D 52 02                     STA   A,LCD,X
+011261  E8                           INX
+011262  88                           DEY
+011263  D0 F6                        BNE   DUZ
+011265  E0 08 00             IMLEC:  CPX   #8                        ; yer varsa imleç
+011268  F0 19                        BEQ   BITTI
+01126A  A9 5F                        LDA   A,#'_'
+01126C  9D 52 02                     STA   A,LCD,X
+01126F  80 12                        BRA   BITTI
+011271  C0 00 00             TERS:   CPY   #0                        ; ters: LCD[i] = DIGITS[n-1-i]
+011274  F0 0D                        BEQ   BITTI
+011276  88                   TLOOP:  DEY
+011277  B9 83 02                     LDA   A,DIGITS,Y
+01127A  9D 52 02                     STA   A,LCD,X
+01127D  E8                           INX
+01127E  C0 00 00                     CPY   #0
+011281  D0 F3                        BNE   TLOOP
+011283  D8                   BITTI:  CLM
+011284  68                           PLA
+011285  6B                           RTL
+
+; semboller
+N_OLD                    $000014
+ST_SAYI                  $000014
+ST_SAYI_ON               $000015
+TA0                      $000046
+TB2                      $000054
+BEEP_SURE                $000214
+KEY                      $000226
+MENU                     $000227
+LCD                      $000252
+DIGITS                   $000283
+REVFLAG                  $000292
+NDIGIT                   $000293
+HANDLER                  $0002DF
+HANDLER_BK               $0002E1
+OPTIONS                  $000340
+OZEL_RAM                 $000500
+F_DELAY                  $007D7F
+F_BEEP                   $0080AA
+F_LCD                    $00828C
+MENU_NEXT                $011000
+MENU_S                   $011016
+TITLES_EN                $01106E
+TITLES_TR                $01111E
+SAYI_GIR                 $0111CE
+SAYI_TUS                 $0111E6
+RAKAM                    $011207
+SIL                      $011221
+TEMIZLE                  $01122F
+CIZ                      $011237
+BOSLUK                   $01123C
+DUZ                      $01125B
+IMLEC                    $011265
+TERS                     $011271
+TLOOP                    $011276
+BITTI                    $011283

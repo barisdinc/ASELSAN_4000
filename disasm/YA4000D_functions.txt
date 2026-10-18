@@ -1,0 +1,647 @@
+addr     label                     insns  calls notes
+000080   RAMCODE_ENTRY               442      1 
+000486   F_000486                     18     13 returns M=0
+0004A5   F_0004A5                     10      3 returns M=0
+0004BF   F_0004BF                     12      3 returns M=0
+0004E0   F_0004E0                     19      9 returns M=0
+00050E   F_00050E                     15     15 returns M=0
+00052D   F_00052D                      9      2 returns M=0
+002000   VEC_RESET                    11      1 
+002008   VEC_UART0_RX                151      0 
+00200C   VEC_UART0_TX                 20      0 
+002010   VEC_ZERODIV                   5      0 
+002014   VEC_BRK                       5      0 
+002018   VEC_DBC                       5      0 
+00201C   VEC_WDT                      17      0 
+002020   VEC_TB2                     161      0 
+002024   VEC_TA3                      39      0 
+002028   VEC_TB1                      70      0 
+00202C   VEC_TA1                     253      0 
+002030   VEC_INT1                     53      0 
+002034   VEC_INT2                     90      0 
+002038   VEC_TA4                     178      0 
+00203C   VEC_TB0                      48      0 
+00328B   F_00328B                      7      3 returns M=0
+0032A2   F_0032A2                     18      3 returns M=0
+0032CE   F_0032CE                     39     10 returns M=0
+003310   F_003310                    239     67 returns M=0
+00350F   F_00350F                     41      4 returns M=0
+003589   F_003589                     66      3 returns M=1
+003610   F_003610                    127      2 returns M=0
+00374A   F_00374A                    540      0 no direct caller (fn pointer?); returns M=0
+003C53   F_003C53                     36      0 no direct caller (fn pointer?); returns M=0
+003CAE   F_003CAE                     36      0 no direct caller (fn pointer?); returns M=0
+003D09   F_003D09                    250      0 no direct caller (fn pointer?); returns M=0
+003F46   F_003F46                    257      0 no direct caller (fn pointer?); returns M=0
+00419D   F_00419D                     12      0 no direct caller (fn pointer?); returns M=0
+0041B5   F_0041B5                     12      0 no direct caller (fn pointer?); returns M=0
+0041CD   F_0041CD                     87      3 returns M=1
+00428B   F_00428B                     65      1 returns M=0
+004313   F_004313                     43      2 returns M=0
+004370   F_004370                    206      0 no direct caller (fn pointer?); returns M=0
+004558   F_004558                     30      4 returns M=0
+004596   F_004596                    188      2 no direct caller (fn pointer?); returns M=0
+004721   F_004721                     83      4 returns M=0
+0047C4   F_0047C4                    109      0 no direct caller (fn pointer?); returns M=0
+0048C1   F_0048C1                    127      1 returns M=0
+004A12   F_004A12                     28      1 returns M=0
+004A5C   F_004A5C                     20      3 returns M=0
+004A9A   F_004A9A                     25      3 no direct caller (fn pointer?); returns M=0
+004AD6   F_004AD6                     42      0 no direct caller (fn pointer?); returns M=0
+004B4B   F_004B4B                    120      0 no direct caller (fn pointer?); returns M=0
+004C59   F_004C59                     62      1 returns M=0
+004D03   F_004D03                     78      2 returns M=0
+004DCC   F_004DCC                     34      5 no direct caller (fn pointer?); returns M=1
+004E1A   F_004E1A                    197      0 no direct caller (fn pointer?); returns M=0
+004FF6   F_004FF6                     87      6 returns M=1
+0050DA   F_0050DA                    168      7 returns M=0
+005247   F_005247                    148      1 returns M=0
+0053A4   F_0053A4                     46      2 returns M=0
+005404   F_005404                     31      2 returns M=0
+005460   F_005460                    376      1 returns M=0
+005822   F_005822                     53      1 returns M=0
+00589D   F_00589D                     46      7 returns M=1
+0058FB   F_0058FB                    230      1 returns M=0
+005B75   F_005B75                     29      2 returns M=1
+005BAD   F_005BAD                    101      3 returns M=0
+005CA6   F_005CA6                    148      1 returns M=0
+005E56   F_005E56                    120      1 returns M=0
+005F9C   F_005F9C                     54      1 returns M=0
+00604C   F_00604C                    246      1 returns M=0
+0062AB   F_0062AB                    287      2 returns M=0
+006567   F_006567                    125      1 returns M=0
+006696   F_006696                    153      1 returns M=0
+006817   F_006817                    101      1 returns M=0
+00691E   F_00691E                     20      4 returns M=0
+006948   F_006948                     64      2 returns M=0
+0069BB   F_0069BB                     30      4 returns M=1
+0069EF   F_0069EF                     30      7 returns M=1
+006A25   F_006A25                     30      3 returns M=1
+006A5B   F_006A5B                      6      0 no direct caller (fn pointer?); returns M=0
+006A67   F_006A67                      1      2 flag-transparent runtime helper; returns M=0
+006A68   F_006A68                     37     19 returns M=1
+006AC2   F_006AC2                    275     35 returns M=1
+006EB3   F_006EB3                     91      7 returns M=1
+006FA0   F_006FA0                    148      7 returns M=1
+00713E   F_00713E                     17      2 returns M=0
+00715B   F_00715B                      8     31 returns M=0
+007172   F_007172                      8     30 returns M=0
+007189   F_007189                     56     42 returns M=1
+0071F0   F_0071F0                     66     13 returns M=0
+007271   F_007271                     64     25 returns M=0
+0072EE   F_0072EE                    109     42 returns M=0
+0073C6   F_0073C6                    133     15 returns M=0
+0074D8   F_0074D8                     34      2 returns M=1
+007529   F_007529                     29      7 returns M=0
+00755E   F_00755E                     78     13 returns M=0
+007627   F_007627                     53     94 returns M=0
+00769C   F_00769C                     35      3 returns M=1
+0076DB   F_0076DB                     67      3 returns M=0
+007771   F_007771                     53      3 returns M=0
+0077F0   F_0077F0                     11     11 returns M=0
+007809   F_007809                    245     14 returns M=0
+007A06   F_007A06                    143     27 returns M=0
+007B78   F_007B78                     52      3 no direct caller (fn pointer?); returns M=0
+007BDE   F_007BDE                     53      1 returns M=0
+007C46   F_007C46                     76      1 returns M=0
+007CF6   F_007CF6                      8      3 returns M=0
+007D0E   F_007D0E                     14      4 returns M=0
+007D35   F_007D35                     25      3 returns M=0
+007D7F   F_007D7F                     87     22 returns M=0
+007E39   F_007E39                     13      2 returns M=1
+007E4C   F_007E4C                     71    127 returns M=1
+007EE2   F_007EE2                     78      2 returns M=1
+007F9B   F_007F9B                     81      3 returns M=1
+008053   F_008053                     20      2 returns M=0
+008084   F_008084                     15      2 returns M=0
+0080AA   F_0080AA                     69    100 returns M=0
+008156   F_008156                     28      3 returns M=0
+00819B   F_00819B                     55      4 returns M=0
+008209   F_008209                     62      3 returns M=0
+00828C   F_00828C                    623     45 returns M=0
+0087A7   F_0087A7                     28      9 returns M=0
+0087DE   F_0087DE                     30      8 flag-transparent runtime helper; returns M=0
+008825   F_008825                     23      8 returns M=1
+008854   F_008854                     43      6 returns M=0
+0088B8   F_0088B8                     98      5 returns M=0
+00899E   F_00899E                     79      4 returns M=0
+008A47   F_008A47                    192      4 returns M=0
+008C05   F_008C05                    130      2 returns M=0
+008D14   F_008D14                     19      7 returns M=0
+008D47   F_008D47                     59      2 returns M=1
+008DC6   F_008DC6                     17     16 returns M=0
+008DED   F_008DED                    100     11 returns M=0
+008ECC   F_008ECC                    243      1 returns M=0
+0090FE   F_0090FE                     26      2 returns M=0
+009134   F_009134                     61      3 returns M=1
+0091BB   F_0091BB                     26      3 returns M=0
+0091EA   F_0091EA                     72      1 returns M=0
+00927F   F_00927F                    289     17 returns M=0
+0095FA   F_0095FA                     51      4 returns M=0
+00968D   F_00968D                     70      6 returns M=0
+00973E   F_00973E                     24      6 
+009782   F_009782                     13      6 returns M=0
+0097AC   F_0097AC                     40      5 returns M=0
+0097EE   F_0097EE                      5      8 returns M=1
+0097FC   F_0097FC                      8      5 returns M=1
+00980E   F_00980E                     41      5 returns M=1
+009855   F_009855                     37      4 returns M=0
+00989B   F_00989B                     39      4 returns M=1
+0098E3   F_0098E3                     29      9 returns M=0
+00991D   F_00991D                     48      1 returns M=1
+00997F   F_00997F                     18      4 returns M=0
+0099AD   F_0099AD                      7      2 returns M=0
+0099BD   F_0099BD                    529      1 
+009E45   F_009E45                      5      2 returns M=0
+009E50   F_009E50                    175      1 returns M=0
+00A01C   F_00A01C                     81      6 returns M=0
+00A0ED   F_00A0ED                     15      3 flag-transparent runtime helper; returns M=0
+00A10E   F_00A10E                     40     12 returns M=0
+00A157   F_00A157                     34      3 returns M=1
+00A19A   F_00A19A                     32      2 returns M=0
+00A1EE   F_00A1EE                     47      2 returns M=1
+00A244   F_00A244                     32      1 returns M=0
+00A280   F_00A280                      9      2 returns M=0
+00A29F   F_00A29F                    104      4 returns M=0
+00A399   F_00A399                      8     21 returns M=0
+00A3A8   F_00A3A8                     38     12 returns M=0
+00A40A   F_00A40A                     88      1 returns M=0
+00A4D6   F_00A4D6                      9      3 returns M=0
+00A4E9   F_00A4E9                     19     14 returns M=0
+00A51C   F_00A51C                     16      3 returns M=0
+00A53F   F_00A53F                      9      1 returns M=0
+00A552   F_00A552                      4      3 returns M=0
+00A559   F_00A559                     19      2 returns M=0
+00A57F   F_00A57F                     34      3 returns M=0
+00A5D6   F_00A5D6                     26      9 returns M=1
+00A605   F_00A605                    266      1 returns M=0
+00A83C   F_00A83C                     36      3 returns M=0
+00A889   F_00A889                     13      8 returns M=0
+00A8A8   F_00A8A8                     15      1 returns M=0
+00A8CF   F_00A8CF                     13      3 returns M=0
+00A8EE   F_00A8EE                     37      1 returns M=0
+00A936   F_00A936                      9      4 returns M=0
+00A948   F_00A948                    170      3 returns M=0
+00AAAC   F_00AAAC                     38      2 returns M=1
+00AAFE   F_00AAFE                      6      7 returns M=0
+00AB0E   F_00AB0E                      4      5 returns M=1
+00AB15   F_00AB15                      7      2 returns M=1
+00AB25   F_00AB25                      7      3 returns M=1
+00AB35   F_00AB35                     28      4 returns M=0
+00AB6E   F_00AB6E                     55      4 returns M=0
+00ABD3   F_00ABD3                     48      3 returns M=0
+00AC38   F_00AC38                     13      5 returns M=1
+00AC52   F_00AC52                     23      2 returns M=0
+00AC7B   F_00AC7B                     25      2 returns M=0
+00ACA6   F_00ACA6                    121      2 returns M=1
+00AD96   F_00AD96                    890      2 returns M=0
+00B563   F_00B563                     54      4 returns M=0
+00B5EB   F_00B5EB                      9      2 returns M=0
+00B5FE   F_00B5FE                     22      2 returns M=0
+00B633   F_00B633                     54      2 returns M=1
+00B6A6   F_00B6A6                     20      1 returns M=0
+00B6D4   F_00B6D4                     21      1 returns M=0
+00B705   F_00B705                      3      2 returns M=0
+00B70F   F_00B70F                     95      2 returns M=1
+00B7E9   F_00B7E9                     12      3 returns M=1
+00B801   F_00B801                     27      4 returns M=1
+00B832   F_00B832                     47      3 returns M=1
+00B8A1   F_00B8A1                     12      1 returns M=1
+00B8BA   F_00B8BA                     23      3 returns M=0
+00B8EC   F_00B8EC                      6      4 returns M=0
+00B8FC   F_00B8FC                     32      2 returns M=1
+00B946   F_00B946                     30      1 returns M=1
+00B98D   F_00B98D                    230      3 returns M=0
+00BB70   F_00BB70                     61      1 returns M=0
+00BC1D   F_00BC1D                     23      1 returns M=0
+00BC5C   F_00BC5C                     41      1 returns M=0
+00BCBF   F_00BCBF                     51      1 returns M=0
+00BD37   F_00BD37                     29      1 returns M=0
+00BD7E   F_00BD7E                     13      2 returns M=0
+00BD9B   F_00BD9B                    158      1 returns M=0
+00BF11   F_00BF11                     31      1 returns M=0
+00BF56   F_00BF56                     14      1 returns M=0
+00BF79   F_00BF79                    167      1 returns M=0
+00C109   F_00C109                    173      1 returns M=0
+00C291   F_00C291                     78      1 returns M=0
+00C341   F_00C341                     11      1 returns M=0
+00C357   F_00C357                     78      1 returns M=0
+00C408   F_00C408                    130      1 returns M=1
+00C504   F_00C504                     49      1 returns M=1
+00C55E   F_00C55E                    177      1 returns M=0
+00C6FA   F_00C6FA                     45      1 returns M=0
+00C768   F_00C768                     37      1 returns M=0
+00C7C9   F_00C7C9                    143      1 returns M=0
+00C91C   F_00C91C                    239      1 returns M=0
+00CB52   F_00CB52                    239     27 returns M=0
+00CDE8   F_00CDE8                      4      3 returns M=0
+00CDEF   F_00CDEF                     64      2 returns M=1
+00CE7E   F_00CE7E                     55      1 returns M=0
+00CEF3   F_00CEF3                     25      2 returns M=1
+00CF33   F_00CF33                     65      3 returns M=1
+00CFC4   F_00CFC4                    217      1 returns M=0
+00D1C8   F_00D1C8                    103      1 returns M=0
+00D2A3   F_00D2A3                     39      2 returns M=0
+00D2F6   F_00D2F6                     98      3 returns M=1
+00D3B4   F_00D3B4                     36      4 returns M=1
+00D408   F_00D408                     34      1 returns M=0
+00D45C   F_00D45C                     55      2 returns M=0
+00D4F9   F_00D4F9                      9      1 returns M=0
+00D512   F_00D512                      5      1 returns M=0
+00D51D   F_00D51D                     75      2 returns M=0
+00D5E9   F_00D5E9                    228      2 returns M=1
+00D7B6   F_00D7B6                    139      1 returns M=0
+00D8E3   F_00D8E3                    126      1 returns M=0
+00DA32   F_00DA32                    312      1 returns M=0
+00DCFD   F_00DCFD                    181      1 returns M=0
+00DED2   F_00DED2                     56      4 returns M=1
+00DF55   F_00DF55                    170      1 returns M=0
+00E0E1   F_00E0E1                     50      1 returns M=0
+00E153   F_00E153                     65      1 returns M=0
+00E1D9   F_00E1D9                     38      1 returns M=0
+00E237   F_00E237                     19      2 flag-transparent runtime helper; returns M=0
+00E25C   F_00E25C                     62      2 returns M=1
+00E305   F_00E305                    248      2 returns M=0
+00E5F3   F_00E5F3                     22      1 returns M=0
+00E626   F_00E626                     24      1 returns M=0
+00E65B   F_00E65B                    395      3 returns M=0
+00E9D2   F_00E9D2                     28      4 returns M=0
+00EA11   F_00EA11                     30      1 returns M=0
+00EA66   F_00EA66                     22      8 returns M=0
+00EAA8   F_00EAA8                     80      2 returns M=0
+00EB70   F_00EB70                    107      1 returns M=0
+00EC7E   F_00EC7E                     56      1 returns M=0
+00ED0F   F_00ED0F                     24      1 returns M=0
+00ED53   F_00ED53                     74      1 returns M=0
+00EE14   F_00EE14                     28      1 returns M=0
+00EE4D   F_00EE4D                     25      2 returns M=0
+00EE8B   F_00EE8B                     28      6 returns M=0
+00EEE9   F_00EEE9                    337      1 returns M=0
+00F2A1   F_00F2A1                    137      1 returns M=0
+00F3E8   F_00F3E8                    452      3 returns M=0
+00F854   F_00F854                     36      1 returns M=0
+00F8AE   F_00F8AE                      6      1 returns M=0
+00F8BD   F_00F8BD                     39      1 returns M=0
+00F934   F_00F934                      8      3 returns M=0
+00FB79   F_00FB79                     58      1 returns M=0
+00FC09   F_00FC09                     15      1 returns M=0
+00FC35   F_00FC35                     26      2 returns M=0
+00FC70   F_00FC70                    106      1 returns M=0
+00FD57   F_00FD57                     94      1 returns M=0
+00FE73   F_00FE73                     83      1 returns M=0
+00FF59   F_00FF59                     31      5 returns M=0
+00FF8C   F_00FF8C                     30     23 flag-transparent runtime helper; returns M=0
+01058E   F_01058E                     15      9 returns M=0
+0105C9   F_0105C9                     46      1 returns M=0
+010630   F_010630                      5      1 returns M=0
+013287   F_013287                     69      1 returns M=0
+01333A   F_01333A                     16      1 returns M=0
+013363   F_013363                     68      2 returns M=0
+0133F6   F_0133F6                     85      1 returns M=0
+0134C0   F_0134C0                   1294      1 returns M=0
+013FD9   F_013FD9                     21      9 returns M=0
+013FFE   F_013FFE                     25      3 returns M=0
+014031   F_014031                     26     11 returns M=0
+01406D   F_01406D                     95      2 returns M=0
+014144   F_014144                    115      5 returns M=0
+014244   F_014244                     93      1 returns M=0
+014329   F_014329                    554      1 returns M=0
+014855   F_014855                     22      9 returns M=0
+01487E   F_01487E                     28      2 returns M=0
+0148AF   F_0148AF                     30      3 returns M=0
+0148E5   F_0148E5                     46      1 returns M=0
+014963   F_014963                     42      1 returns M=0
+0149CE   F_0149CE                     23     42 returns M=1
+0149FD   F_0149FD                     19      2 returns M=1
+014A20   F_014A20                     29      2 returns M=1
+014A50   F_014A50                     22      2 returns M=1
+014A76   F_014A76                     26      1 returns M=0
+014AB3   F_014AB3                    247      1 no direct caller (fn pointer?); returns M=1
+014CDD   F_014CDD                     15      3 returns M=0
+014D00   F_014D00                     25      2 returns M=0
+014D31   F_014D31                     18      2 returns M=1
+014D50   F_014D50                     16      1 returns M=0
+014D6F   F_014D6F                     71      1 returns M=0
+014E15   F_014E15                     83      3 returns M=0
+014EB2   F_014EB2                     81      2 returns M=0
+014F75   F_014F75                     87      1 returns M=0
+01501B   F_01501B                     41     11 returns M=0
+015072   F_015072                      4      0 no direct caller (fn pointer?); returns M=0
+015079   F_015079                     75      2 returns M=0
+01512B   F_01512B                    115      2 returns M=0
+01520C   F_01520C                    412     17 returns M=0
+01556C   F_01556C                     24      2 returns M=0
+0155AB   F_0155AB                     27      2 returns M=0
+0155ED   F_0155ED                     87      6 returns M=0
+0156B1   F_0156B1                     20      1 returns M=0
+0156E4   F_0156E4                     41      6 returns M=0
+015743   F_015743                    163      1 returns M=0
+0158D7   F_0158D7                    303      1 returns M=0
+015BC6   F_015BC6                    168      1 returns M=0
+015D87   F_015D87                    109      1 returns M=0
+015ED0   F_015ED0                     43      1 returns M=0
+015F3A   F_015F3A                     41      2 returns M=0
+015F9B   F_015F9B                     37      1 returns M=1
+015FF7   F_015FF7                     93      2 returns M=0
+0160B8   F_0160B8                    409      1 returns M=0
+0164A5   F_0164A5                    241      1 returns M=0
+016716   F_016716                     36      1 returns M=0
+016767   F_016767                     59      1 returns M=0
+0167F2   F_0167F2                    115      1 returns M=0
+01691C   F_01691C                     85      2 returns M=1
+0169F9   F_0169F9                     82      1 returns M=1
+016AB1   F_016AB1                    104      1 returns M=0
+016BD2   F_016BD2                     77      1 returns M=0
+016C8A   F_016C8A                    237      1 returns M=0
+016EB8   F_016EB8                     45      1 returns M=1
+016F15   F_016F15                     25      3 returns M=0
+016F45   F_016F45                     29      3 returns M=0
+016F7B   F_016F7B                     37      1 returns M=0
+016FE0   F_016FE0                     47      6 returns M=0
+017034   F_017034                     69      1 returns M=0
+0170D4   F_0170D4                     11      2 returns M=0
+0170EE   F_0170EE                      2      1 flag-transparent runtime helper; returns M=0
+0170F4   F_0170F4                     24      1 returns M=0
+017137   F_017137                     23      1 returns M=0
+017175   F_017175                    249      1 returns M=0
+017388   F_017388                     58      1 returns M=0
+017412   F_017412                     54      1 returns M=0
+017492   F_017492                     37      1 returns M=0
+017501   F_017501                     55      1 returns M=0
+017594   F_017594                    111      1 returns M=0
+0176B7   F_0176B7                    176      1 returns M=0
+017839   F_017839                     16      2 returns M=0
+017865   F_017865                     10      1 returns M=0
+017878   F_017878                      6      4 returns M=0
+017887   F_017887                     24      1 returns M=0
+0178C2   F_0178C2                    234      2 returns M=0
+017A9F   F_017A9F                    107      1 returns M=0
+017BBD   F_017BBD                    213      2 returns M=0
+017D9A   F_017D9A                    109      1 returns M=0
+017EA4   F_017EA4                    321      1 returns M=0
+0181B1   F_0181B1                    172      1 returns M=0
+018340   F_018340                     96      1 returns M=1
+01842F   F_01842F                     14      1 returns M=1
+01844E   F_01844E                     33      3 returns M=0
+01848E   F_01848E                     44      2 returns M=1
+0184DF   F_0184DF                    125      2 returns M=0
+018639   F_018639                     14      1 returns M=1
+018656   F_018656                     31      1 returns M=0
+0186A5   F_0186A5                     25      2 returns M=0
+0186D9   F_0186D9                     17      2 returns M=0
+018700   F_018700                    150      8 returns M=0
+018864   F_018864                     71      1 returns M=1
+0188FA   F_0188FA                     43      1 returns M=0
+018965   F_018965                     38      1 returns M=0
+0189AD   F_0189AD                     11      2 returns M=0
+0189CB   F_0189CB                     11      1 returns M=0
+0189E9   F_0189E9                     14      6 returns M=0
+018A03   F_018A03                     79      2 returns M=0
+018AC5   F_018AC5                    147      2 returns M=0
+018BF1   F_018BF1                    155      1 returns M=0
+018D67   F_018D67                     31      3 returns M=0
+018DAF   F_018DAF                    199      4 returns M=0
+018F77   F_018F77                     30      3 returns M=0
+018FBC   F_018FBC                     85      1 returns M=0
+01906F   F_01906F                     56      4 returns M=0
+0190F2   F_0190F2                     35     10 returns M=0
+01914B   F_01914B                    216      1 returns M=0
+019383   F_019383                     90      2 returns M=0
+0195DA   F_0195DA                      5      8 returns M=0
+0195E5   F_0195E5                      5      2 returns M=0
+0195F0   F_0195F0                     18     25 returns M=0
+01960F   F_01960F                     10      3 returns M=0
+019629   F_019629                     12      3 returns M=0
+01964A   F_01964A                     14      1 returns M=0
+019673   F_019673                     20     24 returns M=0
+0196AA   F_0196AA                    181     23 returns M=0
+019852   F_019852                     12      8 returns M=0
+01986E   F_01986E                     10      3 returns M=0
+019884   F_019884                     30     11 returns M=0
+0198CA   F_0198CA                      5      2 returns M=0
+0198D5   F_0198D5                   1110      7 returns M=1
+01A2FF   F_01A2FF                    117      5 returns M=0
+01A3EF   F_01A3EF                    211      1 returns M=0
+01A60C   F_01A60C                     35      5 
+01A664   F_01A664                     46      2 returns M=0
+01A6D5   F_01A6D5                     81      1 
+01A7D0   F_01A7D0                     60      2 returns M=1
+01A839   F_01A839                     64      4 returns M=1
+01A8B4   F_01A8B4                     76      4 returns M=1
+01A94E   F_01A94E                     92      4 returns M=1
+01AA06   F_01AA06                     58      4 returns M=1
+01AA7E   F_01AA7E                     73      4 returns M=1
+01AB11   F_01AB11                     25      3 returns M=1
+01AB3B   F_01AB3B                    308      6 returns M=1
+01AD76   F_01AD76                    239      7 returns M=1
+01AF2F   F_01AF2F                    378      3 returns M=1
+01B211   F_01B211                     46      1 returns M=1
+01B267   F_01B267                    138      1 returns M=1
+01B364   F_01B364                    139      2 returns M=1
+01B47D   F_01B47D                     74      4 returns M=1
+01B504   F_01B504                     35      2 returns M=1
+01B541   F_01B541                    188      2 returns M=1
+01B696   F_01B696                     55      2 returns M=1
+01B6FD   F_01B6FD                    341      1 returns M=1
+01BBE4   F_01BBE4                   1177      1 returns M=0
+01CA08   F_01CA08                    171      1 returns M=0
+01CBC3   F_01CBC3                     32      1 returns M=0
+01CC04   F_01CC04                     30      8 returns M=0
+01CC39   F_01CC39                    346      1 returns M=0
+01CF78   F_01CF78                    364     12 returns M=0
+01D273   F_01D273                    604      1 returns M=0
+01D837   F_01D837                     43      5 returns M=0
+01D889   F_01D889                     42      1 returns M=0
+01D8D9   F_01D8D9                     25      1 returns M=0
+01D90E   F_01D90E                     32      2 flag-transparent runtime helper; returns M=0
+01D954   F_01D954                     52      1 returns M=0
+01D9C5   F_01D9C5                     14      3 returns M=0
+01D9E8   F_01D9E8                     13      1 returns M=0
+01DA02   F_01DA02                     81      7 returns M=0
+01DAC4   F_01DAC4                     28      1 returns M=0
+01DB0C   F_01DB0C                     47      2 returns M=0
+01DB8B   F_01DB8B                     71      1 returns M=0
+01DC35   F_01DC35                    163      2 returns M=0
+01DDDF   F_01DDDF                     28      1 returns M=1
+01DE16   F_01DE16                      5      1 returns M=0
+01DE21   F_01DE21                     24      2 returns M=1
+01DE4E   F_01DE4E                    128      1 returns M=0
+01DF9B   F_01DF9B                     29      1 returns M=0
+01DFDF   F_01DFDF                     15      1 returns M=0
+01E006   F_01E006                      5      1 returns M=0
+01E013   F_01E013                     50      1 returns M=0
+01E08A   F_01E08A                     28      1 returns M=0
+01E0C6   F_01E0C6                      9      1 returns M=0
+01E0E2   F_01E0E2                     18      1 returns M=0
+01E110   F_01E110                     19      3 returns M=0
+01E142   F_01E142                     22      1 no direct caller (fn pointer?); returns M=0
+01E178   F_01E178                     15      1 returns M=0
+01E1A6   F_01E1A6                     60      8 flag-transparent runtime helper; returns M=0
+01E214   F_01E214                     52      3 flag-transparent runtime helper; returns M=0
+01E27C   __switch_byte                52      1 NC77 byte switch helper (inline table); returns M=1
+01E2C6   F_01E2C6                     39      4 flag-transparent runtime helper; returns M=0
+01E30B   F_01E30B                     36     10 returns M=0
+01E350   F_01E350                     29      6 flag-transparent runtime helper; returns M=0
+01E388   F_01E388                     29      2 returns M=0
+01E3BA   F_01E3BA                     27     30 returns M=0
+01E3EA   F_01E3EA                     24      9 flag-transparent runtime helper; returns M=0
+01E414   F_01E414                     21      5 flag-transparent runtime helper; returns M=0
+01E43E   F_01E43E                     21      5 flag-transparent runtime helper; returns M=0
+01E466   F_01E466                     25     38 returns M=0
+01E48E   F_01E48E                      8      1 
+01E49E   F_01E49E                      7      3 flag-transparent runtime helper; returns M=0
+01E4B7   F_01E4B7                      7      1 flag-transparent runtime helper; returns M=1
+01E4C2   F_01E4C2                     12      6 returns M=0
+01E4E0   F_01E4E0                      6     16 flag-transparent runtime helper; returns M=1
+01E4EA   F_01E4EA                      6      2 flag-transparent runtime helper; returns M=0
+
+# Most referenced RAM addresses (absolute addressing)
+$023E  257 refs
+$023A  205 refs
+$0240  187 refs
+$023C  182 refs
+$0283  172 refs
+$0244  168 refs
+$0293  148 refs
+$0228  121 refs
+$0335  117 refs
+$0226  116 refs
+$0231  111 refs
+$0242  103 refs
+$03B9  91 refs
+$0211  87 refs
+$0246  85 refs
+$0230  78 refs
+$0227  76 refs
+$0229  76 refs
+$029D  68 refs
+$0248  64 refs
+$03B8  64 refs
+$01BB  57 refs
+$033F  56 refs
+$0252  55 refs
+$01BE  52 refs
+$0233  46 refs
+$01CD  46 refs
+$029C  45 refs
+$01B6  45 refs
+$029E  43 refs
+$0334  43 refs
+$03B6  42 refs
+$01BA  42 refs
+$0340  39 refs
+$0296  39 refs
+$0118  39 refs
+$0375  36 refs
+$03BA  34 refs
+$01BD  33 refs
+$01AA  33 refs
+$0443  32 refs
+$04BD  31 refs
+$0297  30 refs
+$019D  30 refs
+$01C4  29 refs
+$039E  27 refs
+$03F5  27 refs
+$01B7  27 refs
+$0258  26 refs
+$019C  26 refs
+$0117  25 refs
+$029A  25 refs
+$022A  24 refs
+$0082  24 refs
+$0206  24 refs
+$03CE  24 refs
+$019E  23 refs
+$01A1  23 refs
+$0116  22 refs
+$02E1  22 refs
+$02DF  22 refs
+$039A  22 refs
+$0453  22 refs
+$020A  21 refs
+$03A0  21 refs
+$0080  20 refs
+$03A8  20 refs
+$0343  20 refs
+$0455  20 refs
+$041E  20 refs
+$01E9  19 refs
+$0214  19 refs
+$029F  19 refs
+$011D  19 refs
+$0259  19 refs
+$021C  19 refs
+$01EB  18 refs
+$0115  18 refs
+$0232  18 refs
+$0119  18 refs
+
+# SFR usage
+P6         227 refs
+TCSTART    74 refs
+WDT        59 refs
+P6D        55 refs
+P4         45 refs
+TA3IC      38 refs
+P7         30 refs
+U1C1       23 refs
+P5         20 refs
+TB2        20 refs
+AD5        20 refs
+TA4IC      20 refs
+TA3        13 refs
+INT2IC     13 refs
+TB1IC      13 refs
+U1C0       11 refs
+TA3MOD     11 refs
+U1MOD      10 refs
+U1TB       10 refs
+TA1IC      10 refs
+PMOD       9 refs
+AD7        9 refs
+U0C1       8 refs
+TA1        8 refs
+TB0IC      6 refs
+TA4        6 refs
+U1BRG      5 refs
+U0RIC      5 refs
+U0TIC      5 refs
+U0TB       5 refs
+TA3_H      5 refs
+U0RB       5 refs
+TA4MOD     5 refs
+P7D        4 refs
+U0C0       4 refs
+TA2_H      4 refs
+ADCON      4 refs
+TA2IC      4 refs
+TA1MOD     4 refs
+TB1MOD     4 refs
+TB1        4 refs
+TOSTART    4 refs
+AD4        4 refs
+P8         3 refs
+ADIC       3 refs
+TB0        3 refs
+WDTFS      2 refs
+U1RB       2 refs
+TB2IC      2 refs
+AD6        2 refs
+AD3        2 refs
+INT1IC     2 refs
+TA2MOD     2 refs
+TA2        2 refs
+TB0MOD     2 refs
+P4D        1 refs
+P5D        1 refs
+P8D        1 refs
+TB2MOD     1 refs
+U0MOD      1 refs
+U0BRG      1 refs
+TA0MOD     1 refs
+TA0        1 refs
+INT0IC     1 refs
+TA0IC      1 refs
+U1RIC      1 refs
+U1TIC      1 refs
