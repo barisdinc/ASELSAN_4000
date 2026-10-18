@@ -25,6 +25,8 @@ const { Board, parseHex, FCLK } = B;
 const rom = parseHex(hexText);
 let fails = 0;
 function check(name, ok, info) { out((ok ? 'ok   ' : 'FAIL ') + name + (info ? '  (' + info + ')' : '')); if (!ok) fails++; }
+/* power-on wait; firmware with the 5 s boot screen (acilis_yatolye.inc: JMPL at F_00E0E1) needs longer */
+function boot(b, s) { b.run(FCLK * (s + (b.rom[0xE0E1] === 0x5C ? 5.5 : 0))); }
 function radio(eeMod) {
   const b = new Board(rom), ee = B.defaultEeprom();
   if (eeMod) eeMod(ee);
@@ -58,7 +60,7 @@ function scenario(b, name, seq, expect) {
 /* SAYI / TERS (ozel_firmware/ornekler/sayi_ters.asm) */
 {
   const b = radio();
-  b.run(FCLK * 2.5);
+  boot(b, 2.5);
   check('açılış normal', lcd(b) === 'KANAL 01', lcd(b));
   scenario(b, 'menü: LIST → NUMBER', 'm m', 'LIST|NUMBER');
   scenario(b, 's: SAYI moduna gir', 's', '_');
@@ -83,7 +85,7 @@ function scenario(b, name, seq, expect) {
 /* Turkish menu texts: EE 0x018 bit 7 */
 {
   const b = radio(ee => { ee[0x018] |= 0x80; });
-  b.run(FCLK * 2.5);
+  boot(b, 2.5);
   scenario(b, 'Türkçe menü: SAYI', 'm m s 4 2 s', 'LISTE|SAYI|_|4_|42_|24');
 }
 
@@ -92,7 +94,7 @@ if (origText) {
   const orig = parseHex(origText);
   // [original keys, patched keys]: SUB MENU is one m further in the patched ring (after NUMBER)
   const run = (r, seq) => { const b = new Board(r), ee = B.defaultEeprom(); ee[0x018] |= 0x20; B.eeFixSums(ee); b.eeprom.mem.set(ee);
-    b.font = V.buildFont(b.rom); b.run(FCLK * 2.5); return keys(b, seq).join('|'); };
+    b.font = V.buildFont(b.rom); boot(b, 2.5); return keys(b, seq).join('|'); };
   const extra = 'm'.repeat(RING.length);
   for (const [so, sp] of [['ms05mmsms', 'ms05mmsms'], ['p', 'p'], ['mmsmsmmsm', 'm' + extra + 'msmsmmsm']]) {
     let c = run(rom, sp); for (const t of RING) c = c.replace('|' + t.padEnd(8), '');
@@ -100,7 +102,7 @@ if (origText) {
     check('orijinalle aynı: ' + so, a === c, a + '  /  ' + c);
   }
   const b = new Board(rom), ee = B.defaultEeprom(); ee[0x018] |= 0x20; B.eeFixSums(ee); b.eeprom.mem.set(ee);
-  b.font = V.buildFont(b.rom); b.run(FCLK * 2.5);
+  b.font = V.buildFont(b.rom); boot(b, 2.5);
   scenario(b, 'halka (SUB MENU açık): normal → LIST → ' + RING.join(' → ') + ' → SUB MENU → normal',
     'mmm' + extra, ['LIST', ...RING, 'SUB MENU', 'KANAL 01'].join('|'));
 }
@@ -109,7 +111,7 @@ if (origText) {
 if (RING.includes('CALC')) {
   const enter = 'mm' + 'm'.repeat(RING.indexOf('CALC')) + 's';
   const b = radio();
-  b.run(FCLK * 2.5);
+  boot(b, 2.5);
   last = (name, seq, exp) => { const g = keys(b, seq.replace(/ /g, '')); const l = g[g.length - 1];
     check(name, l === exp.padStart(8), '"' + l + '"'); };
   scenario(b, 'HESAP: gir', enter, ['LIST', ...RING.slice(0, RING.indexOf('CALC') + 1), '       0'].join('|'));
@@ -133,7 +135,7 @@ if (RING.includes('CALC')) {
   last('ikinci sayı yoksa # işlemi bırakır', 's 7 * #', '7');
   scenario(b, 'm: çıkış', 'm', 'KANAL 01');
   const t = radio(ee => { ee[0x018] |= 0x80; });
-  t.run(FCLK * 2.5);
+  boot(t, 2.5);
   const g = keys(t, enter + '1****0#');
   check('Türkçe: HESAP / HATA', g[RING.indexOf('CALC') + 1] === 'HESAP   ' && g[g.length - 1] === 'HATA    ', g.join('|'));
 }
@@ -145,7 +147,7 @@ if (RING.includes('GAME')) {
   const beeps = (b, from) => b.events.filter(e => e[0] >= from && /^BİP \d/.test(e[1])).map(e => +e[1].split(' ')[1]);
   const near = (f, want) => Math.abs(f - want) / want < 0.02;
   const b = radio();
-  b.run(FCLK * 2.5);
+  boot(b, 2.5);
   scenario(b, 'OYUN: gir', enter, ['LIST', ...RING.slice(0, RING.indexOf('GAME') + 1), '___'].join('|'));
   const t0 = target(b);
   check('tutulan sayı 1..999', t0 >= 1 && t0 <= 999, t0);
@@ -181,7 +183,7 @@ if (RING.includes('GAME')) {
   check('40 oyunda sayılar aralıkta ve çeşitli', inRange && seen.size >= 35, seen.size + ' farklı: ' + [...seen].slice(0, 10).join(' ') + ' …');
   scenario(b, 'm: çıkış', 'm', 'KANAL 01');
   const tr = radio(ee => { ee[0x018] |= 0x80; });
-  tr.run(FCLK * 2.5); keys(tr, enter);
+  boot(tr, 2.5); keys(tr, enter);
   const tt = target(tr); keys(tr, String(tt)); const w = keys(tr, '#')[0];
   check('Türkçe: BULDU', w === 'BULDU  1', '"' + w + '"');
 }
@@ -196,9 +198,9 @@ if (RING.includes('FREQ')) {
   /* the firmware's own words for a frequency: put it into EEPROM channel 1 of the original image */
   const reference = (hz, uhf) => { const o = new Board(origText ? parseHex(origText) : rom), ee = B.defaultEeprom();
     if (uhf) UHF(ee); B.eeSetChannel(ee, 1, hz, hz, { name: 'REF' }); B.eeFixSums(ee); o.eeprom.mem.set(ee);
-    o.font = V.buildFont(o.rom); o.run(FCLK * 2.6); return synthBytes(rec(o)); };
+    o.font = V.buildFont(o.rom); boot(o, 2.6); return synthBytes(rec(o)); };
   const b = radio();
-  b.run(FCLK * 2.5);
+  boot(b, 2.5);
   scenario(b, 'FREKANS: gir', enter, ['LIST', ...RING.slice(0, RING.indexOf('FREQ') + 1), '___ ____'].join('|'));
   scenario(b, 'haneler, 3. haneden sonra boşluk', '1 5 6 5 2 5', '1__ ____|15_ ____|156 ____|156 5___|156 52__|156 525_');
   scenario(b, '# ayarlar (6 hane = kHz)', '#', '156 5250');
@@ -229,26 +231,35 @@ if (RING.includes('FREQ')) {
   check('kanal anahtarı: kanala dönüş', vco(b) === '201.0500' && lcd(b) === 'KANAL 03', vco(b) + ' ' + lcd(b));
   /* UHF configuration (base 400 MHz, -45 MHz injection, prescaler 128) */
   const u = radio(UHF);
-  u.run(FCLK * 2.5);
+  boot(u, 2.5);
   keys(u, enter + '433125#');
   check('UHF: 433,125 MHz, RX VCO 388,125', vco(u) === '388.1250' && synthBytes(rec(u)) === reference(433.125e6, true), vco(u) + ' ' + synthBytes(rec(u)) + ' / ' + reference(433.125e6, true));
   keys(u, 'm'); u.inputs.P4 = 0x7F; u.run(FCLK * 0.6);
   check('UHF PTT: TX 433,125', vco(u) === '433.1250', vco(u));
   const t = radio(ee => { ee[0x018] |= 0x80; });
-  t.run(FCLK * 2.5);
+  boot(t, 2.5);
   const g = keys(t, enter + '1#');
   check('Türkçe: FREKANS / HATA', g[RING.indexOf('FREQ') + 1] === 'FREKANS ' && g[g.length - 1] === 'HATA    ', g.join('|'));
+}
+
+/* boot screen built into the ROM (acilis_yatolye.inc): 5 s, independent of the EEPROM */
+if (new Board(rom).rom[0xE0E1] === 0x5C) {
+  for (const [name, mod] of [['varsayılan EEPROM', null], ['Türkçe + UHF EEPROM', ee => { ee[0x018] |= 0x80; ee[0x58C] = 0x3E; ee[0x58D] = 0x80; }]]) {
+    const b = radio(mod), seen = [];
+    for (const t of [0.6, 3.0, 5.4, 7.5]) { b.run(FCLK * (t - b.now / FCLK)); seen.push(lcd(b)); }
+    check('açılış ekranı 5 s yATOLYE (' + name + ')', seen[0] === 'yATOLYE ' && seen[1] === 'yATOLYE ' && seen[2] === 'yATOLYE ' && seen[3] !== 'yATOLYE ', seen.join('|'));
+  }
 }
 
 /* the real device is programmed through the serial loader: flash the new image into a
  * radio that runs the original firmware, reset, and try the new mode */
 if (origText) {
   const b = new Board(parseHex(origText)), ee = B.defaultEeprom(); B.eeFixSums(ee); b.eeprom.mem.set(ee);
-  b.font = V.buildFont(b.rom); b.run(FCLK * 2.6);
+  b.font = V.buildFont(b.rom); boot(b, 2.6);
   const up = new UPD.FlashUpdater(b, rom, { verify: true });
   while (!up.done && b.now < FCLK * 600) { b.run(FCLK * 0.01); up.tick(); }
   check('seri yükleyiciyle yazıldı ve doğrulandı', !up.error, up.error || up.log.slice(-1)[0]);
-  b.font = V.buildFont(b.rom); b.run(FCLK * 3);
+  b.font = V.buildFont(b.rom); boot(b, 3);
   scenario(b, 'yüklemeden sonra SAYI çalışıyor', 'mms 2 0 2 6 s', 'LIST|NUMBER|_|2_|20_|202_|2026_|6202');
   if (RING.includes('FREQ')) { keys(b, 'm'); const g = keys(b, 'mmmmms156525#'); check('yüklemeden sonra FREKANS çalışıyor', g[g.length - 1] === '156 5250' && (b.radioState().vco / 1e6).toFixed(4) === '201.5250', g.join('|')); }
   if (RING.includes('GAME')) { keys(b, 'm'); const g = keys(b, 'mmmms123#'); check('yüklemeden sonra OYUN çalışıyor', g[4] === '___     ' && /^123 [v^]  1$|^WIN    1$/.test(g[8]), g.join('|')); }

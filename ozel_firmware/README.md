@@ -9,6 +9,7 @@ Orijinal YA4000S yazılımına eklenen özellikler. Her örnek önce simülatör
 | `YA4000S_HESAP.HEX` | SAYI + **HESAP**: dört işlemli hesap makinesi | `ornekler/hesap.asm` |
 | `YA4000S_OYUN.HEX` | SAYI + HESAP + **OYUN**: sayı tahmin oyunu (rastgele sayı, sesler) | `ornekler/oyun.asm` |
 | `YA4000S_FREKANS.HEX` | Önceki üçü + **FREKANS**: tuş takımından frekans girip telsizi ayarlama (VFO) | `ornekler/frekans.asm` |
+| `YA4000S_FREKANS_YATOLYE.HEX` | FREKANS'ın tamamı + açılışta 5 saniye **yATOLYE** (flash'a gömülü, EEPROM / programlayıcı değiştiremez; sürüm yazısı "AS V2-3" yerine) | `ornekler/frekans_yatolye.asm` |
 
 Kaynak düzeni (`ornekler/`):
 
@@ -17,6 +18,16 @@ Kaynak düzeni (`ornekler/`):
 | `menu_altyapi.inc` | Ortak: firmware'in menü değişkenleri, sabitler, menü tablolarını bank 1'e taşıyan 18 yama |
 | `sayi_ters.inc`, `hesap.inc`, `oyun.inc`, `frekans.inc` | Her örneğin işleyicileri |
 | `sayi_ters.asm`, `hesap.asm`, `oyun.asm`, `frekans.asm` | Bir firmware = altyapı + menü tabloları (hangi öğeler, hangi sırada) + örneklerin `.inc` dosyaları |
+| `acilis_yatolye.inc` | Açılış ekranı: F_00E0E1'e (sürüm yazısı) JMPL, 5 s "yATOLYE"; LCD fontunda olmayan küçük `y` için F_00828C'ye segment yaması (0x2546) |
+| `frekans_yatolye.asm` | `frekans.asm` + `acilis_yatolye.inc` |
+
+**Menü sırası** (FREKANS ve FREKANS_YATOLYE; Türkçe EE[0x018] bit 7, ALT MENU bit 5, ör. EE[0x018] = 0xA1):
+
+```
+KANAL 01 -m-> LISTE -m-> SAYI -m-> HESAP -m-> OYUN -m-> FREKANS -m-> ALT MENU -m-> KANAL 01
+```
+
+Bir öğeye `s` ile girilir; içindeyken `m` normal ekrana döner. ALT MENU kapalıysa (bit 5 = 0) FREKANS'tan sonra doğrudan normal ekran gelir. İngilizce menüde başlıklar NUMBER / CALC / GAME / FREQ / SUB MENU.
 
 ```
 cd disasm

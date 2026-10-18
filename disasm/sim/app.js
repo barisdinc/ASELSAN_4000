@@ -156,7 +156,7 @@ const GLYPH = {
   '0': 'abcdefjk', '1': 'bcj', '2': 'abdeg1g2', '3': 'abcdg2', '4': 'bcfg1g2', '5': 'acdfg1g2', '6': 'acdefg1g2', '7': 'abc', '8': 'abcdefg1g2', '9': 'abcdfg1g2',
   A: 'abcefg1g2', B: 'abcdg2il', C: 'adef', D: 'abcdil', E: 'adefg1', F: 'aefg1', G: 'acdefg2', H: 'bcefg1g2', I: 'adil', J: 'bcde', K: 'efg1jm', L: 'def',
   M: 'bcefhj', N: 'bcefhm', O: 'abcdef', P: 'abefg1g2', Q: 'abcdefm', R: 'abefg1g2m', S: 'acdfg1g2', T: 'ail', U: 'bcdef', V: 'efjk', W: 'bcefkm', X: 'hjkm', Y: 'hjl', Z: 'adjk',
-  '-': 'g1g2', '+': 'g1g2il', '*': 'g1g2hijklm', '/': 'jk', ':': 'il', '<': 'jm', '_': 'd', '^': 'hj', 'v': 'km', 'd': 'bcdeg1g2', 'm': 'ceg1g2l', 'e': 'abdefg1g2', 'j': 'cd', '?': 'abg2l',
+  '-': 'g1g2', '+': 'g1g2il', '*': 'g1g2hijklm', '/': 'jk', ':': 'il', '<': 'jm', '_': 'd', '^': 'hj', 'v': 'km', 'd': 'bcdeg1g2', 'm': 'ceg1g2l', 'e': 'abdefg1g2', 'j': 'cd', 'y': 'bcdfg1g2', '?': 'abg2l',
 };
 function segList(g) { const r = []; let s = g; while (s.length) { const m = s.match(/^(g1|g2|[a-m])/); r.push(m[1]); s = s.slice(m[1].length); } return r; }
 function glyphSvg(id, w, h) {

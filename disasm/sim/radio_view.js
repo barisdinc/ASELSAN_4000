@@ -26,6 +26,9 @@ function buildFont(rom) {
     for (let i = 0; i < 26; i++) { const v = w(let0 + 2 * i); if (!map.has(v)) map.set(v, String.fromCharCode(65 + i)); }
     for (let i = 0; i < 10; i++) { const v = w(dig0 + 2 * i); if (!map.has(v)) map.set(v, String(i)); }
     for (const c in punct) { const v = w(punct[c]); if (!map.has(v)) map.set(v, c); }
+    // lower-case y (no glyph in the ROM font; drawn by ozel_firmware/ornekler/acilis_yatolye.inc):
+    // '4' plus the bottom bar (the bit 'U' has and 'A' lacks)
+    const y = w(dig0 + 8) | (w(let0 + 40) & ~w(let0)); if (!map.has(y)) map.set(y, 'y');
     const d7 = new Map(); for (let i = 0; i < 10; i++) d7.set(rom[ch7 + i], String(i));
     return { map, d7, reverse };
   };
