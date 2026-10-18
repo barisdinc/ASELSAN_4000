@@ -304,6 +304,9 @@ if (RING.includes('APRS')) {
   b.inputs.P5 |= 0x80; b.run(FCLK * 0.6);                    // P57 = 1: kanalda sinyal
   check('APRS: kanalda sinyal varken hoparlör kapalı (P46 = 0)', !hop(), 'P46=' + (hop() ? 1 : 0));
   b.inputs.P5 &= ~0x80; b.run(FCLK * 0.4);
+  const bip = b => b.events.filter(e => /^BİP \d/.test(e[1])).length;
+  let n0 = bip(b); keys(b, '5*#0');
+  check('APRS: tuşlara basınca bip yok (TA0 / P50 sessiz)', bip(b) === n0, (bip(b) - n0) + ' bip');
   /* PTT: örnekleri toplayıp çöz */
   const log = [], push = b.pushAudio.bind(b);
   b.pushAudio = (buf, v) => { if (buf === b.audio.ta1) log.push(b.now, v); push(buf, v); };
@@ -322,6 +325,9 @@ if (RING.includes('APRS')) {
   check('APRS: çıkınca kanala dönüş', vco(b) === vco0, vco(b) + ' / ' + vco0);
   b.inputs.P5 |= 0x80; b.run(FCLK * 0.6);
   check('çıkınca kanalda sinyal: hoparlör açılır (P46 = 1)', hop(), 'P46=' + (hop() ? 1 : 0));
+  n0 = bip(b); keys(b, 'mm');
+  check('çıkınca bipler geri geldi', bip(b) > n0, (bip(b) - n0) + ' bip');
+  keys(b, 'm'.repeat(RING.length + 1)); for (let k = 0; k < 14 && lcd(b) !== 'KANAL 01'; k++) keys(b, 'm');
   b.inputs.P5 &= ~0x80; b.run(FCLK * 0.6);
   check('sinyal gidince hoparlör kapanır', !hop(), 'P46=' + (hop() ? 1 : 0));
   log.length = 0;
@@ -361,6 +367,29 @@ if (RING.includes('APRS')) {
     const r = radio(adlar(ayar)); boot(r, 2.5); const g = keys(r, enter); r.run(FCLK * 0.3);
     const f = paketGonder(r);
     check('APRS hatalı ayar: ' + ad + ' -> ' + ekran + ', paket yok', g[g.length - 1] === ekran.padEnd(8) && f.length === 0, g[g.length - 1] + ' / ' + f.length + ' paket');
+  }
+  /* kanal 55: otomatik gönderim (PTT'ye basılmadan) */
+  {
+    const r = radio(adlar([...AYAR, '12'])); boot(r, 2.5); keys(r, enter); r.run(FCLK * 0.3);
+    const log = [], push = r.pushAudio, tx = [];
+    r.pushAudio = (buf, v) => { if (buf === r.audio.ta1) log.push(r.now, v); push.call(r, buf, v); };
+    for (let t = 0; t < 27; t += 0.25) { r.run(FCLK * 0.25); tx.push(r.radioState().vco / 1e6 < 150 ? 1 : 0); }
+    r.pushAudio = push;
+    const f = AFSK.decode(log, FCLK), txs = tx.join('').split(/0+/).filter(Boolean).length;
+    check('APRS otomatik: kanal 55 = 12 s, PTT yok, 27 s\'de 2 paket', f.length === 2 && f.every(x => x.fcsOk && x.text === PAKET), f.map(x => x.text).join(' / ') || 'paket yok');
+    const t1 = log.length ? log[0] / FCLK : 0;
+    check('APRS otomatik: ilk paket ~12 s sonra, her gönderimden sonra verici kapanıyor', txs === 2 && tx[tx.length - 1] === 0, 'gönderim ' + txs + ', son durum ' + (tx[tx.length - 1] ? 'TX' : 'RX') + ', ekran ' + lcd(r));
+    keys(r, 'm'); log.length = 0;
+    r.pushAudio = (buf, v) => { if (buf === r.audio.ta1) log.push(r.now, v); push.call(r, buf, v); };
+    r.run(FCLK * 14); r.pushAudio = push;
+    check('APRS otomatik: menüden çıkınca durur', log.length === 0 && lcd(r) === 'KANAL 01', log.length / 2 + ' örnek, ' + lcd(r));
+  }
+  {
+    const r = radio(adlar([...AYAR, ''])); boot(r, 2.5); keys(r, enter); r.run(FCLK * 0.3);
+    let n = 0; const push = r.pushAudio;
+    r.pushAudio = (buf, v) => { if (buf === r.audio.ta1) n++; push.call(r, buf, v); };
+    r.run(FCLK * 14); r.pushAudio = push;
+    check('APRS otomatik: kanal 55 boşsa gönderim yok', n === 0 && lcd(r) === 'APRS PTT', n + ' örnek');
   }
   const kotu = b.events.filter(e => e[0] > t0 && /WATCHDOG|RESET/.test(e[1]));   // (açılıştakiler hariç)
   check('APRS: bekçi köpeği / yeniden başlama yok', kotu.length === 0, kotu.map(e => (e[0] / FCLK).toFixed(2) + ' ' + e[1]).join(', '));

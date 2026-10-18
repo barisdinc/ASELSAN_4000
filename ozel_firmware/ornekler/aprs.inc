@@ -2,7 +2,7 @@
 ;
 ;   ... m (APRS) s     -> "APRS PTT"    kanal 50..54'ün adları EEPROM'dan okunup paket kurulur;
 ;                                       telsiz alma ve gönderme 144,800 MHz'e geçer (TKS kapalı),
-;                                       hoparlör kapanır (kanaldaki paketler duyulmaz)
+;                                       hoparlör tamamen susar (kanal sesi, bip ve uyarı tonları yok)
 ;   PTT                -> "APRS TX"     paket gider (~0,75 s), ardından "APRS OK"; PTT basılı
 ;                                       tutulursa telsiz 144,800'de göndermeye devam eder
 ;   m                  -> çık: telsiz önceki kanalına / frekansına döner
@@ -14,6 +14,8 @@
 ;   kanal 53  yorum (mesaj)              "ASELSAN"   -> sondaki boşluklar atılır
 ;   kanal 54  simge: tablo + kod         "/B"        -> /b (koddaki harf küçük harfe çevrilir;
 ;                                                       tek karakterse tablo '/'; boşsa /b)
+;   kanal 55  otomatik gönderim aralığı, saniye   "60"  -> APRS menüsündeyken PTT'ye basılmasa
+;             da her 60 saniyede bir paket gider (boş ya da 0: kapalı; en kısa 10 s)
 ; Paket: <50>>APIZCI,WIDE1-1,WIDE2-1:!<51><tablo><52><kod><53>
 ;   örnek: TA7W-7>APIZCI,WIDE1-1,WIDE2-1:!4050.63N/03109.39EbASELSAN
 ; Ad geçersizse ekranda "CAGRI -" / "ENLEM -" / "BOYLAM -" (İngilizce "CALL -", "LAT -", "LON -")
@@ -40,8 +42,12 @@
 ;            hoparlör kapalı kalır (kanaldaki paketler kullanıcıyı rahatsız etmesin); uyarı ve tuş
 ;            sesleri (P50) etkilenmez. APRS'e girerken hoparlör hemen kapatılır, çıkışta
 ;            RX'e yeniden girilince firmware susturmaya göre yeniden açar
+;   0x0080AA F_0080AA (bip) ve 0x008084 F_008084 (uyarı tonu): APRS menüsündeyken hiç ses
+;            çalınmaz (TA0 / P50 başlatılmaz). Böylece APRS'te hoparlör tamamen sessiz.
 ;   VFO_KANCA (frekans.inc) her turda APRS_KANCA'yı çağırır: menü zaman aşımını yeniler,
-;            menüden herhangi bir yolla çıkılınca sentezör kaydını geri yükler
+;            menüden herhangi bir yolla çıkılınca sentezör kaydını geri yükler; otomatik
+;            gönderim zamanı gelince PTT isteği kurar ($0244 bit 2: F_005E56 bunu PTT gibi
+;            işler, verici açılır, durum 4 -> 5 -> APRS_PTT paketi gönderir ve isteği siler)
 
 AP_FAZ      .EQU OZEL_RAM+$A0   ; 2 bayt: DDS faz sayacı
 AP_ARTIM    .EQU OZEL_RAM+$A2   ; 2 bayt: faz artımı (ton)
@@ -73,6 +79,19 @@ AP_T2       .EQU OZEL_RAM+$DD
 AP_AD       .EQU OZEL_RAM+$DE   ; 8 bayt: EEPROM'dan okunan kanal adı
 AP_HANE     .EQU OZEL_RAM+$E6   ; 7 bayt: konumun rakamları
 AP_CER      .EQU OZEL_RAM+$ED   ; 60 bayt: AX.25 çerçevesi (en uzun 60 bayt) .. $0628
+; otomatik gönderim (OZEL_RAM'den önceki boş alan, $04ED..$04FF)
+AP_ARALIK   .EQU $04F0          ; 2 bayt: kanal 55'teki saniye (0 = kapalı)
+AP_SANIYE   .EQU $04F2          ; 2 bayt: son gönderimden beri geçen saniye
+AP_MS       .EQU $04F4          ; 2 bayt: saniyenin milisaniyesi (32 ms adım)
+AP_SONTIK   .EQU $04F6          ; son görülen 32 ms sayacı ($0457)
+AP_FARK     .EQU $04F7          ; geçen 32 ms adımı
+AP_OTO      .EQU $04F8          ; 1 = otomatik gönderim için PTT isteği kuruldu
+AP_OTO_SURE .EQU $04F9          ; isteğin kalan süresi (32 ms adım); verici açılmazsa bırakılır
+TIK_32MS    .EQU $0457          ; TB2 kesmesi her 32 ms'de bir artırır
+PTT_ISTEK   .EQU $0244          ; F_005E56: bit 0..5 PTT istekleri (0x20 P47, 0x10 panel ...)
+F_PTT_APRS  .EQU $0004          ; firmware'de kullanılmayan istek biti: otomatik APRS gönderimi
+EE_ARALIK   .EQU $2E+13*54+EE_AD    ; kanal 55
+AP_EN_KISA  .EQU 10             ; en kısa otomatik gönderim aralığı (s)
 
 F_AP_KURULU .EQU 1
 F_AP_GITTI  .EQU 2
@@ -122,6 +141,12 @@ AP_KOD_ADRES .EQU *
         .EXPECT $F8,$0C,$0A,$00,$40,$4C,$0B,$EA   ; SEM / SEB #$40,P4 / JMP L_00EA0B
         JMPL  APRS_HOPARLOR
         .BYTE $EA,$EA,$EA,$EA           ; (NOP, çalışmaz)
+        .ORG $0080AA                    ; F_0080AA (tuş / onay / hata bipleri)
+        .EXPECT $A3,$04,$0B,$5B         ; LDA A,$04,S / PHD / TAD
+        JMPL  APRS_BIP
+        .ORG $008084                    ; F_008084 (uyarı tonu aç: TA0 -> P50)
+        .EXPECT $A3,$04,$48,$F8         ; LDA A,$04,S / PHA / SEM
+        JMPL  APRS_UYARI
         .ORG $00F4E4                    ; durum 5 -> 6: seçmeli çağrı kimliği yerine APRS
         .EXPECT $22,$5B,$E6,$00
         JSRL  APRS_PTT
@@ -262,6 +287,38 @@ APRS_HOPARLOR:
 AH_AC:  SEB   #$40,R_P4                 ; orijinal
         JMPL  $00EA0E
 
+; Bip (F_0080AA girişi, JMPL ile: yığın girişteki gibi): APRS'te sessiz döner
+APRS_BIP:
+        .ASSUME M=0,X=0
+        PHP
+        SEM
+        JSR   AP_ETKIN
+        BEQ   ABP_SUS
+        PLP
+        LDA   A,$04,S                   ; orijinal: LDA A,$04,S / PHD / TAD
+        PHD
+        TAD
+        JMPL  $0080AE
+ABP_SUS:
+        PLP
+        RTL
+
+; Uyarı tonu (F_008084 girişi; TB2 kesmesinden de çağrılır): APRS'te başlatma
+APRS_UYARI:
+        .ASSUME M=0,X=0
+        PHP
+        SEM
+        JSR   AP_ETKIN
+        BEQ   AUY_SUS
+        PLP
+        LDA   A,$04,S                   ; orijinal: LDA A,$04,S / PHA / SEM (JMPL bu üçünü
+        PHA                             ; kapladı), sonra 0x008088'den devam
+        SEM
+        JMPL  $008088
+AUY_SUS:
+        PLP
+        RTL
+
 ; APRS menüsü açık ve frekans kurulu mu? Z = 1: evet (M = 1 giriş ve çıkış, A bozulur)
 AP_ETKIN:
         .ASSUME M=1,X=0
@@ -300,7 +357,11 @@ APRS_PTT:
         JSRL  F_LCD
         CLM
         JSR   AFSK_GONDER
+        CLB   #F_PTT_APRS,PTT_ISTEK     ; otomatik gönderimse PTT isteğini bırak: verici kapanır
+        LDM   #0,AP_SANIYE              ; aralık yeniden başlar
+        LDM   #0,AP_MS
         SEM
+        LDM   #0,AP_OTO
         SEB   #F_AP_GITTI,AP_DURUM
         CLM
         LDX   #8                        ; "APRS OK"
@@ -603,6 +664,9 @@ AHA_5:  LDA   A,AP_SEMBOL+1             ; simge kodu
         CLM
         STX   AP_UZ
         JSR   AP_FCS
+        LDA   A,#EE_ARALIK              ; kanal 55: otomatik gönderim aralığı
+        JSR   AP_AD_OKU
+        JSR   AP_ARALIK_AL
         CLC
         RTS
 AHA_HATA:
@@ -969,6 +1033,60 @@ AMS_2:  LDA   A,AP_AD,Y
 AMS_SON:
         RTS
 
+; Kanal 55: baştaki boşluklardan sonraki rakamlar (en çok 4) = saniye; rakam yoksa 0 (kapalı),
+; 1..9 ise 10. Sayaçları sıfırlar (M = 0 giriş ve çıkış)
+AP_ARALIK_AL:
+        .ASSUME M=0,X=0
+        LDM   #0,AP_ARALIK
+        LDM   #0,AP_SANIYE
+        LDM   #0,AP_MS
+        LDY   #0
+AAL_1:  CPY   #8                        ; baştaki boşluklar
+        BEQ   AAL_SON
+        LDA   A,AP_AD,Y
+        AND   A,#$00FF
+        CMP   A,#' '
+        BNE   AAL_2
+        INY
+        BRA   AAL_1
+AAL_2:  LDX   #4                        ; en çok 4 rakam
+AAL_3:  CPY   #8
+        BEQ   AAL_SON
+        LDA   A,AP_AD,Y
+        AND   A,#$00FF
+        SEC
+        SBC   A,#'0'
+        BCC   AAL_SON
+        CMP   A,#10
+        BCS   AAL_SON
+        STA   A,AP_T1                   ; ARALIK = 10 * ARALIK + rakam (AP_T1/AP_T2 2 bayt)
+        LDA   A,AP_ARALIK
+        ASL   A
+        STA   A,AP_CRC                  ; (geçici, FCS çoktan yazıldı)
+        ASL   A
+        ASL   A
+        CLC
+        ADC   A,AP_CRC
+        CLC
+        ADC   A,AP_T1
+        STA   A,AP_ARALIK
+        INY
+        DEX
+        BNE   AAL_3
+AAL_SON:
+        LDA   A,AP_ARALIK
+        BEQ   AAL_X
+        CMP   A,#AP_EN_KISA
+        BCS   AAL_X
+        LDA   A,#AP_EN_KISA
+        STA   A,AP_ARALIK
+AAL_X:  SEM
+        LDA   A,TIK_32MS
+        STA   A,AP_SONTIK
+        LDM   #0,AP_OTO
+        CLM
+        RTS
+
 ; FCS: CRC-16-CCITT (yansıtılmış 0x8408, başlangıç 0xFFFF, sonda tersi) çerçevenin sonuna,
 ; düşük bayt önce; AP_UZ 2 artar (M = 0)
 AP_FCS:
@@ -1008,13 +1126,22 @@ APRS_KANCA:
         LDA   A,MENU
         CMP   A,#ST_APRS_ON
         BNE   AKN_CIKIS
+        CLB   #$40,R_P4                 ; hoparlör her turda yeniden kapatılır
         LDA   A,MENU_OLAY               ; açıkken menü zaman aşımı yok
         CMP   A,#$14
-        BNE   AKN_SON
+        BNE   AKN_ZAMAN
         LDM   #$3F,MENU_SAYAC
-        BRA   AKN_SON
+AKN_ZAMAN:
+        JMP   AP_OTO_ZAMAN
 AKN_CIKIS:
         LDM   #0,AP_DURUM
+        LDA   A,AP_OTO                  ; otomatik gönderim isteği kalmasın
+        BEQ   AKN_C1
+        LDM   #0,AP_OTO
+        CLM
+        CLB   #F_PTT_APRS,PTT_ISTEK
+        SEM
+AKN_C1:
         LDX   #0                        ; kayıt hâlâ bizimki mi? (kanal anahtarı çevrildiyse dokunma)
 AKN_1:  LDA   A,SYN_KAYIT,X
         CMP   A,AP_KAYIT,X
@@ -1031,5 +1158,64 @@ AKN_2:  LDA   A,AP_YEDEK,X
         BNE   AKN_2
         LDM   #1,RADYO_DURUM
 AKN_SON:
+        CLM
+        RTS
+
+; Otomatik gönderim zamanlaması (APRS_KANCA'dan, M = 1; RTS ile M = 0 döner). Geçen 32 ms
+; adımlarını saniyeye çevirir; aralık dolunca PTT isteği kurar. İstek ~3 s içinde paketle
+; sonuçlanmazsa (gönderme yasağı, kanal meşgul) bırakılır.
+AP_OTO_ZAMAN:
+        .ASSUME M=1,X=0
+        LDA   A,TIK_32MS                ; geçen adım
+        SEC
+        SBC   A,AP_SONTIK
+        STA   A,AP_FARK
+        LDA   A,TIK_32MS
+        STA   A,AP_SONTIK
+        JSR   AP_HAZIR                  ; paket hazır değilse sayma
+        BNE   AOZ_SON
+        CLM
+        LDA   A,AP_ARALIK
+        BEQ   AOZ_SON
+        SEM
+        LDA   A,AP_OTO
+        BEQ   AOZ_SAY
+        LDA   A,AP_OTO_SURE             ; istek bekliyor: süresi dolarsa bırak
+        SEC
+        SBC   A,AP_FARK
+        BCS   AOZ_S1
+        LDA   A,#0
+AOZ_S1: STA   A,AP_OTO_SURE
+        BNE   AOZ_SON
+        LDM   #0,AP_OTO
+        CLM
+        CLB   #F_PTT_APRS,PTT_ISTEK
+        LDM   #0,AP_SANIYE
+        BRA   AOZ_SON
+AOZ_SAY:
+        .ASSUME M=1,X=0
+        LDA   A,AP_FARK
+        BEQ   AOZ_SON
+        CLM
+AOZ_1:  LDA   A,AP_MS                   ; her adım 32 ms
+        CLC
+        ADC   A,#32
+        CMP   A,#1000
+        BCC   AOZ_2
+        SBC   A,#1000
+        INC   AP_SANIYE
+AOZ_2:  STA   A,AP_MS
+        SEM
+        DEC   AP_FARK
+        CLM
+        BNE   AOZ_1
+        LDA   A,AP_SANIYE
+        CMP   A,AP_ARALIK
+        BCC   AOZ_SON
+        SEB   #F_PTT_APRS,PTT_ISTEK     ; zamanı geldi: PTT isteği
+        SEM
+        LDM   #1,AP_OTO
+        LDM   #94,AP_OTO_SURE           ; ~3 s
+AOZ_SON:
         CLM
         RTS

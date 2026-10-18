@@ -149,7 +149,8 @@ Menüde FREKANS'tan sonra gelir (`m` ile **APRS** başlığına gelip `s`).
 
 | Ekran / tuş | Ne olur |
 |---|---|
-| `s` (APRS başlığında) | Telsiz alma ve gönderme **144,800 MHz**'e geçer, TKS kapanır, hoparlör kapanır (kanaldaki paketler duyulmaz; tuş ve uyarı sesleri duyulur). Ekranda `APRS PTT` |
+| `s` (APRS başlığında) | Telsiz alma ve gönderme **144,800 MHz**'e geçer, TKS kapanır, hoparlör tamamen susar (kanal sesi, tuş bipleri ve uyarı tonları yok). Ekranda `APRS PTT` |
+| (bekle) | Kanal 55'te saniye yazılıysa PTT'ye basılmadan o aralıkla paket gider; telsiz kendisi gönderip almaya döner |
 | PTT | ~130 ms sonra paket gider (0,75 s): ekranda `APRS TX`, bitince `APRS OK`. PTT basılı tutulursa telsiz 144,800'de göndermeye (konuşmaya) devam eder |
 | `m` | Çık: telsiz önceki kanalına / frekansına döner. Menüdeyken kanal anahtarı çevrildiyse yeni kanal kalır |
 
@@ -164,6 +165,7 @@ FREKANS'taki gibi APRS açıkken firmware'in ~4 s'lik menü zaman aşımı kapal
 | 52 | Boylam: DDDMM (4 hane yazılırsa başa 0), boşluk, mm, `E`/`W` | `3109 39E` | `03109.39E` |
 | 53 | Yorum (sondaki boşluklar atılır; boş olabilir) | `ASELSAN` | `ASELSAN` |
 | 54 | Simge: tablo + kod. Koddaki harf küçük harfe çevrilir; tek karakterse tablo `/`; boşsa `/b` | `/B` | `/b` (bisiklet) |
+| 55 | Otomatik gönderim aralığı, saniye (en çok 4 rakam). Boş ya da 0: kapalı; 1–9 yazılırsa 10 | `60` | her 60 s'de bir paket |
 
 Koordinatlarda rakamlar arasındaki ilk boşluk ondalık noktadır (kanal adında nokta yazılamaz). Noktadan sonra 1 ya da 2 hane yazılabilir (tek haneyse sona 0 eklenir: `4050 6N` → `4050.60N`); noktadan önce enlemde 4, boylamda 5 hane (4 yazılırsa başa 0) olmalı. Boşluk hiç yoksa son iki rakam ondalık sayılır (`405063N`, `0310939E`). Baştaki ve harften sonraki boşluklar ile `-` `_` `/` atlanır.
 
@@ -194,7 +196,11 @@ Ad geçersizse ekranda `CAGRI -`, `ENLEM -` ya da `BOYLAM -` (İngilizce `CALL -
 | 0x00EDA2 (durum 4) | PTT'de kimlik gönderilecek mi? (5 ya da doğrudan 8) | APRS menüsündeyse 5'e geçer; gecikme 4 × 32 ms (EEPROM'daki ton gönderme gecikmesi değil: senin telsizinde 1,5 s) |
 | 0x00F4E4 (durum 5) | `JSRL F_00E65B` (seçmeli çağrı kimliği) | `APRS_PTT`: APRS menüsündeyse paketi gönderir, değilse hiçbir şey |
 | 0x00E9FE (`F_00E9D2`) | susturma açıldı → `SEB #$40,P4` (hoparlör açık) | `APRS_HOPARLOR`: APRS menüsündeyse P46 = 0 |
-| `VFO_KANCA` (0x00F84D) | | `APRS_KANCA`: menü zaman aşımını yeniler, menüden çıkılınca sentezör kaydını geri yükler |
+| 0x0080AA `F_0080AA` | bip (tuş, onay, hata) | `APRS_BIP`: APRS menüsündeyse çalmadan döner |
+| 0x008084 `F_008084` | uyarı tonu (TA0 → P50) | `APRS_UYARI`: APRS menüsündeyse başlatmaz |
+| `VFO_KANCA` (0x00F84D) | | `APRS_KANCA`: menü zaman aşımını yeniler, hoparlörü kapalı tutar, menüden çıkılınca sentezör kaydını geri yükler; otomatik gönderim zamanı gelince PTT isteği kurar |
+
+**Otomatik gönderim.** Zaman tabanı TB2 kesmesinin her 32 ms'de bir artırdığı 0x0457 sayacı. Süre dolunca `APRS_KANCA` RAM 0x0244'ün bit 2'sini kurar. Firmware'in PTT işleyicisi (`F_005E56`) bu baytın alt 6 bitini PTT isteği sayar (0x20 P47, 0x10 panel...); bit 2 hiçbir yerde kullanılmıyordu. Verici firmware'in kendi yoluyla açılır (güç rampası, sentezör), durum 4 → 5 → `APRS_PTT` paketi gönderir ve biti siler; verici kapanır. Gönderme yasağı / kanal meşgulü yüzünden ~3 s içinde paket gitmezse istek bırakılır. Elle PTT ile gönderimden sonra da aralık baştan başlar.
 
 **Simülatörde doğrulama** (`test_ozel.js`, `disasm/sim/afsk.js`): TA1'e yazılan örnekler firmware'den bağımsız bir çözücüden geçirilir (1200/2200 Hz enerjisi, bit saati, NRZI, bit doldurma, CRC). Üç farklı ayarla paket bayt bayt çözülür (SSID'siz, iki haneli SSID, güney / batı, 6 haneli boylam, boş yorum, tek karakterli simge); dört hatalı ayarda hata ekranı çıkar ve paket gitmez. Örnekleme 9600 Hz.
 
