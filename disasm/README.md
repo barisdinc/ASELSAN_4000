@@ -23,7 +23,7 @@ Derleyici imzaları NC77 ile uyumlu (ncrt0 başlangıç kodu, runtime kütüphan
 
 Doğrulama:
 - 8 listing'in hepsi HEX içeriğiyle **bayt bayt aynı** (eksik/fazla/yanlış bayt yok).
-- Opcode tabloları `ASELSAN_4000/MCUDocs/1989_MELPS_7700_Software_Manual.pdf` Appendix C
+- Opcode tabloları `../MCUDocs/1989_MELPS_7700_Software_Manual.pdf` Appendix C
   (Instruction Code Table 1/2/3: tek bayt, `42` ve `89` önekleri) ile hücre hücre karşılaştırıldı, birebir aynı.
 - SFR adresleri ve vektör tablosu M37732S4 veri sayfasından (1991 data book, Fig. 2 ve Table 1) alındı.
 - Port pinlerine kılavuzdaki sinyal adları eklendi (`[P67 SENTEZOR_KILIT]` gibi). Kaynak: 4021/4025 Depo Bakım
