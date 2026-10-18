@@ -188,6 +188,41 @@ function refusals(basePath) {
   check('sağlama toplamı düzeltilir', r4.ok && r4.notes.some(s => /düzeltildi/.test(s)) && U2.checkRomChecksum(r4.image).ok, r4.notes.join('; '));
 }
 
+/* EEPROM restore: checks, only changed pages written, verify, reset, new settings in use;
+ * a lossy line rewrites the page */
+async function eepromRestore(path) {
+  const b = radio(path);
+  const port = new S.SimPort(b, FCLK);
+  const logs = [];
+  const c = new S.RadioClient(port, { log: s => logs.push(s) });
+  await c.connect();
+  const cur = await c.readEeprom();
+  const f = cur.slice(); B.eeSetChannel(f, 1, 145.6e6, 145.7e6, { name: 'GERI YUK' }); f[0x018] |= 0x80;   // sums not fixed
+  const r = S.checkEeprom(f, cur);
+  check('EEPROM: sağlama toplamı düzeltilir', r.ok && r.notes.some(n => /düzeltildi/.test(n)) && B.eeCheckSums(r.ee).every(x => x), r.notes.join('; '));
+  const other = cur.slice(); other[0x58B] ^= 2; B.eeFixSums(other);
+  const r2 = S.checkEeprom(other, cur);
+  check('EEPROM: başka donanım tipi reddedilir', !r2.ok && /donanım tipi/.test(r2.errors[0]), r2.errors[0]);
+  check('EEPROM: 2048 bayt değilse reddedilir', !S.checkEeprom(new Uint8Array(1000), cur).ok);
+  const cal = cur.slice(); cal[0x590] ^= 1; B.eeFixSums(cal);
+  const r3 = S.checkEeprom(cal, cur);
+  check('EEPROM: kalibrasyon farkı uyarı ister', r3.ok && r3.warnings.some(w => /kalibrasyon/.test(w)), r3.warnings.join('; '));
+  /* lose a byte in the 2nd write frame */
+  let n = 0; const w = port.write.bind(port);
+  port.write = async bytes => { if (bytes.length > 20 && ++n === 2) { bytes = Array.from(bytes); bytes.splice(12, 1); } return w(bytes); };
+  const res = await c.writeEeprom(r.ee, { current: cur });
+  port.write = w;
+  let d = 0; for (let a = 0; a < 2048; a++) if (b.eeprom.mem[a] !== r.ee[a]) d++;
+  check('EEPROM: yazıldı, yalnız değişen sayfalar', d === 0 && res.pages > 0 && res.pages < 10, res.pages + ' sayfa, ' + d + ' fark');
+  check('EEPROM: adres baytı kaybolunca başka yere yazılan sayfa tam karşılaştırmada düzeltildi', logs.some(l => /tam karşılaştırma/.test(l)), logs.filter(l => /sayfa/.test(l)).join(' | '));
+  b.run(FCLK * (b.rom[0xE0E1] === 0x5C ? 9 : 4));
+  const lcd = V.decodeLcd(b, V.buildFont(b.rom)).text;
+  check('EEPROM: telsiz yeniden açıldı, yeni kanal adı', lcd === 'GERI YUK', lcd);
+  await c.connect();
+  const now = await c.readEeprom();
+  check('EEPROM: açılıştan sonra okunan dosyayla aynı', now.every((v, i) => v === r.ee[i]));
+}
+
 const V = globalThis.RadioView, U2 = globalThis.Updater;
 (async () => {
   try {
@@ -196,6 +231,7 @@ const V = globalThis.RadioView, U2 = globalThis.Updater;
     await lossy(args[0] || '../../YA4000S.HEX');
     await noRadio();
     refusals(args[0] || '../../YA4000S.HEX');
+    await eepromRestore(args[0] || '../../YA4000S.HEX');
     if (args[1]) {
       await write(args[0], args[1]);
       await interrupted(args[0], args[1]);

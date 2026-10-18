@@ -99,6 +99,12 @@ Açılışta (0x00E3FA–0x00E48C) **0x2000–0xFFFF** baytlarının 16 bit topl
 - Bağlantı katmanında sağlama yok: yazma çerçevesinde kaybolan bir bayt, kaymış veri olarak flash'a yazılır. İstemci sonda bütün blokları geri okur; tutmazsa yükleyicide `0D 03` ile yeniden silip baştan yazar (en çok 3 deneme). Silinmiş flash'a yeniden yazmak için silme şart olduğundan blok bazında düzeltme yapılamaz.
 - Yazmadan önce `checkImage`: reset vektörü (0xFFFE) olmalı, 0x010100–0x0105C7 yükleyici bloğu tam ve bilinen yükleyiciyle aynı olmalı (yoksa telsiz bir daha seri porttan güncellenemez), ROM sağlama toplamı gerekirse düzeltilir.
 - Yükleme yarıda kalırsa telsiz açık olduğu sürece yükleyici RAM'de çalışır: yeniden bağlanıp (`01`) yükleme baştan başlatılabilir.
+- **EEPROM geri yükleme** (`writeEeprom`, sayfanın 6. adımı): çalışan firmware'in `03 03 01 00 aH aL <veri>` komutuyla, telsizdekinden farklı olan 16 baytlık hizalı sayfalar yazılır. Her sayfa geri okunur; sonra EEPROM'un tamamı karşılaştırılır. Çerçevede adres baytı kaybolursa veri başka bir adrese yazılır ve bunu sayfanın kendi geri okuması göremez; tam karşılaştırma bunu bulup düzeltir. Sonunda `04 01` ile reset atılır (firmware ayarların çoğunu RAM'de tutuyor).
+- Yazmadan önce `checkEeprom` şunları denetler:
+  - Dosya 2048 bayt olmalı.
+  - Donanım tipi biti (EE 0x58B bit 1) telsizinkiyle aynı olmalı; değilse dosya reddedilir, çünkü telsiz "ERR HW" verip kapanırdı.
+  - Tutmayan sağlama toplamları düzeltilir.
+  - Kalibrasyon bloğu ya da bant tabanı farklıysa uyarı verilir ve ayrıca onay istenir.
 
 
 `sim/updater.js` PC tarafını uygular (Seri port sekmesi → Firmware güncelleme). `make test-sim`, değiştirilmiş bir görüntüyü (0x2DE9 "CH" → "KN") seri porttan yükleyip yeni kodun açıldığını doğrular: silme 1,3 s, 817 blok × 128 bayt ≈ 140 s (9600 baud), doğrulama ≈ 165 s.

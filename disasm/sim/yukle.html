@@ -70,7 +70,7 @@ label.mode { display: flex; gap: 6px; align-items: center; }
   <nav><a href="./">Simülatör</a><a href="https://github.com/barisdinc/ASELSAN_4000">GitHub</a><button id="themeBtn" title="Açık / koyu tema">◐</button></nav>
 </header>
 <main>
-  <div class="banner">1–4. adımlar telsizden yalnızca <b>okur</b>. Telsize yalnızca 5. adım (firmware yükleme) yazar; o adım bu oturumda EEPROM ve flash yedeği alınmadan açılmaz.</div>
+  <div class="banner">1–4. adımlar telsizden yalnızca <b>okur</b>. Telsize yalnızca 5. adım (firmware yükleme) ve 6. adım (EEPROM geri yükleme) yazar; 5. adım bu oturumda EEPROM ve flash yedeği, 6. adım EEPROM yedeği alınmadan açılmaz.</div>
 
   <section class="card">
     <h2>1 · Bağlantı</h2>
@@ -133,6 +133,22 @@ label.mode { display: flex; gap: 6px; align-items: center; }
     <div id="wrResult"></div>
   </section>
 
+  <section class="card" id="erCard">
+    <h2>6 · EEPROM geri yükleme</h2>
+    <p class="note" style="margin-bottom:6px">Daha önce indirdiğiniz EEPROM yedeğini (<span class="mono">.bin</span>, 2048 bayt) telsize geri yazar: kanallar, seçenekler, parola, kalibrasyon. Yalnızca telsizdekinden farklı olan 16 baytlık sayfalar yazılır, her sayfa geri okunarak doğrulanır, sonunda telsiz yeniden başlatılır (≈ 10–20 sn). Firmware'e dokunmaz.</p>
+    <div class="row"><label class="row"><input type="file" id="erFile" accept=".bin,.BIN,.eep,.rom" hidden><button id="erFileBtn">Yedek dosyası seç…</button></label><span class="note">ya da .bin dosyasını sayfaya sürükleyip bırakın</span></div>
+    <div id="erInfo"></div>
+    <div id="erBody" class="locked">
+      <div class="checks">
+        <label><input type="checkbox" id="erC1"> Telsizdeki şu anki EEPROM'un yedeğini (3. adım) indirdim ve sakladım.</label>
+        <label id="erC2Row" class="warn" hidden><input type="checkbox" id="erC2"> Yukarıdaki uyarıları okudum; bu yedeği bu telsize yüklemek istiyorum.</label>
+      </div>
+      <div class="row"><button class="danger" id="erBtn" disabled>EEPROM'u geri yükle</button><span class="note" id="erGate"></span></div>
+    </div>
+    <div class="prog" id="erProg"><progress id="erBar" max="1" value="0"></progress><span class="note" id="erTxt"></span></div>
+    <div id="erResult"></div>
+  </section>
+
   <section class="card">
     <h2>Günlük</h2>
     <pre id="log" class="mono"></pre>
@@ -153,6 +169,7 @@ const B = window.Board, S = window.SeriIstemci;
 const FW = window.FIRMWARE_HEX || {};
 let port = null, client = null, busy = false, header = null;
 let eeDone = false, flashImg = null, wr = null;          // backups of this session, checked image to write
+let eeData = null, er = null;                             // the radio's EEPROM as read now, checked EEPROM file to restore
 const REF = FW['YA4000S.HEX'] ? B.parseHex(FW['YA4000S.HEX']) : null;   // known loader block
 
 /* ---------------------------------------------------------------- ui helpers */
@@ -172,9 +189,10 @@ function refresh() {
   const on = !!client;
   $('connectBtn').disabled = on || busy; $('disconnectBtn').disabled = !on || busy;
   $('eeBtn').disabled = !on || busy; $('flashBtn').disabled = !on || busy;
+  $('erFileBtn').disabled = busy;
   document.querySelectorAll('input[name=mode]').forEach(r => r.disabled = on || busy);
   $('simFw').disabled = on || busy;
-  updateWrite();
+  updateWrite(); updateEeWrite();
 }
 function mode() { return document.querySelector('input[name=mode]:checked').value; }
 function progress(barId, txtId, frac, t0) {
@@ -259,11 +277,12 @@ $('eeBtn').onclick = () => run(async () => {
   const ee = await client.readEeprom(f => progress('eeBar', 'eeTxt', f, t0));
   log('EEPROM okundu (' + ee.length + ' bayt, ' + ((performance.now() - t0) / 1000).toFixed(1) + ' s)');
   download($('eeDl'), 'aselsan_eeprom_' + stamp() + '.bin', ee, 'application/octet-stream', 'EEPROM yedeğini indir');
-  eeDone = true;
+  eeDone = true; eeData = ee;
   showEeprom(ee);
+  if (er) loadEeFile(er.name, er.raw);
 });
 
-function showEeprom(ee) {
+function showEeprom(ee, target) {
   const sums = B.eeCheckSums(ee), names = ['0x578 kalibrasyon', '0x000 seçenek', '0x008 seçenek', '0x018 parametre + kanallar'];
   const base = B.eeBase(ee) * 25e3, band = base < 250e6 ? 'VHF' : 'UHF';
   const pw = Array.from(ee.slice(0x54E, 0x552));
@@ -286,7 +305,7 @@ function showEeprom(ee) {
       chans.map(([n, c]) => '<tr><td class="num">' + String(n).padStart(2, '0') + '</td><td class="num">' + mhz(c.rx) + '</td><td class="num">' + mhz(c.tx) +
         '</td><td class="mono">' + esc(c.name) + '</td><td class="num">' + (c.rxTone || '–') + ' / ' + (c.txTone || '–') + '</td></tr>').join('') + '</tbody></table></div>';
   }
-  $('eeSum').innerHTML = h;
+  $(target || 'eeSum').innerHTML = h;
 }
 
 /* ---------------------------------------------------------------- flash */
@@ -333,7 +352,14 @@ async function loadFile(f) {
 }
 $('wrFile').onchange = () => { loadFile($('wrFile').files[0]); $('wrFile').value = ''; };
 addEventListener('dragover', e => { e.preventDefault(); });
-addEventListener('drop', e => { e.preventDefault(); if (e.dataTransfer.files[0]) { loadFile(e.dataTransfer.files[0]); $('wrCard').scrollIntoView({ behavior: 'smooth' }); } });
+addEventListener('drop', e => {
+  e.preventDefault();
+  const f = e.dataTransfer.files[0];
+  if (!f) return;
+  /* a 2048-byte binary is an EEPROM backup (6), anything else a firmware file (5) */
+  if (f.size === 2048 && !/\.(hex|s19|s28|s37|srec|mot|ihx|txt)$/i.test(f.name)) { openEeFile(f); $('erCard').scrollIntoView({ behavior: 'smooth' }); }
+  else { loadFile(f); $('wrCard').scrollIntoView({ behavior: 'smooth' }); }
+});
 ['wrC1', 'wrC2', 'wrC3', 'wrRecover'].forEach(id => $(id).onchange = updateWrite);
 
 let lastSel = null;
@@ -419,6 +445,82 @@ $('wrBtn').onclick = () => {
 };
 loadImage($('wrSel').value, FW[$('wrSel').value]);
 
+/* ---------------------------------------------------------------- EEPROM restore */
+$('erFileBtn').onclick = () => $('erFile').click();
+$('erFile').onchange = () => { openEeFile($('erFile').files[0]); $('erFile').value = ''; };
+['erC1', 'erC2'].forEach(id => $(id).onchange = updateEeWrite);
+async function openEeFile(f) {
+  if (!f || busy) return;
+  const raw = new Uint8Array(await f.arrayBuffer());
+  log('EEPROM dosyası açıldı: ' + f.name + ' (' + raw.length + ' bayt)');
+  loadEeFile(f.name, raw);
+}
+function loadEeFile(name, raw) {
+  const r = S.checkEeprom(raw, eeData);
+  er = Object.assign(r, { name, raw });
+  let h = '<div class="kv" style="margin-top:12px"><div>Dosya</div><div class="mono">' + esc(name) + '</div>';
+  if (r.ok) {
+    h += '<div>Telsizdekine göre</div><div>' + (r.diff === null ? '<span class="note">karşılaştırma için 3. adımda telsizin EEPROM\'unu okuyun</span>'
+      : r.diff === 0 ? '<span class="ok">telsizdeki EEPROM ile aynı, yazılacak bir şey yok</span>' : r.diff + ' bayt değişecek') + '</div>';
+    if (r.notes.length) h += '<div>Not</div><div class="note">' + r.notes.map(esc).join('<br>') + '</div>';
+    if (r.warnings.length) h += '<div>Uyarı</div><div class="warn">' + r.warnings.map(w => '⚠ ' + esc(w)).join('<br>') + '</div>';
+    h += '</div><div id="erSum"></div>';
+  } else {
+    h += '</div><ul class="errs bad">' + r.errors.map(e => '<li>' + esc(e) + '</li>').join('') + '</ul>';
+  }
+  $('erInfo').innerHTML = h;
+  if (r.ok) showEeprom(r.ee, 'erSum');
+  $('erC2Row').hidden = !(r.ok && r.warnings.length); $('erC2').checked = false;
+  updateEeWrite();
+}
+function updateEeWrite() {
+  if (!$('erBtn')) return;
+  const gate = !!client && !!eeData;
+  $('erBody').classList.toggle('locked', !gate);
+  ['erC1', 'erC2'].forEach(id => $(id).disabled = !gate || busy);
+  const warn = er && er.ok && er.warnings.length;
+  $('erGate').textContent = !client ? 'Geri yüklemek için: önce bağlanın (1) ve telsizin EEPROM yedeğini alın (3).'
+    : !eeData ? 'Önce telsizin şu anki EEPROM yedeğini alın (3. adım).'
+    : !er ? 'Yedek dosyasını seçin.'
+    : !er.ok ? 'Dosya denetimden geçmedi (sebebi yukarıda kırmızıyla yazıyor).'
+    : er.diff === 0 ? 'Dosya telsizdekiyle aynı.'
+    : !$('erC1').checked ? 'Onay kutusunu işaretleyin.'
+    : warn && !$('erC2').checked ? 'Uyarıları onaylayın.' : '';
+  $('erBtn').disabled = !(gate && er && er.ok && er.diff !== 0 && $('erC1').checked && (!warn || $('erC2').checked) && !busy);
+}
+$('erBtn').onclick = () => {
+  if (!er || !er.ok) return;
+  if (!confirm(er.name + ' telsizin EEPROM\'una yazılacak (' + er.diff + ' bayt değişecek), ardından telsiz yeniden başlatılacak.\n\nDevam edilsin mi?')) return;
+  run(async () => {
+    $('erResult').innerHTML = ''; $('erProg').classList.add('on');
+    addEventListener('beforeunload', guard);
+    const t0 = performance.now(), target = er.ee;
+    log('EEPROM GERİ YÜKLEME: ' + er.name);
+    let res;
+    try {
+      res = await client.writeEeprom(target, { current: eeData, onProgress: f => progress('erBar', 'erTxt', f, t0) });
+    } catch (e) {
+      $('erResult').innerHTML = '<p class="bad"><b>Geri yükleme tamamlanmadı:</b> ' + esc(e.message) + '</p>' +
+        '<p class="note">EEPROM\'un bir kısmı yazılmış olabilir. Telsizi kapatmadan kabloyu kontrol edip tekrar deneyin; gerekirse 3. adımda aldığınız yedeği geri yükleyin.</p>';
+      throw e;
+    } finally { removeEventListener('beforeunload', guard); }
+    log('EEPROM yazıldı: ' + res.pages + ' sayfa (' + Math.round((performance.now() - t0) / 1000) + ' s); telsiz yeniden açılıyor');
+    $('erTxt').textContent = 'Telsiz yeniden açılıyor…';
+    await port.sleep(9000);                                // boot (≈ 8 s with the yATOLYE screen)
+    await client.connect();
+    const now = await client.readEeprom();
+    let d = 0; for (let a = 0; a < 2048; a++) if (now[a] !== target[a]) d++;
+    eeData = now; showEeprom(now);
+    $('eeDl').innerHTML = ''; download($('eeDl'), 'aselsan_eeprom_' + stamp() + '.bin', now, 'application/octet-stream', 'Şu anki EEPROM\'u indir');
+    $('erResult').innerHTML = d === 0
+      ? '<p class="ok"><b>✓ EEPROM geri yüklendi.</b> Telsiz yeniden açıldı; okunan EEPROM dosyayla birebir aynı.</p>'
+      : '<p class="warn">EEPROM yazıldı ve doğrulandı, ancak yeniden açılıştan sonra ' + d + ' bayt dosyadan farklı (firmware açılışta bazı değerleri kendisi güncelliyor olabilir). Ayrıntı için EEPROM\'u indirip karşılaştırın.</p>';
+    log(d === 0 ? 'EEPROM doğrulandı' : 'açılıştan sonra ' + d + ' bayt farklı');
+    loadEeFile(er.name, er.raw);
+  });
+};
+updateEeWrite();
+
 refresh();
 
 /* headless check: yukle.html#otomatik-test runs the whole flow on the simulator and marks the page */
@@ -436,6 +538,26 @@ if (location.hash === '#otomatik-test-aile') (async () => {
   $('wrC3').checked = true; updateWrite();
   const b = !$('wrBtn').disabled;
   document.body.dataset.test = a && b ? 'bitti' : 'hata ' + a + ' ' + b + ' ' + $('wrGate').textContent;
+})();
+if (location.hash === '#otomatik-test-eeprom') (async () => {
+  document.querySelector('input[value=sim]').checked = true; onMode();
+  const until = c => new Promise(r => { const t = setInterval(() => { if (c()) { clearInterval(t); r(); } }, 50); });
+  $('connectBtn').click(); await until(() => client && !busy);
+  const pre = /EEPROM yedeğini alın/.test($('erGate').textContent);
+  $('eeBtn').click(); await until(() => !busy);
+  // a backup with another channel 1 and the Turkish menu
+  const f = eeData.slice(); B.eeSetChannel(f, 1, 145.6e6, 145.7e6, { name: 'GERI YUK' }); f[0x018] |= 0x80; B.eeFixSums(f);
+  const bad = eeData.slice(); bad[0x58B] ^= 2; B.eeFixSums(bad);
+  loadEeFile('baska_tip.bin', bad);
+  const refused = !er.ok && /donanım tipi/.test($('erInfo').textContent) && $('erBtn').disabled;
+  await openEeFile(new File([f], 'yedek.bin'));
+  window.confirm = () => true;
+  $('erC1').checked = true; updateEeWrite();
+  const enabled = !$('erBtn').disabled;
+  $('erBtn').click(); await until(() => !busy);
+  const mem = port.b.eeprom.mem, same = f.every((v, i) => v === mem[i]);
+  document.body.dataset.test = pre && refused && enabled && same && /geri yüklendi/.test($('erResult').textContent) ? 'bitti'
+    : 'hata pre=' + pre + ' ret=' + refused + ' en=' + enabled + ' same=' + same + ' ' + $('erResult').textContent;
 })();
 if (location.hash === '#otomatik-test') (async () => {
   document.querySelector('input[value=sim]').checked = true; onMode();

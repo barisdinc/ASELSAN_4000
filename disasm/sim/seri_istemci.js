@@ -1,6 +1,7 @@
 /* seri_istemci.js - PC side of the radio's serial service protocol (../seri_protokol.md):
- * link, ROM header, EEPROM backup, flash backup, firmware identification (read only), and
- * writeFirmware() (flash update through the radio's loader; checkImage() first).
+ * link, ROM header, EEPROM backup, flash backup, firmware identification (read only),
+ * writeFirmware() (flash update through the radio's loader; checkImage() first) and
+ * writeEeprom() (EEPROM restore with the firmware's own write command; checkEeprom() first).
  *
  * One client, two ports:
  *   WebSerialPort  a real radio through a USB-RS232 adapter (Chrome / Edge, Web Serial API)
@@ -11,6 +12,7 @@
 (function (root) {
 'use strict';
 const U = root.Updater || (typeof require !== 'undefined' ? require('./updater.js') : null);
+const BD = root.Board || (typeof require !== 'undefined' ? require('./board.js') : null);
 
 /* ------------------------------------------------------------------ ports */
 class WebSerialPort {
@@ -153,6 +155,51 @@ class RadioClient {
   }
   async readHeader() { return parseHeader(await this.readMemoryBlock(0x10000, 128)); }
 
+  /* EEPROM restore: 03 03 01 00 aH aL <data> (the running firmware writes the 24C16 and ACKs).
+   * One 16-byte page per command, page aligned; only pages that differ from `current` (the backup
+   * just read) are written.  Every written page is read back; a page that does not match (the link
+   * has no checksum) is written again, up to `attempts` times; then the whole EEPROM is compared.  Ends with a software reset (04 01)
+   * so the firmware starts with the new settings (it keeps a copy of many of them in RAM). */
+  async writeEeprom(ee, opts = {}) {
+    const cur = opts.current, prog = opts.onProgress || (() => {}), attempts = opts.attempts || 3;
+    const pages = [];
+    for (let a = 0; a < ee.length; a += 16) {
+      if (cur && cur.length === ee.length && ee.slice(a, a + 16).every((v, i) => v === cur[a + i])) continue;
+      pages.push(a);
+    }
+    this.log('EEPROM: ' + pages.length + ' sayfa × 16 bayt yazılacak' + (cur ? ' (yalnız farklı olanlar)' : ''));
+    let done = 0;
+    for (const a of pages) {
+      const d = Array.from(ee.slice(a, a + 16));
+      for (let t = 1; ; t++) {
+        await this.request([3, 3, 1, 0, a >> 8 & 0xFF, a & 0xFF].concat(d), false);
+        const back = await this.readEepromBlock(a, 16);
+        if (back.every((v, i) => v === d[i])) break;
+        if (t >= attempts) throw new Error('EEPROM doğrulama: 0x' + a.toString(16).padStart(3, '0') + ' sayfası ' + attempts + ' denemede yazılamadı');
+        this.log('0x' + a.toString(16) + ' sayfası tutmadı, yeniden yazılıyor');
+      }
+      prog(++done / (pages.length + 1));
+    }
+    /* a byte lost in the address field writes the page somewhere else, which the page's own
+     * read-back cannot see: compare the whole EEPROM and rewrite every page that differs */
+    for (let t = 1; ; t++) {
+      const now = await this.readEeprom();
+      const bad = [];
+      for (let a = 0; a < ee.length; a += 16) if (!ee.slice(a, a + 16).every((v, i) => v === now[a + i])) bad.push(a);
+      if (!bad.length) break;
+      if (t >= attempts) throw new Error('EEPROM doğrulama: ' + bad.length + ' sayfa tutmuyor (' + attempts + ' tam okumada)');
+      this.log('tam karşılaştırma: ' + bad.length + ' sayfa farklı (0x' + bad.map(a => a.toString(16)).join(', 0x') + '), yeniden yazılıyor');
+      for (const a of bad) await this.request([3, 3, 1, 0, a >> 8 & 0xFF, a & 0xFF].concat(Array.from(ee.slice(a, a + 16))), false);
+    }
+    this.log('EEPROM tamamı doğrulandı');
+    prog(1);
+    if (opts.reset !== false) {
+      await this.request([4, 1], false);
+      this.log('reset gönderildi: telsiz yeni EEPROM ile açılıyor');
+    }
+    return { pages: pages.length };
+  }
+
   /* Firmware update through the radio's own loader (../seri_protokol.md, "Firmware güncelleme"):
    *   0D 03     the firmware copies the loader to RAM 0x0080 and runs it; it erases the whole flash
    *   poll      03 01 02 00 20 00 16 until the flash reads 0xFF (status bytes while erasing)
@@ -271,6 +318,34 @@ function findBytes(hay, needle) {
   return -1;
 }
 
+/* EEPROM file checks before a restore.  ee: Uint8Array from the file; cur: the radio's EEPROM read
+ * in this session (or null).  Returns { ok, errors, warnings, notes, ee (copy, checksums fixed), diff }
+ * warnings need the user's explicit confirmation. */
+function checkEeprom(ee, cur) {
+  const errors = [], warnings = [], notes = [];
+  if (!ee || ee.length !== 2048) return { ok: false, errors: ['dosya 2048 bayt olmalı (24C16 EEPROM yedeği); bu dosya ' + (ee ? ee.length : 0) + ' bayt'], warnings, notes };
+  const img = new Uint8Array(ee);
+  if (img.every(x => x === 0xFF) || img.every(x => x === 0)) errors.push('dosya boş (tamamı ' + (img[0] ? 'FF' : '00') + ')');
+  /* EE 0x58B bit 1 = board type; F_00DA32 compares it with the probed hardware and shows
+   * "ERR HW" / "ARZ DN" and switches the radio off when they differ */
+  if (cur && ((img[0x58B] ^ cur[0x58B]) & 2)) errors.push('donanım tipi farklı (EE 0x58B bit 1: dosyada ' + (img[0x58B] >> 1 & 1) + ', telsizde ' + (cur[0x58B] >> 1 & 1) + '). Bu yedek başka tip bir telsizden; yüklenirse telsiz açılışta "ERR HW" / "ARZ DN" verip kapanır');
+  if (!errors.length) {
+    const sums = BD.eeCheckSums(img);
+    if (!sums.every(x => x)) {
+      BD.eeFixSums(img);
+      notes.push('sağlama toplamı tutmayan blok düzeltildi (' + BD.EE_SUMS.filter((b, i) => !sums[i]).map(b => '0x' + b[0].toString(16).padStart(3, '0')).join(', ') + '); yoksa telsiz "ARZ PRG" verirdi');
+    }
+    if (cur) {
+      let calDiff = 0; for (let a = 0x578; a < 0x5BD; a++) if (img[a] !== cur[a]) calDiff++;
+      if (calDiff) warnings.push('kalibrasyon bloğu (0x578–0x5BC) telsizdekinden ' + calDiff + ' baytta farklı: yedek başka bir telsize ait olabilir; güç, frekans ve bant ayarları değişir');
+      if (BD.eeBase(img) !== BD.eeBase(cur)) warnings.push('bant tabanı farklı: dosyada ' + (BD.eeBase(img) * 0.025).toFixed(3) + ' MHz, telsizde ' + (BD.eeBase(cur) * 0.025).toFixed(3) + ' MHz');
+    }
+  }
+  let diff = null;
+  if (cur && cur.length === 2048) { diff = 0; for (let a = 0; a < 2048; a++) if (img[a] !== cur[a]) diff++; }
+  return { ok: !errors.length, errors, warnings, notes, ee: img, diff };
+}
+
 /* bytes that would change on the radio (img = flash backup Uint8Array, image = Map after checkImage) */
 function diffCount(img, image) {
   let n = 0;
@@ -333,7 +408,7 @@ function toSrec(img, lo = 0x2000, hi = 0x20000, header = 'radio') {
   return lines.join('\r\n') + '\r\n';
 }
 
-const api = { WebSerialPort, SimPort, RadioClient, parseHeader, romSum, identify, toSrec, checkImage, diffCount, LOADER_LO, LOADER_HI };
+const api = { WebSerialPort, SimPort, RadioClient, parseHeader, romSum, identify, toSrec, checkImage, checkEeprom, diffCount, LOADER_LO, LOADER_HI };
 if (typeof module !== 'undefined' && module.exports) module.exports = api;
 else root.SeriIstemci = api;
 })(typeof window !== 'undefined' ? window : globalThis);
