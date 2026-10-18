@@ -5,14 +5,15 @@
 ;   0-9      frekans, noktasız: 156525 = 156,525 MHz; 12,5 kHz adım için 7 hane: 1565125
 ;            ekranda "156 5125" (3. haneden sonra boşluk = ondalık nokta)
 ;   *        son haneyi sil
-;   #        alma frekansını hafızaya al (onay sesi), ekran temizlenir: "--- ----"
+;   #        alma frekansını hafızaya al (onay sesi), ekranda "GONDERME" ("TX FREQ")
 ;                                                 2. adım: GÖNDERME (TX) frekansı
-;   0-9 *    aynı şekilde gönderme frekansı ('-' = gönderme frekansı giriliyor)
+;   0-9 *    aynı şekilde gönderme frekansı: "160 65--" ('-' = gönderme frekansı giriliyor)
 ;   #        ayarla: telsiz RX'te 1. frekansı, TX'te 2. frekansı kullanır (onay sesi)
 ;            hiç hane girmeden # = gönderme de alma frekansında (simplex)
 ;   * (boşken) 1. adıma, alma frekansına geri dön
 ;   s        girişi temizle
 ;   m        çık (telsiz yeni frekanslarda kalır; kanal anahtarı çevrilince kanala döner)
+; FREKANS açıkken firmware'in ~4 s'lik menü zaman aşımı kapalıdır (VFO_KANCA sayacı yeniler).
 ;
 ; VFO modunda normal ekran almada alma frekansını, gönderirken (PTT) gönderme frekansını
 ; gösterir: VFO_KANCA telsiz durum makinesinin her turunda (0x00F84D) radyo durumuna bakar.
@@ -77,6 +78,8 @@ ON_BOLUCU   .EQU $020B
 FREF        .EQU $01F5
 TERS_TABLO  .EQU $002B06        ; bit sırası ters çevirme tablosu (256 bayt)
 F_RADYO_SON .EQU $00E626        ; telsiz durum makinesinin sonunda çağrılan fonksiyon
+MENU_SAYAC  .EQU $0230          ; menü zaman aşımı: geri sayar (menüye girişte $3F, ~4 s)
+MENU_OLAY   .EQU $0231          ; sayaç bitince yapılacak iş; $14 = normal ekrana dön
 
 ; ---------------------------------------------------------------------------------------------
 ; Kanca: durum makinesinin sonundaki "JSRL F_00E626" bizim yordamımıza gider
@@ -545,6 +548,15 @@ VFO_KANCA:
         PHA
         PHX
         PHY                             ; yığında 8 bayt: çerçeve göstericisi $0C,S
+        SEM                             ; FREKANS açıkken menü zaman aşımı yok (çıkış m ile):
+        LDA   A,MENU                    ; firmware ~4 s tuşa basılmazsa normal ekrana atıyor,
+        CMP   A,#ST_FREKANS_ON          ; ikinci frekansı girmeye vakit kalmıyordu
+        BNE   VK_ZA
+        LDA   A,MENU_OLAY
+        CMP   A,#$14
+        BNE   VK_ZA
+        LDM   #$3F,MENU_SAYAC
+VK_ZA:  CLM
         LDA   A,VFO_IMZA
         CMP   A,#VFO_IMZA_D
         BEQ   VK_VFO
@@ -655,7 +667,30 @@ FE_TR:  .ASSUME M=1,X=0
         BNE   FE_TR
         CLM
         RTS
-FE_GIRIS:
+FE_GIRIS:                               ; 2. adımda giriş boşken: "GONDERME" / "TX FREQ"
+        .ASSUME M=1,X=0
+        BBC   #F_TX_ADIM,FR_DURUM,FE_HANE
+        LDA   A,FR_NDIG
+        BNE   FE_HANE
+        LDX   #0
+        BBS   #$80,OPTIONS,FE_TR2
+FE_EN2: LDA   A,>TXT_FR_TX,X
+        STA   A,LCD,X
+        INX
+        CPX   #8
+        BNE   FE_EN2
+        CLM
+        RTS
+FE_TR2: .ASSUME M=1,X=0
+        LDA   A,>TXT_FR_GONDER,X
+        STA   A,LCD,X
+        INX
+        CPX   #8
+        BNE   FE_TR2
+        CLM
+        RTS
+FE_HANE:
+        .ASSUME M=1,X=0
         CLM
         ; düşer
 
@@ -691,3 +726,7 @@ TXT_FR_ERROR:
         .TEXT8 "ERROR"
 TXT_FR_HATA:
         .TEXT8 "HATA"
+TXT_FR_TX:
+        .TEXT8 "TX FREQ"
+TXT_FR_GONDER:
+        .TEXT8 "GONDERME"

@@ -910,7 +910,7 @@
 0119C8  D0 03                        BNE   FK_SON
 0119CA  4C 2E 1A                     JMP   FK_AYARLA
 0119CD  D8                   FK_SON: CLM
-0119CE  20 EB 1D                     JSR   FR_EKRAN
+0119CE  20 FF 1D                     JSR   FR_EKRAN
 0119D1  68                           PLA
 0119D2  6B                           RTL
 0119D3  F8                           SEM                             ; hata metni + bip
@@ -1212,7 +1212,7 @@
 011CC2  C0 05 00                     CPY   #5
 011CC5  D0 F3                        BNE   FSK_1
 011CC7  D8                           CLM
-011CC8  20 18 1E                     JSR   FR_METIN                  ; "156 5250" -> LCD
+011CC8  20 5C 1E                     JSR   FR_METIN                  ; "156 5250" -> LCD
 011CCB  A2 00 00                     LDX   #0                        ; metin: alma VFO_METIN, gönderme VFO_METIN+8
 011CCE  F8                           SEM
 011CCF  3C 48 05 02 03               BBC   #F_TX_ADIM,FR_DURUM,FSK_2
@@ -1270,135 +1270,168 @@
 011D44  48                           PHA
 011D45  DA                           PHX
 011D46  5A                           PHY                             ; yığında 8 bayt: çerçeve göstericisi $0C,S
-011D47  AD 70 05                     LDA   A,VFO_IMZA
-011D4A  C9 56 46                     CMP   A,#VFO_IMZA_D
-011D4D  F0 03                        BEQ   VK_VFO
-011D4F  4C E2 1D                     JMP   VK_SON
-011D52  A2 00 00                     LDX   #0                        ; sentezör kaydı hâlâ bizim mi?
-011D55  F8                           SEM
-011D56  BD 70 03                     LDA   A,SYN_KAYIT,X
-011D59  DD 73 05                     CMP   A,VFO_RX_KAYIT,X
-011D5C  D0 7E                        BNE   VK_BITTI
-011D5E  BD 77 03                     LDA   A,SYN_KAYIT+7,X
-011D61  DD 78 05                     CMP   A,VFO_TX_KAYIT,X
-011D64  D0 76                        BNE   VK_BITTI
-011D66  E8                           INX
-011D67  E0 05 00                     CPX   #5
-011D6A  D0 EA                        BNE   VK_KAYIT
-011D6C  A0 00 00                     LDY   #0                        ; istenen: 0 alma, 1 gönderme (durum 4..12)
-011D6F  AD 28 02                     LDA   A,RADYO_DURUM
-011D72  C9 04                        CMP   A,#4
-011D74  90 05                        BCC   VK_ISTENEN
-011D76  C9 0D                        CMP   A,#$0D
-011D78  B0 01                        BCS   VK_ISTENEN
-011D7A  C8                           INY
-011D7B  98                           TYA
-011D7C  CD 72 05                     CMP   A,VFO_DURUM
-011D7F  F0 61                        BEQ   VK_SON
-011D81  8D 72 05                     STA   A,VFO_DURUM
-011D84  D8                           CLM
-011D85  29 FF 00                     AND   A,#$00FF
-011D88  0A                           ASL   A
-011D89  0A                           ASL   A
-011D8A  0A                           ASL   A
-011D8B  AA                           TAX                             ; X = yeni metin (0 / 8)
-011D8C  49 08 00                     EOR   A,#8
-011D8F  A8                           TAY                             ; Y = eski metin
-011D90  F8                           SEM
-011D91  AD 27 02                     LDA   A,MENU                    ; menüdeyken ekrana dokunma
-011D94  D0 34                        BNE   VK_AD
-011D96  DA                           PHX                             ; ekranda eski metin (normal ekran) mı?
-011D97  A2 00 00                     LDX   #0
-011D9A  B9 7D 05                     LDA   A,VFO_METIN,Y
-011D9D  DD 52 02                     CMP   A,LCD,X
-011DA0  D0 27                        BNE   VK_BASKA
-011DA2  C8                           INY
-011DA3  E8                           INX
-011DA4  E0 08 00                     CPX   #8
-011DA7  D0 F1                        BNE   VK_KARS
-011DA9  FA                           PLX
-011DAA  A0 00 00                     LDY   #0
-011DAD  BD 7D 05             VK_YAZ: LDA   A,VFO_METIN,X             ; kanal adı ve ekran tamponu
-011DB0  99 4A 02                     STA   A,KANAL_ADI,Y
-011DB3  99 52 02                     STA   A,LCD,Y
-011DB6  E8                           INX
-011DB7  C8                           INY
-011DB8  C0 08 00                     CPY   #8
-011DBB  D0 F0                        BNE   VK_YAZ
-011DBD  D8                           CLM
-011DBE  A3 0C                        LDA   A,$0C,S                   ; NC77 çerçeve göstericisi
-011DC0  48                           PHA
-011DC1  22 8C 82 00                  JSRL  F_LCD
-011DC5  D8                           CLM
-011DC6  68                           PLA
-011DC7  80 19                        BRA   VK_SON
-011DC9                               .ASSUME M=1,X=0
-011DC9  FA                           PLX                             ; ekranda başka bir şey var: yalnız kanal adı
-011DCA  A0 00 00             VK_AD:  LDY   #0
-011DCD  BD 7D 05             VK_AD1: LDA   A,VFO_METIN,X
-011DD0  99 4A 02                     STA   A,KANAL_ADI,Y
-011DD3  E8                           INX
-011DD4  C8                           INY
-011DD5  C0 08 00                     CPY   #8
-011DD8  D0 F3                        BNE   VK_AD1
-011DDA  80 06                        BRA   VK_SON
-011DDC                               .ASSUME M=1,X=0
-011DDC  D8                           CLM
-011DDD  9C 70 05 00 00               LDM   #0,VFO_IMZA               ; kanala dönülmüş: VFO modu bitti
-011DE2  D8                   VK_SON: CLM
-011DE3  7A                           PLY
-011DE4  FA                           PLX
-011DE5  68                           PLA
-011DE6  28                           PLP
-011DE7  5C 26 E6 00                  JMPL  F_RADYO_SON
-011DEB                               .ASSUME M=0,X=0
-011DEB  F8                           SEM
-011DEC  3C 48 05 01 26               BBC   #F_HATA_G,FR_DURUM,FE_GIRIS
-011DF1  A2 00 00                     LDX   #0
-011DF4  2C 40 03 80 0F               BBS   #$80,OPTIONS,FE_TR
-011DF9  BF 4A 1E 01          FE_EN:  LDA   A,>TXT_FR_ERROR,X
-011DFD  9D 52 02                     STA   A,LCD,X
-011E00  E8                           INX
-011E01  E0 08 00                     CPX   #8
-011E04  D0 F3                        BNE   FE_EN
-011E06  D8                           CLM
-011E07  60                           RTS
-011E08                       FE_TR:  .ASSUME M=1,X=0
-011E08  BF 52 1E 01                  LDA   A,>TXT_FR_HATA,X
-011E0C  9D 52 02                     STA   A,LCD,X
-011E0F  E8                           INX
-011E10  E0 08 00                     CPX   #8
-011E13  D0 F3                        BNE   FE_TR
-011E15  D8                           CLM
-011E16  60                           RTS
-011E17  D8                           CLM
-011E18                               .ASSUME M=0,X=0
-011E18  F8                           SEM
-011E19  A2 00 00                     LDX   #0                        ; X = hane, Y = LCD konumu
-011E1C  A0 00 00                     LDY   #0
-011E1F  C0 03 00             FM_DON: CPY   #3
-011E22  D0 06                        BNE   FM_1
-011E24  A9 20                        LDA   A,#' '
-011E26  99 52 02                     STA   A,LCD,Y
-011E29  C8                           INY
-011E2A  8A                   FM_1:   TXA
-011E2B  CD 47 05                     CMP   A,FR_NDIG
-011E2E  B0 05                        BCS   FM_ALT
-011E30  BD 40 05                     LDA   A,FR_HANE,X
-011E33  80 09                        BRA   FM_KOY
-011E35  A9 5F                FM_ALT: LDA   A,#'_'
-011E37  3C 48 05 02 02               BBC   #F_TX_ADIM,FR_DURUM,FM_KOY
-011E3C  A9 2D                        LDA   A,#'-'
-011E3E  99 52 02             FM_KOY: STA   A,LCD,Y
-011E41  E8                           INX
-011E42  C8                           INY
-011E43  C0 08 00                     CPY   #8
-011E46  D0 D7                        BNE   FM_DON
-011E48  D8                           CLM
-011E49  60                           RTS
-011E4A  45 52 52 4F 52 20 …          .TEXT8 "ERROR"
-011E52  48 41 54 41 20 20 …          .TEXT8 "HATA"
-011E5A                               .ORG $00E0E1                    ; F_00E0E1: LDA A,$04,S / PHD / TAD
+011D47  F8                           SEM                             ; FREKANS açıkken menü zaman aşımı yok (çıkış m ile):
+011D48  AD 27 02                     LDA   A,MENU                    ; firmware ~4 s tuşa basılmazsa normal ekrana atıyor,
+011D4B  C9 1B                        CMP   A,#ST_FREKANS_ON          ; ikinci frekansı girmeye vakit kalmıyordu
+011D4D  D0 0B                        BNE   VK_ZA
+011D4F  AD 31 02                     LDA   A,MENU_OLAY
+011D52  C9 14                        CMP   A,#$14
+011D54  D0 04                        BNE   VK_ZA
+011D56  9C 30 02 3F                  LDM   #$3F,MENU_SAYAC
+011D5A  D8                   VK_ZA:  CLM
+011D5B  AD 70 05                     LDA   A,VFO_IMZA
+011D5E  C9 56 46                     CMP   A,#VFO_IMZA_D
+011D61  F0 03                        BEQ   VK_VFO
+011D63  4C F6 1D                     JMP   VK_SON
+011D66  A2 00 00                     LDX   #0                        ; sentezör kaydı hâlâ bizim mi?
+011D69  F8                           SEM
+011D6A  BD 70 03                     LDA   A,SYN_KAYIT,X
+011D6D  DD 73 05                     CMP   A,VFO_RX_KAYIT,X
+011D70  D0 7E                        BNE   VK_BITTI
+011D72  BD 77 03                     LDA   A,SYN_KAYIT+7,X
+011D75  DD 78 05                     CMP   A,VFO_TX_KAYIT,X
+011D78  D0 76                        BNE   VK_BITTI
+011D7A  E8                           INX
+011D7B  E0 05 00                     CPX   #5
+011D7E  D0 EA                        BNE   VK_KAYIT
+011D80  A0 00 00                     LDY   #0                        ; istenen: 0 alma, 1 gönderme (durum 4..12)
+011D83  AD 28 02                     LDA   A,RADYO_DURUM
+011D86  C9 04                        CMP   A,#4
+011D88  90 05                        BCC   VK_ISTENEN
+011D8A  C9 0D                        CMP   A,#$0D
+011D8C  B0 01                        BCS   VK_ISTENEN
+011D8E  C8                           INY
+011D8F  98                           TYA
+011D90  CD 72 05                     CMP   A,VFO_DURUM
+011D93  F0 61                        BEQ   VK_SON
+011D95  8D 72 05                     STA   A,VFO_DURUM
+011D98  D8                           CLM
+011D99  29 FF 00                     AND   A,#$00FF
+011D9C  0A                           ASL   A
+011D9D  0A                           ASL   A
+011D9E  0A                           ASL   A
+011D9F  AA                           TAX                             ; X = yeni metin (0 / 8)
+011DA0  49 08 00                     EOR   A,#8
+011DA3  A8                           TAY                             ; Y = eski metin
+011DA4  F8                           SEM
+011DA5  AD 27 02                     LDA   A,MENU                    ; menüdeyken ekrana dokunma
+011DA8  D0 34                        BNE   VK_AD
+011DAA  DA                           PHX                             ; ekranda eski metin (normal ekran) mı?
+011DAB  A2 00 00                     LDX   #0
+011DAE  B9 7D 05                     LDA   A,VFO_METIN,Y
+011DB1  DD 52 02                     CMP   A,LCD,X
+011DB4  D0 27                        BNE   VK_BASKA
+011DB6  C8                           INY
+011DB7  E8                           INX
+011DB8  E0 08 00                     CPX   #8
+011DBB  D0 F1                        BNE   VK_KARS
+011DBD  FA                           PLX
+011DBE  A0 00 00                     LDY   #0
+011DC1  BD 7D 05             VK_YAZ: LDA   A,VFO_METIN,X             ; kanal adı ve ekran tamponu
+011DC4  99 4A 02                     STA   A,KANAL_ADI,Y
+011DC7  99 52 02                     STA   A,LCD,Y
+011DCA  E8                           INX
+011DCB  C8                           INY
+011DCC  C0 08 00                     CPY   #8
+011DCF  D0 F0                        BNE   VK_YAZ
+011DD1  D8                           CLM
+011DD2  A3 0C                        LDA   A,$0C,S                   ; NC77 çerçeve göstericisi
+011DD4  48                           PHA
+011DD5  22 8C 82 00                  JSRL  F_LCD
+011DD9  D8                           CLM
+011DDA  68                           PLA
+011DDB  80 19                        BRA   VK_SON
+011DDD                               .ASSUME M=1,X=0
+011DDD  FA                           PLX                             ; ekranda başka bir şey var: yalnız kanal adı
+011DDE  A0 00 00             VK_AD:  LDY   #0
+011DE1  BD 7D 05             VK_AD1: LDA   A,VFO_METIN,X
+011DE4  99 4A 02                     STA   A,KANAL_ADI,Y
+011DE7  E8                           INX
+011DE8  C8                           INY
+011DE9  C0 08 00                     CPY   #8
+011DEC  D0 F3                        BNE   VK_AD1
+011DEE  80 06                        BRA   VK_SON
+011DF0                               .ASSUME M=1,X=0
+011DF0  D8                           CLM
+011DF1  9C 70 05 00 00               LDM   #0,VFO_IMZA               ; kanala dönülmüş: VFO modu bitti
+011DF6  D8                   VK_SON: CLM
+011DF7  7A                           PLY
+011DF8  FA                           PLX
+011DF9  68                           PLA
+011DFA  28                           PLP
+011DFB  5C 26 E6 00                  JMPL  F_RADYO_SON
+011DFF                               .ASSUME M=0,X=0
+011DFF  F8                           SEM
+011E00  3C 48 05 01 26               BBC   #F_HATA_G,FR_DURUM,FE_GIRIS
+011E05  A2 00 00                     LDX   #0
+011E08  2C 40 03 80 0F               BBS   #$80,OPTIONS,FE_TR
+011E0D  BF 8E 1E 01          FE_EN:  LDA   A,>TXT_FR_ERROR,X
+011E11  9D 52 02                     STA   A,LCD,X
+011E14  E8                           INX
+011E15  E0 08 00                     CPX   #8
+011E18  D0 F3                        BNE   FE_EN
+011E1A  D8                           CLM
+011E1B  60                           RTS
+011E1C                       FE_TR:  .ASSUME M=1,X=0
+011E1C  BF 96 1E 01                  LDA   A,>TXT_FR_HATA,X
+011E20  9D 52 02                     STA   A,LCD,X
+011E23  E8                           INX
+011E24  E0 08 00                     CPX   #8
+011E27  D0 F3                        BNE   FE_TR
+011E29  D8                           CLM
+011E2A  60                           RTS
+011E2B                               .ASSUME M=1,X=0
+011E2B  3C 48 05 02 2B               BBC   #F_TX_ADIM,FR_DURUM,FE_HANE
+011E30  AD 47 05                     LDA   A,FR_NDIG
+011E33  D0 26                        BNE   FE_HANE
+011E35  A2 00 00                     LDX   #0
+011E38  2C 40 03 80 0F               BBS   #$80,OPTIONS,FE_TR2
+011E3D  BF 9E 1E 01          FE_EN2: LDA   A,>TXT_FR_TX,X
+011E41  9D 52 02                     STA   A,LCD,X
+011E44  E8                           INX
+011E45  E0 08 00                     CPX   #8
+011E48  D0 F3                        BNE   FE_EN2
+011E4A  D8                           CLM
+011E4B  60                           RTS
+011E4C                       FE_TR2: .ASSUME M=1,X=0
+011E4C  BF A6 1E 01                  LDA   A,>TXT_FR_GONDER,X
+011E50  9D 52 02                     STA   A,LCD,X
+011E53  E8                           INX
+011E54  E0 08 00                     CPX   #8
+011E57  D0 F3                        BNE   FE_TR2
+011E59  D8                           CLM
+011E5A  60                           RTS
+011E5B                               .ASSUME M=1,X=0
+011E5B  D8                           CLM
+011E5C                               .ASSUME M=0,X=0
+011E5C  F8                           SEM
+011E5D  A2 00 00                     LDX   #0                        ; X = hane, Y = LCD konumu
+011E60  A0 00 00                     LDY   #0
+011E63  C0 03 00             FM_DON: CPY   #3
+011E66  D0 06                        BNE   FM_1
+011E68  A9 20                        LDA   A,#' '
+011E6A  99 52 02                     STA   A,LCD,Y
+011E6D  C8                           INY
+011E6E  8A                   FM_1:   TXA
+011E6F  CD 47 05                     CMP   A,FR_NDIG
+011E72  B0 05                        BCS   FM_ALT
+011E74  BD 40 05                     LDA   A,FR_HANE,X
+011E77  80 09                        BRA   FM_KOY
+011E79  A9 5F                FM_ALT: LDA   A,#'_'
+011E7B  3C 48 05 02 02               BBC   #F_TX_ADIM,FR_DURUM,FM_KOY
+011E80  A9 2D                        LDA   A,#'-'
+011E82  99 52 02             FM_KOY: STA   A,LCD,Y
+011E85  E8                           INX
+011E86  C8                           INY
+011E87  C0 08 00                     CPY   #8
+011E8A  D0 D7                        BNE   FM_DON
+011E8C  D8                           CLM
+011E8D  60                           RTS
+011E8E  45 52 52 4F 52 20 …          .TEXT8 "ERROR"
+011E96  48 41 54 41 20 20 …          .TEXT8 "HATA"
+011E9E  54 58 20 46 52 45 …          .TEXT8 "TX FREQ"
+011EA6  47 4F 4E 44 45 52 …          .TEXT8 "GONDERME"
+011EAE                               .ORG $00E0E1                    ; F_00E0E1: LDA A,$04,S / PHD / TAD
 00E0E1                               .EXPECT $A3,$04,$0B,$5B
 00E0E1                               .ASSUME M=0,X=0
 00E0E1  5C 00 20 01                  JMPL  ACILIS
@@ -1477,6 +1510,8 @@ BAND_TABAN               $000224
 KEY                      $000226
 MENU                     $000227
 RADYO_DURUM              $000228
+MENU_SAYAC               $000230
+MENU_OLAY                $000231
 KANAL_ADI                $00024A
 LCD                      $000252
 DIGITS                   $000283
@@ -1700,27 +1735,33 @@ FU_1                     $011D03
 FU_2                     $011D18
 FU_3                     $011D27
 VFO_KANCA                $011D42
-VK_VFO                   $011D52
-VK_KAYIT                 $011D56
-VK_ISTENEN               $011D7B
-VK_KARS                  $011D9A
-VK_YAZ                   $011DAD
-VK_BASKA                 $011DC9
-VK_AD                    $011DCA
-VK_AD1                   $011DCD
-VK_BITTI                 $011DDC
-VK_SON                   $011DE2
-FR_EKRAN                 $011DEB
-FE_EN                    $011DF9
-FE_TR                    $011E08
-FE_GIRIS                 $011E17
-FR_METIN                 $011E18
-FM_DON                   $011E1F
-FM_1                     $011E2A
-FM_ALT                   $011E35
-FM_KOY                   $011E3E
-TXT_FR_ERROR             $011E4A
-TXT_FR_HATA              $011E52
+VK_ZA                    $011D5A
+VK_VFO                   $011D66
+VK_KAYIT                 $011D6A
+VK_ISTENEN               $011D8F
+VK_KARS                  $011DAE
+VK_YAZ                   $011DC1
+VK_BASKA                 $011DDD
+VK_AD                    $011DDE
+VK_AD1                   $011DE1
+VK_BITTI                 $011DF0
+VK_SON                   $011DF6
+FR_EKRAN                 $011DFF
+FE_EN                    $011E0D
+FE_TR                    $011E1C
+FE_GIRIS                 $011E2B
+FE_EN2                   $011E3D
+FE_TR2                   $011E4C
+FE_HANE                  $011E5B
+FR_METIN                 $011E5C
+FM_DON                   $011E63
+FM_1                     $011E6E
+FM_ALT                   $011E79
+FM_KOY                   $011E82
+TXT_FR_ERROR             $011E8E
+TXT_FR_HATA              $011E96
+TXT_FR_TX                $011E9E
+TXT_FR_GONDER            $011EA6
 ACILIS                   $012000
 AC_YAZ                   $01200D
 ACILIS_METNI             $012029

@@ -105,8 +105,8 @@ Telsiz 1–999 arasında bir sayı tutar.
 | `0–9` | Frekans, noktasız. `156525` = 156,525 MHz. 12,5 kHz adımlar için 7 hane: `1565125`. Ekranda `156 5125`; 3. haneden sonraki boşluk ondalık noktadır |
 | `*` | Son haneyi sil |
 | `s` | Girişi temizle |
-| `#` (1. adım) | Alma frekansını hafızaya al (onay sesi). Ekran temizlenir: `--- ----`. Çizgiler gönderme frekansının girildiğini gösterir |
-| `0–9`, `*` | Gönderme frekansı, aynı şekilde: `160 65--` |
+| `#` (1. adım) | Alma frekansını hafızaya al (onay sesi). Ekranda `GONDERME` (İngilizce `TX FREQ`): şimdi gönderme frekansı girilir |
+| `0–9`, `*` | Gönderme frekansı, aynı şekilde: `160 65--` (çizgiler gönderme frekansının girildiğini gösterir) |
 | `#` (2. adım) | Ayarla (onay sesi): telsiz almada 1. frekansı, gönderirken 2. frekansı kullanır. Ekranda alma frekansı kalır |
 | `#` (2. adımda hiç hane yokken) | Simplex: gönderme frekansı = alma frekansı |
 | `*` (2. adımda giriş boşken) | 1. adıma dön; alma frekansı düzeltilebilir |
@@ -115,6 +115,8 @@ Telsiz 1–999 arasında bir sayı tutar.
 Örnek: `156525#160650#` → alma 156,525 MHz, gönderme 160,650 MHz. `156525##` → ikisi de 156,525 MHz.
 
 **VFO modunda ekran:** Normal ekranda almadayken alma frekansı (`156 5250`), PTT'ye basılıyken gönderme frekansı (`160 6500`) görünür; PTT bırakılınca alma frekansına döner. Menüdeyken ekran değiştirilmez, yalnız kanal adı güncellenir.
+
+FREKANS açıkken firmware'in menü zaman aşımı (yaklaşık 4 s tuşa basılmazsa normal ekrana dönme) kapalıdır; çıkış yalnız `m` ile. İlk sürümde bu yoktu: gerçek telsizde 1. adımdan sonra 4 s beklenince ana ekrana dönülüyor, girilen frekans kayboluyordu.
 
 Kanal anahtarı çevrilince (ya da LIST ile kanal seçilince) telsiz o kanala döner ve VFO modu biter. Frekanslar yalnızca RAM'de tutulur: EEPROM'a yazılmaz, kapatınca kaybolur.
 

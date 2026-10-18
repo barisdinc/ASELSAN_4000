@@ -204,13 +204,15 @@ if (RING.includes('FREQ')) {
   scenario(b, 'FREKANS: gir', enter, ['LIST', ...RING.slice(0, RING.indexOf('FREQ') + 1), '___ ____'].join('|'));
   scenario(b, 'haneler, 3. haneden sonra boşluk', '1 5 6 5 2 5', '1__ ____|15_ ____|156 ____|156 5___|156 52__|156 525_');
   const vco0 = vco(b);
-  scenario(b, '# alma frekansını saklar, gönderme adımı', '#', '--- ----');
+  scenario(b, '# alma frekansını saklar, gönderme adımı', '#', 'TX FREQ');
   check('1. adımda telsiz değişmedi', vco(b) === vco0, vco(b));
+  b.run(FCLK * 8);
+  check('FREKANS açıkken menü zaman aşımı yok (8 s)', lcd(b) === 'TX FREQ ' && b.ram[0x227] !== 0, lcd(b) + ' menü ' + b.ram[0x227]);
   scenario(b, 'gönderme frekansı haneleri', '1 6 0 6 5', '1-- ----|16- ----|160 ----|160 6---|160 65--');
-  scenario(b, 'boşken * alma frekansına döner', '* * * * * *', '160 6---|160 ----|16- ----|1-- ----|--- ----|156 5250');
-  scenario(b, 'alma frekansı düzeltilir', '* * 7 5 #', '156 525_|156 52__|156 527_|156 5275|--- ----');
+  scenario(b, 'boşken * alma frekansına döner', '* * * * * *', '160 6---|160 ----|16- ----|1-- ----|TX FREQ|156 5250');
+  scenario(b, 'alma frekansı düzeltilir', '* * 7 5 #', '156 525_|156 52__|156 527_|156 5275|TX FREQ');
   keys(b, 'm'); keys(b, enter);
-  scenario(b, 'yeniden: alma 156,525, gönderme 160,650', '1 5 6 5 2 5 # 1 6 0 6 5 0 #', '1__ ____|15_ ____|156 ____|156 5___|156 52__|156 525_|--- ----|1-- ----|16- ----|160 ----|160 6---|160 65--|160 650-|156 5250');
+  scenario(b, 'yeniden: alma 156,525, gönderme 160,650', '1 5 6 5 2 5 # 1 6 0 6 5 0 #', '1__ ____|15_ ____|156 ____|156 5___|156 52__|156 525_|TX FREQ|1-- ----|16- ----|160 ----|160 6---|160 65--|160 650-|156 5250');
   check('RX VCO = 156,525 + 45', vco(b) === '201.5250', vco(b));
   check('sentezör baytları firmware ile aynı (RX 156,525 / TX 160,650)', synthBytes(rec(b)) === reference(156.525e6, false, 160.65e6), synthBytes(rec(b)) + ' / ' + reference(156.525e6, false, 160.65e6));
   b.inputs.P4 = 0x7F; b.run(FCLK * 0.6);
@@ -267,6 +269,7 @@ if (RING.includes('FREQ')) {
   const t = radio(ee => { ee[0x018] |= 0x80; });
   boot(t, 2.5);
   const g = keys(t, enter + '1#');
+  check('Türkçe: 2. adımda GONDERME', keys(t, '*s156525#')[8] === 'GONDERME', lcd(t));
   check('Türkçe: FREKANS / HATA', g[RING.indexOf('FREQ') + 1] === 'FREKANS ' && g[g.length - 1] === 'HATA    ', g.join('|'));
 }
 
