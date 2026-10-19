@@ -2,7 +2,7 @@
 
 Orijinal makine kodunu (ya da yeni derlenen bir HEX'i) tarayıcıda, K3 kontrol kartının modeli üzerinde çalıştırır. Gerçek cihaza yüklemeden yazılımı denemek için kullanılır.
 
-**Açmak için:** `index.html`'i tarayıcıda açın. Sunucu gerekmez; `file://` ile de çalışır. Firmware'ler `firmware.js` içinde gömülü (`make sim` yeniden üretir). Başka bir HEX dosyası için **HEX yükle…** düğmesini kullanın; S-record ve Intel HEX desteklenir.
+**Açmak için:** `index.html`'i tarayıcıda açın. Sunucu gerekmez; `file://` ile de çalışır. Firmware'ler `firmware.js` içinde gömülü (`make sim` yeniden üretir): resmi S D E K P R V Y sürümleri ve yalnız son atölye derlemesi `YA4000S_FREKANS_YATOLYE.HEX` (açıklamasında sürüm ve derleme tarihi, örn. `AT V0-2 · 19.10.2026 14:31`). Diğer örnekler `ozel_firmware/` içinde derlenir, listeye girmez. Başka bir HEX dosyası için **HEX yükle…** düğmesini kullanın; S-record ve Intel HEX desteklenir.
 
 ## Neler var
 

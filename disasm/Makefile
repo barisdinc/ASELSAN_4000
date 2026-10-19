@@ -68,9 +68,10 @@ test-ozel: $(ORNEKLER)
 	cd sim && $(JSRUN) test_ozel.js $(JSSEP) ../../ozel_firmware/YA4000S_FREKANS_YATOLYE.HEX ../../YA4000S.HEX FREQ,APRS
 
 sim: ozel
-	$(PY) sim/mkfirmware.py ../YA4000S.HEX ../YA4000D.HEX ../YA4000E.HEX ../YA4000K.HEX \
+	$(PY) sim/mkfirmware.py --surum ../ozel_firmware/surum.json \
+	    ../YA4000S.HEX ../YA4000D.HEX ../YA4000E.HEX ../YA4000K.HEX \
 	    ../YA4000P.HEX ../YA4000R.HEX ../YA4000V.HEX ../YA4000Y.HEX \
-	    ../ozel_firmware/YA4000S_MERHABA.HEX $(ORNEKLER) > sim/firmware.js
+	    ../ozel_firmware/YA4000S_FREKANS_YATOLYE.HEX > sim/firmware.js
 
 # read-only serial client (yukle.html) against the simulated radio
 test-yukle:

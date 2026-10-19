@@ -23,7 +23,7 @@ const fwList = Object.keys(window.FIRMWARE_HEX || {}).sort((a, b) => (a === 'YA4
 const fwLabel = n => n + ((window.FIRMWARE_TIME || {})[n] ? '  ·  ' + window.FIRMWARE_TIME[n] : '');
 for (const n of fwList) { const o = document.createElement('option'); o.value = n; o.textContent = fwLabel(n); $('fwSel').appendChild(o); }
 if (!fwList.length) { const o = document.createElement('option'); o.textContent = '(firmware.js yok)'; $('fwSel').appendChild(o); }
-$('fwSel').value = store.get('sim.fw') || fwList[0] || '';
+$('fwSel').value = fwList.includes(store.get('sim.fw')) ? store.get('sim.fw') : fwList[0] || '';   // an image dropped from the list falls back
 $('fwBtn').onclick = () => $('fwFile').click();
 $('fwFile').onchange = e => {
   const f = e.target.files[0]; if (!f) return;
