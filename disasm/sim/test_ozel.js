@@ -503,6 +503,14 @@ if (RING.includes('APRS')) {
     const tus = keys(r, '#');
     r.selIn.noise = false; r.inputs.P5 &= ~0x80; r.run(FCLK * 0.5);
     check('APRS alma: 3 s gürültüde yeniden başlama yok, tuş çalışıyor', !r.events.slice(ev0).some(e => /WATCHDOG|RESET/.test(e[1])) && tus[0] === 'APRS OK ', tus.join('|'));
+    /* P66 çok hızlı titrerse (girişsiz karşılaştırıcı) kesme seli ana döngüyü durdurmasın: AR_KENAR_MAX */
+    r.selIn.noiseUs = [5, 10]; r.selIn.noise = true; r.inputs.P5 |= 0x80; const ev1 = r.events.length;
+    const titrek = al('TA8TT>APRS:>titresim oncesi', {}, false), k8 = kay(30); r.selIn.noise = true; r.inputs.P5 |= 0x80; r.run(FCLK * 2);
+    const tus2 = keys(r, '#');
+    r.selIn.noise = false; r.selIn.noiseUs = null; r.inputs.P5 &= ~0x80; r.run(FCLK * 0.5);
+    const sonraki = al('TA8UU>APRS:>sonra');
+    check('APRS alma: P66 5-10 µs titrerken yeniden başlama yok, tuş çalışıyor, sonra yine alıyor', !r.events.slice(ev1).some(e => /WATCHDOG|RESET/.test(e[1])) && tus2[0] === 'APRS OK ' && sonraki === 'TA8UU>AP', tus2[0] + ' / ' + sonraki);
+    check('APRS alma: taşıyıcı yokken çözücü (TB1) kapalı', !(r.sfr[0x40] & 0x40) && !(r.ram[0x5FC] & 1), 'TCSTART ' + r.sfr[0x40].toString(16));
     keys(r, 'm');
     const tb1 = r.sfr[0x40] & 0x40;
     const disari = al('TA4CC>APRS:>menü dışı');

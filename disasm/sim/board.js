@@ -205,7 +205,8 @@ class Signal {
     }
     for (const s of this.segs) if (t >= s.t0 && t < s.t1) return Math.floor((t - s.t0) * 2 * s.f / FCLK) & 1;
     if (this.noise) {
-      while (t >= this.nextNoise) { this.noiseLvl ^= 1; this.nextNoise += FCLK * (0.00005 + Math.random() * 0.0004); }
+      const [n0, n1] = this.noiseUs || [50, 450];   // kenarlar arası µs (gerçek karşılaştırıcı girişsizken çok hızlı titreyebilir)
+      while (t >= this.nextNoise) { this.noiseLvl ^= 1; this.nextNoise += FCLK * (n0 + Math.random() * (n1 - n0)) / 1e6; }
       return this.noiseLvl;
     }
     return 1;

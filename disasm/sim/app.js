@@ -216,11 +216,14 @@ $('selSend').onclick = () => {
   board.selIn.setSequence(board.now, [{ f: 0, ms: 20 }].concat(seq));
   addTxLog('RX seçmeli çağrı girişi: ' + $('selStd').value + ' ' + $('selDigits').value);
 };
+let aprsBitis = 0;   // paket bitince taşıyıcı (P57) kapanır
 $('aprsSend').onclick = () => {
   let fr; try { fr = AFSK.encode($('aprsIn').value); } catch (e) { alert('APRS paketi: KAYNAK>HEDEF[,YOL]:bilgi'); return; }
   const e = AFSK.edges(fr), t = board.now;
   board.selIn.setEdges(e.map(x => t + Math.round(x * FCLK)));
+  const elle = $('carrier').checked;                                       // taşıyıcı zaten açıksa açık kalır
   $('carrier').checked = true; applyRxInputs();                         // susturma açık
+  aprsBitis = elle ? 0 : t + Math.round((e[e.length - 1] + 0.05) * FCLK);
   addTxLog('RX APRS paketi (P66): ' + $('aprsIn').value + ' (' + e[e.length - 1].toFixed(2) + ' s)');
 };
 $('lockFault').onchange = e => { if (board) board.lockFault = e.target.checked; };
@@ -514,6 +517,7 @@ document.querySelectorAll('#tabs button').forEach(b => b.onclick = () => showTab
 let frame = 0, perfC = 0, perfT = performance.now(), simRate = 0;
 function renderAll(force) {
   if (!board) return;
+  if (aprsBitis && board.now >= aprsBitis) { aprsBitis = 0; $('carrier').checked = false; applyRxInputs(); }
   renderLcd(); renderRf();
   if (activeTab === 'rf' || force) analyse();
   if (activeTab === 'serial') { if (u0dirty || force) renderU0(); renderSerialInfo(); }

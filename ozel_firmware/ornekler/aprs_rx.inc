@@ -56,6 +56,8 @@ AR_SEC      .EQU $0624          ; gösterilen liste öğesi (1..AR_LN), 0 = yeni
 AR_D        .EQU $0625          ; 2 bayt: geçici
 AR_T        .EQU $0627          ; geçici (bayt)
 AR_IT       .EQU $0628          ; 2 bayt: kesmenin geçicisi
+AR_KENAR    .EQU OZEL_RAM+$94   ; 2 bayt: bu 32 ms'deki kenar sayısı (kesme seli koruması)
+AR_KENAR_MAX .EQU 256           ; 2200 Hz: ~141 kenar / 32 ms; fazlası titreşim
 ; kayan mesaj (aprs_mesaj.inc)
 AR_KILIT    .EQU OZEL_RAM+$38   ; 1 = AR_MSJ'de gösterilecek / gösterilen paket var (kesme yazmaz)
 AR_MN       .EQU OZEL_RAM+$39   ; AR_MSJ'deki bayt sayısı (FCS'siz)
@@ -82,7 +84,17 @@ AR_SURE     .EQU 125            ; 125 x 32 ms = 4 s
 AR_TB1:
         .ASSUME M=0,X=0
         PHY
-        LDA   A,R_TB1                   ; ölçülen yarım periyot
+        INC   AR_KENAR                  ; kesme seli: P66 titreşirse (girişsiz karşılaştırıcı) ana döngü
+        LDA   A,AR_KENAR                ; durmasın; TB1 bu 32 ms için durur, AR_ISLE yeniden kurar
+        CMP   A,#AR_KENAR_MAX
+        BCC   RTB_0
+        SEM
+        CLB   #$40,R_TCSTART
+        LDM   #$00,R_TB1IC
+        LDM   #0,AR_DURUM               ; (çerçeve de biter)
+        JMP   RTB_SON
+        .ASSUME M=0,X=0
+RTB_0:  LDA   A,R_TB1                   ; ölçülen yarım periyot
         CLC
         ADC   A,AR_BEKLE
         CMP   A,#AR_KISA
@@ -335,12 +347,18 @@ AR_ISLE:
         .ASSUME M=0,X=0
         STA   A,AR_D                    ; çerçeve
         SEM
-        LDA   A,RADYO_DURUM             ; alma: 2..3
+        LDA   A,AP_FARK                 ; yeni 32 ms: kenar sayacı sıfırlanır
+        BEQ   RIS_0
+        CLM
+        LDM   #0,AR_KENAR
+        SEM
+RIS_0:  LDA   A,RADYO_DURUM             ; alma: 2..3
         CMP   A,#2
         BCC   RIS_KAPAT
         CMP   A,#4
         BCS   RIS_KAPAT
-        JSR   AR_AC
+        BBC   #$20,$023E,RIS_KAPAT      ; yalnız taşıyıcı varken (susturma açık): kapalıyken P66 boş ya da
+        JSR   AR_AC                     ; titreşiyor olabilir
         BRA   RIS_1
 RIS_KAPAT:
         JSR   AR_KAPAT
