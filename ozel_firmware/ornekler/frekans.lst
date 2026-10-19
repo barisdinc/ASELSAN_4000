@@ -1009,7 +1009,7 @@
 012714                               .ASSUME M=0,X=0
 012714  A3 04                        LDA   A,$04,S
 012716  48                           PHA
-012717  20 4B 30                     JSR   AR_TUS                    ; '*' / '#': duyulanlar listesi (aprs_rx.inc)
+012717  20 9C 30                     JSR   AR_TUS                    ; '*' / '#': duyulanlar listesi (aprs_rx.inc)
 01271A  B0 03                        BCS   ATS_SON
 01271C  20 22 27                     JSR   AP_EKRAN
 01271F  D8                           CLM
@@ -1576,11 +1576,11 @@
 012C27  20 1A 2D                     JSR   AP_OTO_ZAMAN
 012C2A  D8                           CLM
 012C2B  A3 0E                        LDA   A,$0E,S                   ; çerçeve göstericisi (VFO_KANCA $0C,S + JSR)
-012C2D  20 D6 2F                     JSR   AR_ISLE                   ; alma: duyulan istasyonlar (aprs_rx.inc)
+012C2D  20 02 30                     JSR   AR_ISLE                   ; alma: duyulan istasyonlar (aprs_rx.inc)
 012C30  60                           RTS
 012C31                               .ASSUME M=1,X=0
 012C31  9C AA 05 00                  LDM   #0,AP_DURUM
-012C35  20 A3 2F                     JSR   AR_KAPAT                  ; alma çözücüsü kapansın (TB1)
+012C35  20 B0 2F                     JSR   AR_KAPAT                  ; alma çözücüsü kapansın (TB1)
 012C38  9C 22 06 00                  LDM   #0,AR_GOSTER
 012C3C  9C 24 06 00                  LDM   #0,AR_SEC
 012C40  9C 3C 05 00                  LDM   #0,AR_KDURUM
@@ -1625,7 +1625,7 @@
 012C9D  D0 2B                        BNE   AAD_SON
 012C9F  9C AA 05 00                  LDM   #0,AP_DURUM               ; RAM açılışta rastgele: APRS değişkenlerini temizle
 012CA3  9C F8 04 00                  LDM   #0,AP_OTO
-012CA7  20 B9 2F                     JSR   AR_SIFIRLA
+012CA7  20 C6 2F                     JSR   AR_SIFIRLA
 012CAA  D8                           CLM
 012CAB  A9 5A A5                     LDA   A,#ACILIS_TAMAM
 012CAE  8D F8 05                     STA   A,AP_ACILIS
@@ -1744,7 +1744,7 @@
 012D96  5A                           PHY
 012D97  EE 94 05                     INC   AR_KENAR                  ; kesme seli: P66 titreşirse (girişsiz karşılaştırıcı) ana döngü
 012D9A  AD 94 05                     LDA   A,AR_KENAR                ; durmasın; TB1 bu 32 ms için durur, AR_ISLE yeniden kurar
-012D9D  C9 00 01                     CMP   A,#AR_KENAR_MAX
+012D9D  C9 00 04                     CMP   A,#AR_KENAR_MAX
 012DA0  90 10                        BCC   RTB_0
 012DA2  F8                           SEM
 012DA3  1C 40 00 40                  CLB   #$40,R_TCSTART
@@ -1890,305 +1890,364 @@
 012EEB  F8                           SEM
 012EEC  60                           RTS
 012EED                               .ASSUME M=1,X=0
-012EED  3C FC 05 02 4E               BBC   #$02,AR_DURUM,RBY_YENI
-012EF2  AD FE 05                     LDA   A,AR_BITSAY
-012EF5  C9 07                        CMP   A,#7                      ; bayrağın 7 biti: çerçeve bayta hizalı
-012EF7  D0 47                        BNE   RBY_YENI
-012EF9  D8                           CLM
-012EFA  AD 08 06                     LDA   A,AR_SAY
-012EFD  C9 12 00                     CMP   A,#18
-012F00  90 3E                        BCC   RBY_YENI
-012F02  AD 0A 06                     LDA   A,AR_CRC
-012F05  C9 B8 F0                     CMP   A,#$F0B8
-012F08  D0 36                        BNE   RBY_YENI
-012F0A  F8                           SEM
-012F0B  AD 1A 06                     LDA   A,AR_YENI
-012F0E  D0 13                        BNE   RBY_MSJ                   ; öncekini ana döngü henüz almadı
-012F10  A2 00 00                     LDX   #0
-012F13  BD 13 06             RBY_1:  LDA   A,AR_ADR+7,X              ; gönderen
-012F16  9D 1B 06                     STA   A,AR_YENI_ADR,X
-012F19  E8                           INX
-012F1A  E0 07 00                     CPX   #7
-012F1D  D0 F4                        BNE   RBY_1
-012F1F  9C 1A 06 01                  LDM   #1,AR_YENI
-012F23  AD 38 05                     LDA   A,AR_KILIT                ; mesaj tamponu boştaysa bu paket gösterilecek
-012F26  D0 18                        BNE   RBY_YENI
-012F28  D8                           CLM
-012F29  AD 08 06                     LDA   A,AR_SAY
-012F2C  38                           SEC
-012F2D  E9 02 00                     SBC   A,#2                      ; FCS'siz
-012F30  C9 60 00                     CMP   A,#AR_MSJ_UZ
-012F33  90 03                        BCC   RBY_2
-012F35  A9 60 00                     LDA   A,#AR_MSJ_UZ              ; uzun paketin başı
-012F38  F8                   RBY_2:  SEM
-012F39  8D 39 05                     STA   A,AR_MN
-012F3C  9C 38 05 01                  LDM   #1,AR_KILIT
-012F40  F8                           SEM
-012F41  0C FC 05 02                  SEB   #$02,AR_DURUM
-012F45  9C FE 05 00                  LDM   #0,AR_BITSAY
-012F49  D8                           CLM
-012F4A  9C 08 06 00 00               LDM   #0,AR_SAY
-012F4F  9C 0A 06 FF FF               LDM   #$FFFF,AR_CRC
-012F54  F8                           SEM
-012F55  60                           RTS
-012F56                               .ASSUME M=1,X=0
-012F56  3C FC 05 01 0E               BBC   #$01,AR_DURUM,RAC_KUR
-012F5B  3C 40 00 40 09               BBC   #$40,R_TCSTART,RAC_KUR
-012F60  AD 7B 00                     LDA   A,R_TB1IC
-012F63  29 07                        AND   A,#$07
-012F65  C9 06                        CMP   A,#$06
-012F67  F0 39                        BEQ   RAC_SON
-012F69  1C 40 00 40                  CLB   #$40,R_TCSTART
-012F6D  9C 5C 00 4A                  LDM   #R_TB1MOD_OLC,R_TB1MOD
-012F71  9C FC 05 00                  LDM   #0,AR_DURUM
-012F75  9C FD 05 00                  LDM   #0,AR_BIRLER
-012F79  9C FE 05 00                  LDM   #0,AR_BITSAY
-012F7D  9C 06 06 01                  LDM   #1,AR_TON
-012F81  9C 07 06 01                  LDM   #1,AR_SONTON
-012F85  D8                           CLM
-012F86  9C 00 06 00 00               LDM   #0,AR_DPREV
-012F8B  9C 02 06 00 00               LDM   #0,AR_P
-012F90  9C 04 06 00 00               LDM   #0,AR_BEKLE
-012F95  F8                           SEM
-012F96  0C FC 05 01                  SEB   #$01,AR_DURUM
-012F9A  9C 7B 00 06                  LDM   #$06,R_TB1IC
-012F9E  0C 40 00 40                  SEB   #$40,R_TCSTART
-012FA2  60                           RTS
-012FA3                               .ASSUME M=1,X=0
-012FA3  3C FC 05 01 10               BBC   #$01,AR_DURUM,RKP_SON
-012FA8  1C 40 00 40                  CLB   #$40,R_TCSTART
-012FAC  9C 7B 00 00                  LDM   #$00,R_TB1IC
-012FB0  9C 5C 00 00                  LDM   #$00,R_TB1MOD
-012FB4  9C FC 05 00                  LDM   #0,AR_DURUM
-012FB8  60                           RTS
-012FB9                               .ASSUME M=1,X=0
-012FB9  9C FC 05 00                  LDM   #0,AR_DURUM
-012FBD  9C 1A 06 00                  LDM   #0,AR_YENI
-012FC1  9C 22 06 00                  LDM   #0,AR_GOSTER
-012FC5  9C 23 06 00                  LDM   #0,AR_LN
-012FC9  9C 24 06 00                  LDM   #0,AR_SEC
-012FCD  9C 38 05 00                  LDM   #0,AR_KILIT
-012FD1  9C 3C 05 00                  LDM   #0,AR_KDURUM
-012FD5  60                           RTS
-012FD6                               .ASSUME M=0,X=0
-012FD6  8D 25 06                     STA   A,AR_D                    ; çerçeve
-012FD9  F8                           SEM
-012FDA  AD F7 04                     LDA   A,AP_FARK                 ; yeni 32 ms: kenar sayacı sıfırlanır
-012FDD  F0 07                        BEQ   RIS_0
-012FDF  D8                           CLM
-012FE0  9C 94 05 00 00               LDM   #0,AR_KENAR
-012FE5  F8                           SEM
-012FE6  AD 28 02             RIS_0:  LDA   A,RADYO_DURUM             ; alma: 2..3
-012FE9  C9 02                        CMP   A,#2
-012FEB  90 0E                        BCC   RIS_KAPAT
-012FED  C9 04                        CMP   A,#4
-012FEF  B0 0A                        BCS   RIS_KAPAT
-012FF1  3C 3E 02 20 05               BBC   #$20,$023E,RIS_KAPAT      ; yalnız taşıyıcı varken (susturma açık): kapalıyken P66 boş ya da
-012FF6  20 56 2F                     JSR   AR_AC                     ; titreşiyor olabilir
-012FF9  80 03                        BRA   RIS_1
-012FFB  20 A3 2F                     JSR   AR_KAPAT
-012FFE  AD 1A 06             RIS_1:   LDA   A,AR_YENI
-013001  F0 07                        BEQ   RIS_K
-013003  20 E3 30                     JSR   AR_LISTEYE
-013006  9C 1A 06 00                  LDM   #0,AR_YENI
-01300A  20 E4 BB             RIS_K:  JSR   AR_KAYAN                  ; kayan mesaj (aprs_mesaj.inc); C = 1: ekran yazıldı
-01300D  B0 2F                        BCS   RIS_LCD
-01300F  AD 22 06                     LDA   A,AR_GOSTER
-013012  F0 35                        BEQ   RIS_SON
-013014  AD F7 04                     LDA   A,AP_FARK                 ; AP_OTO_ZAMAN bu turda hesapladı
-013017  F0 30                        BEQ   RIS_SON
-013019  AD 22 06                     LDA   A,AR_GOSTER
-01301C  38                           SEC
-01301D  ED F7 04                     SBC   A,AP_FARK
-013020  B0 02                        BCS   RIS_2
-013022  A9 00                        LDA   A,#0
-013024  8D 22 06             RIS_2:   STA   A,AR_GOSTER
-013027  D0 20                        BNE   RIS_SON
-013029  AD 28 02                     LDA   A,RADYO_DURUM
-01302C  C9 04                        CMP   A,#4
-01302E  90 06                        BCC   RIS_3
-013030  9C 22 06 01                  LDM   #1,AR_GOSTER              ; gönderiyor: sonra dön
-013034  80 13                        BRA   RIS_SON
-013036  9C 24 06 00          RIS_3:   LDM   #0,AR_SEC
-01303A  D8                           CLM
-01303B  20 22 27                     JSR   AP_EKRAN                  ; süre doldu: APRS ekranı
-01303E  D8                   RIS_LCD: CLM
-01303F  AD 25 06                     LDA   A,AR_D
-013042  48                           PHA
-013043  22 8C 82 00                  JSRL  F_LCD
-013047  D8                           CLM
-013048  68                           PLA
-013049  D8                   RIS_SON: CLM
-01304A  60                           RTS
-01304B                               .ASSUME M=0,X=0
-01304B  F8                           SEM
-01304C  9C 3C 05 00                  LDM   #0,AR_KDURUM              ; her tuş kayan mesajı keser
-013050  9C 38 05 00                  LDM   #0,AR_KILIT
-013054  AD 26 02                     LDA   A,KEY
-013057  C9 2A                        CMP   A,#'*'
-013059  F0 07                        BEQ   RTU_ESKI
-01305B  C9 23                        CMP   A,#'#'
-01305D  F0 10                        BEQ   RTU_YENI
-01305F  D8                           CLM
-013060  18                           CLC
-013061  60                           RTS
-013062                               .ASSUME M=1,X=0
-013062  AD 24 06                     LDA   A,AR_SEC
-013065  CD 23 06                     CMP   A,AR_LN
-013068  B0 0D                        BCS   RTU_GOSTER                 ; en eskide kal
-01306A  EE 24 06                     INC   AR_SEC
-01306D  80 08                        BRA   RTU_GOSTER
-01306F  AD 24 06                     LDA   A,AR_SEC
-013072  F0 03                        BEQ   RTU_GOSTER
-013074  CE 24 06                     DEC   AR_SEC
-013077  AD 24 06                     LDA   A,AR_SEC
-01307A  D0 3C                        BNE   RTU_OGE
-01307C  AD 23 06                     LDA   A,AR_LN                   ; liste boş ve '*': "EMPTY"
-01307F  D0 2D                        BNE   RTU_APRS
-013081  AD 26 02                     LDA   A,KEY
-013084  C9 2A                        CMP   A,#'*'
-013086  D0 26                        BNE   RTU_APRS
-013088  D8                           CLM
-013089  A2 00 00                     LDX   #0
-01308C  F8                           SEM
-01308D  3C 40 03 80 03               BBC   #$80,OPTIONS,RTU_BOS
-013092  A2 08 00                     LDX   #8
-013095  D8                   RTU_BOS: CLM
-013096  A0 00 00                     LDY   #0
-013099  F8                           SEM
-01309A  BF D3 30 01          RTU_B1:  LDA   A,>AR_METIN,X
-01309E  99 52 02                     STA   A,LCD,Y
-0130A1  E8                           INX
-0130A2  C8                           INY
-0130A3  C0 08 00                     CPY   #8
-0130A6  D0 F2                        BNE   RTU_B1
-0130A8  9C 22 06 7D                  LDM   #AR_SURE,AR_GOSTER
-0130AC  80 22                        BRA   RTU_EVET
-0130AE  9C 22 06 00                  LDM   #0,AR_GOSTER              ; APRS ekranı
-0130B2  D8                           CLM
-0130B3  20 22 27                     JSR   AP_EKRAN
-0130B6  80 18                        BRA   RTU_EVET
-0130B8                               .ASSUME M=1,X=0
-0130B8  1A                   RTU_OGE: DEC   A                         ; X = 7 * (sec - 1)
-0130B9  8D 27 06                     STA   A,AR_T
-0130BC  0A                           ASL   A
-0130BD  0A                           ASL   A
-0130BE  0A                           ASL   A
-0130BF  38                           SEC
-0130C0  ED 27 06                     SBC   A,AR_T
-0130C3  D8                           CLM
-0130C4  29 FF 00                     AND   A,#$00FF
-0130C7  AA                           TAX
-0130C8  F8                           SEM
-0130C9  20 52 31                     JSR   AR_CAGRI_YAZ
-0130CC  9C 22 06 7D                  LDM   #AR_SURE,AR_GOSTER
-0130D0  D8                           CLM
-0130D1  38                           SEC
-0130D2  60                           RTS
-0130D3  45 4D 50 54 59 20 …          .TEXT8 "EMPTY"
-0130DB  42 4F 53 20 20 20 …          .TEXT8 "BOS"
-0130E3                               .ASSUME M=1,X=0
-0130E3  9C 27 06 00                  LDM   #0,AR_T                   ; öğe sırası
-0130E7  A2 00 00                     LDX   #0                        ; X = öğenin başı
-0130EA  AD 27 06                     LDA   A,AR_T
-0130ED  CD 23 06                     CMP   A,AR_LN
-0130F0  B0 24                        BCS   RLY_YOK
-0130F2  DA                           PHX
-0130F3  A0 00 00                     LDY   #0
-0130F6  BD 00 05             RLY_K:  LDA   A,AR_LISTE,X
-0130F9  D9 1B 06                     CMP   A,AR_YENI_ADR,Y
-0130FC  D0 0A                        BNE   RLY_FARKLI
-0130FE  E8                           INX
-0130FF  C8                           INY
-013100  C0 07 00                     CPY   #7
-013103  D0 F1                        BNE   RLY_K
-013105  FA                           PLX                             ; bulundu: önündekiler bir kayar, bu öğenin üstüne
-013106  80 2C                        BRA   RLY_KAYDIR
-013108  FA                           PLX
-013109  D8                           CLM
-01310A  8A                           TXA
-01310B  18                           CLC
-01310C  69 07 00                     ADC   A,#7
-01310F  AA                           TAX
-013110  F8                           SEM
-013111  EE 27 06                     INC   AR_T
-013114  80 D4                        BRA   RLY_ARA
-013116  AD 23 06                     LDA   A,AR_LN
-013119  C9 08                        CMP   A,#AR_N_MAX
-01311B  B0 06                        BCS   RLY_DOLU
-01311D  EE 23 06                     INC   AR_LN
-013120  AD 23 06                     LDA   A,AR_LN
-013123  1A                           DEC   A                         ; kayacak öğe sayısı = yeni sayı - 1
-013124  8D 27 06                     STA   A,AR_T
-013127  0A                           ASL   A
-013128  0A                           ASL   A
-013129  0A                           ASL   A
-01312A  38                           SEC
-01312B  ED 27 06                     SBC   A,AR_T
-01312E  D8                           CLM
-01312F  29 FF 00                     AND   A,#$00FF
-013132  AA                           TAX                             ; X = kayacak bayt sayısı
-013133  F8                           SEM
-013134  E0 00 00                     CPX   #0
-013137  F0 09                        BEQ   RLY_KOY
-013139  CA                           DEX
-01313A  BD 00 05                     LDA   A,AR_LISTE,X
-01313D  9D 07 05                     STA   A,AR_LISTE+7,X
-013140  80 F2                        BRA   RLY_KAYDIR
-013142  A2 00 00                     LDX   #0
-013145  BD 1B 06             RLY_K3: LDA   A,AR_YENI_ADR,X
-013148  9D 00 05                     STA   A,AR_LISTE,X
-01314B  E8                           INX
-01314C  E0 07 00                     CPX   #7
-01314F  D0 F4                        BNE   RLY_K3
-013151  60                           RTS
-013152                               .ASSUME M=1,X=0
-013152  A0 00 00                     LDY   #0                        ; LCD konumu
-013155  9C 27 06 06                  LDM   #6,AR_T
-013159  BD 00 05             RCY_1:  LDA   A,AR_LISTE,X
-01315C  4A                           LSR   A
-01315D  C9 20                        CMP   A,#' '
-01315F  F0 04                        BEQ   RCY_2
-013161  99 52 02                     STA   A,LCD,Y
-013164  C8                           INY
-013165  E8                   RCY_2:  INX
-013166  CE 27 06                     DEC   AR_T
-013169  D0 EE                        BNE   RCY_1
-01316B  BD 00 05                     LDA   A,AR_LISTE,X              ; SSID baytı
-01316E  4A                           LSR   A
-01316F  29 0F                        AND   A,#$0F
-013171  F0 30                        BEQ   RCY_DOLDUR
-013173  8D 27 06                     STA   A,AR_T
-013176  C9 0A                        CMP   A,#10
-013178  B0 0B                        BCS   RCY_IKI
-01317A  A9 2D                        LDA   A,#'-'
-01317C  99 52 02                     STA   A,LCD,Y
-01317F  C8                           INY
-013180  AD 27 06                     LDA   A,AR_T
-013183  80 17                        BRA   RCY_HANE
-013185  C0 06 00                     CPY   #6
-013188  B0 06                        BCS   RCY_I1
-01318A  A9 2D                        LDA   A,#'-'
-01318C  99 52 02                     STA   A,LCD,Y
-01318F  C8                           INY
-013190  A9 31                RCY_I1: LDA   A,#'1'
-013192  99 52 02                     STA   A,LCD,Y
-013195  C8                           INY
-013196  AD 27 06                     LDA   A,AR_T
-013199  38                           SEC
-01319A  E9 0A                        SBC   A,#10
-01319C  18                           CLC
-01319D  69 30                        ADC   A,#'0'
-01319F  99 52 02                     STA   A,LCD,Y
-0131A2  C8                           INY
-0131A3  C0 08 00                     CPY   #8
-0131A6  B0 08                        BCS   RCY_SON
-0131A8  A9 20                        LDA   A,#' '
-0131AA  99 52 02                     STA   A,LCD,Y
-0131AD  C8                           INY
-0131AE  80 F3                        BRA   RCY_DOLDUR
-0131B0  60                           RTS
-0131B1                               .ORG $00F628                    ; durum 12 (PTT bırakıldı): kimlik gönder
+012EED  D8                           CLM
+012EEE  EE 98 05                     INC   AR_DG_BYR
+012EF1  F8                           SEM
+012EF2  3C FC 05 02 56               BBC   #$02,AR_DURUM,RBY_YENI
+012EF7  AD FE 05                     LDA   A,AR_BITSAY
+012EFA  C9 07                        CMP   A,#7                      ; bayrağın 7 biti: çerçeve bayta hizalı
+012EFC  D0 4F                        BNE   RBY_YENI
+012EFE  D8                           CLM
+012EFF  AD 08 06                     LDA   A,AR_SAY
+012F02  C9 12 00                     CMP   A,#18
+012F05  90 46                        BCC   RBY_YENI
+012F07  AD 0A 06                     LDA   A,AR_CRC
+012F0A  C9 B8 F0                     CMP   A,#$F0B8
+012F0D  F0 05                        BEQ   RBY_IYI
+012F0F  EE 9A 05                     INC   AR_DG_CRC
+012F12  80 39                        BRA   RBY_YENI
+012F14  EE 9C 05                     INC   AR_DG_OK
+012F17  F8                           SEM
+012F18  AD 1A 06                     LDA   A,AR_YENI
+012F1B  D0 13                        BNE   RBY_MSJ                   ; öncekini ana döngü henüz almadı
+012F1D  A2 00 00                     LDX   #0
+012F20  BD 13 06             RBY_1:  LDA   A,AR_ADR+7,X              ; gönderen
+012F23  9D 1B 06                     STA   A,AR_YENI_ADR,X
+012F26  E8                           INX
+012F27  E0 07 00                     CPX   #7
+012F2A  D0 F4                        BNE   RBY_1
+012F2C  9C 1A 06 01                  LDM   #1,AR_YENI
+012F30  AD 38 05                     LDA   A,AR_KILIT                ; mesaj tamponu boştaysa bu paket gösterilecek
+012F33  D0 18                        BNE   RBY_YENI
+012F35  D8                           CLM
+012F36  AD 08 06                     LDA   A,AR_SAY
+012F39  38                           SEC
+012F3A  E9 02 00                     SBC   A,#2                      ; FCS'siz
+012F3D  C9 60 00                     CMP   A,#AR_MSJ_UZ
+012F40  90 03                        BCC   RBY_2
+012F42  A9 60 00                     LDA   A,#AR_MSJ_UZ              ; uzun paketin başı
+012F45  F8                   RBY_2:  SEM
+012F46  8D 39 05                     STA   A,AR_MN
+012F49  9C 38 05 01                  LDM   #1,AR_KILIT
+012F4D  F8                           SEM
+012F4E  0C FC 05 02                  SEB   #$02,AR_DURUM
+012F52  9C FE 05 00                  LDM   #0,AR_BITSAY
+012F56  D8                           CLM
+012F57  9C 08 06 00 00               LDM   #0,AR_SAY
+012F5C  9C 0A 06 FF FF               LDM   #$FFFF,AR_CRC
+012F61  F8                           SEM
+012F62  60                           RTS
+012F63                               .ASSUME M=1,X=0
+012F63  3C FC 05 01 0E               BBC   #$01,AR_DURUM,RAC_KUR
+012F68  3C 40 00 40 09               BBC   #$40,R_TCSTART,RAC_KUR
+012F6D  AD 7B 00                     LDA   A,R_TB1IC
+012F70  29 07                        AND   A,#$07
+012F72  C9 06                        CMP   A,#$06
+012F74  F0 39                        BEQ   RAC_SON
+012F76  1C 40 00 40                  CLB   #$40,R_TCSTART
+012F7A  9C 5C 00 4A                  LDM   #R_TB1MOD_OLC,R_TB1MOD
+012F7E  9C FC 05 00                  LDM   #0,AR_DURUM
+012F82  9C FD 05 00                  LDM   #0,AR_BIRLER
+012F86  9C FE 05 00                  LDM   #0,AR_BITSAY
+012F8A  9C 06 06 01                  LDM   #1,AR_TON
+012F8E  9C 07 06 01                  LDM   #1,AR_SONTON
+012F92  D8                           CLM
+012F93  9C 00 06 00 00               LDM   #0,AR_DPREV
+012F98  9C 02 06 00 00               LDM   #0,AR_P
+012F9D  9C 04 06 00 00               LDM   #0,AR_BEKLE
+012FA2  F8                           SEM
+012FA3  0C FC 05 01                  SEB   #$01,AR_DURUM
+012FA7  9C 7B 00 06                  LDM   #$06,R_TB1IC
+012FAB  0C 40 00 40                  SEB   #$40,R_TCSTART
+012FAF  60                           RTS
+012FB0                               .ASSUME M=1,X=0
+012FB0  3C FC 05 01 10               BBC   #$01,AR_DURUM,RKP_SON
+012FB5  1C 40 00 40                  CLB   #$40,R_TCSTART
+012FB9  9C 7B 00 00                  LDM   #$00,R_TB1IC
+012FBD  9C 5C 00 00                  LDM   #$00,R_TB1MOD
+012FC1  9C FC 05 00                  LDM   #0,AR_DURUM
+012FC5  60                           RTS
+012FC6                               .ASSUME M=1,X=0
+012FC6  9C 9E 05 00                  LDM   #0,AR_DG_SAYFA
+012FCA  D8                           CLM
+012FCB  9C 96 05 00 00               LDM   #0,AR_DG_KMAX
+012FD0  9C 98 05 00 00               LDM   #0,AR_DG_BYR
+012FD5  9C 9A 05 00 00               LDM   #0,AR_DG_CRC
+012FDA  9C 9C 05 00 00               LDM   #0,AR_DG_OK
+012FDF  9C 94 05 00 00               LDM   #0,AR_KENAR
+012FE4  F8                           SEM
+012FE5  9C FC 05 00                  LDM   #0,AR_DURUM
+012FE9  9C 1A 06 00                  LDM   #0,AR_YENI
+012FED  9C 22 06 00                  LDM   #0,AR_GOSTER
+012FF1  9C 23 06 00                  LDM   #0,AR_LN
+012FF5  9C 24 06 00                  LDM   #0,AR_SEC
+012FF9  9C 38 05 00                  LDM   #0,AR_KILIT
+012FFD  9C 3C 05 00                  LDM   #0,AR_KDURUM
+013001  60                           RTS
+013002                               .ASSUME M=0,X=0
+013002  8D 25 06                     STA   A,AR_D                    ; çerçeve
+013005  F8                           SEM
+013006  AD F7 04                     LDA   A,AP_FARK                 ; yeni 32 ms: kenar sayacı sıfırlanır
+013009  F0 12                        BEQ   RIS_0
+01300B  D8                           CLM
+01300C  AD 94 05                     LDA   A,AR_KENAR
+01300F  CD 96 05                     CMP   A,AR_DG_KMAX
+013012  90 03                        BCC   RIS_00
+013014  8D 96 05                     STA   A,AR_DG_KMAX
+013017  9C 94 05 00 00       RIS_00: LDM   #0,AR_KENAR
+01301C  F8                           SEM
+01301D  AD 28 02             RIS_0:  LDA   A,RADYO_DURUM             ; alma: 2..3
+013020  C9 02                        CMP   A,#2
+013022  90 09                        BCC   RIS_KAPAT
+013024  C9 04                        CMP   A,#4
+013026  B0 05                        BCS   RIS_KAPAT
+013028  20 63 2F                     JSR   AR_AC
+01302B  80 03                        BRA   RIS_1
+01302D  20 B0 2F                     JSR   AR_KAPAT
+013030  AD 1A 06             RIS_1:   LDA   A,AR_YENI
+013033  F0 07                        BEQ   RIS_K
+013035  20 70 31                     JSR   AR_LISTEYE
+013038  9C 1A 06 00                  LDM   #0,AR_YENI
+01303C  AD 9E 05             RIS_K:  LDA   A,AR_DG_SAYFA
+01303F  F0 1A                        BEQ   RIS_K1
+013041  AD F7 04                     LDA   A,AP_FARK                 ; teşhis ekranı: ~0,5 s'de bir yenilenir
+013044  F0 0E                        BEQ   RIS_SON0
+013046  AD 9F 05                     LDA   A,AR_DG_SURE
+013049  38                           SEC
+01304A  ED F7 04                     SBC   A,AP_FARK
+01304D  90 07                        BCC   RIS_DG
+01304F  F0 05                        BEQ   RIS_DG
+013051  8D 9F 05                     STA   A,AR_DG_SURE
+013054  D8                           CLM
+013055  60                           RTS
+013056                               .ASSUME M=1,X=0
+013056  20 45 BD             RIS_DG: JSR   AR_TANI
+013059  80 34                        BRA   RIS_LCD
+01305B  20 E4 BB             RIS_K1: JSR   AR_KAYAN                  ; kayan mesaj (aprs_mesaj.inc); C = 1: ekran yazıldı
+01305E  B0 2F                        BCS   RIS_LCD
+013060  AD 22 06                     LDA   A,AR_GOSTER
+013063  F0 35                        BEQ   RIS_SON
+013065  AD F7 04                     LDA   A,AP_FARK                 ; AP_OTO_ZAMAN bu turda hesapladı
+013068  F0 30                        BEQ   RIS_SON
+01306A  AD 22 06                     LDA   A,AR_GOSTER
+01306D  38                           SEC
+01306E  ED F7 04                     SBC   A,AP_FARK
+013071  B0 02                        BCS   RIS_2
+013073  A9 00                        LDA   A,#0
+013075  8D 22 06             RIS_2:   STA   A,AR_GOSTER
+013078  D0 20                        BNE   RIS_SON
+01307A  AD 28 02                     LDA   A,RADYO_DURUM
+01307D  C9 04                        CMP   A,#4
+01307F  90 06                        BCC   RIS_3
+013081  9C 22 06 01                  LDM   #1,AR_GOSTER              ; gönderiyor: sonra dön
+013085  80 13                        BRA   RIS_SON
+013087  9C 24 06 00          RIS_3:   LDM   #0,AR_SEC
+01308B  D8                           CLM
+01308C  20 22 27                     JSR   AP_EKRAN                  ; süre doldu: APRS ekranı
+01308F  D8                   RIS_LCD: CLM
+013090  AD 25 06                     LDA   A,AR_D
+013093  48                           PHA
+013094  22 8C 82 00                  JSRL  F_LCD
+013098  D8                           CLM
+013099  68                           PLA
+01309A  D8                   RIS_SON: CLM
+01309B  60                           RTS
+01309C                               .ASSUME M=0,X=0
+01309C  F8                           SEM
+01309D  9C 3C 05 00                  LDM   #0,AR_KDURUM              ; her tuş kayan mesajı keser
+0130A1  9C 38 05 00                  LDM   #0,AR_KILIT
+0130A5  AD 26 02                     LDA   A,KEY                     ; rakam tuşu: KEY = 'd', rakam firmware'in tamponunda
+0130A8  C9 64                        CMP   A,#'d'
+0130AA  D0 31                        BNE   RTU_0
+0130AC  AD 93 02                     LDA   A,NDIGIT
+0130AF  1A                           DEC   A
+0130B0  D8                           CLM
+0130B1  29 0F 00                     AND   A,#$000F
+0130B4  AA                           TAX
+0130B5  F8                           SEM
+0130B6  BD 83 02                     LDA   A,DIGITS,X
+0130B9  9C 93 02 00                  LDM   #0,NDIGIT
+0130BD  C9 30                        CMP   A,#'0'
+0130BF  F0 04                        BEQ   RTU_D0
+0130C1  C9 00                        CMP   A,#0
+0130C3  D0 18                        BNE   RTU_0
+0130C5  EE 9E 05             RTU_D0: INC   AR_DG_SAYFA               ; teşhis: sonraki sayfa
+0130C8  AD 9E 05                     LDA   A,AR_DG_SAYFA
+0130CB  C9 06                        CMP   A,#6
+0130CD  90 04                        BCC   RTU_D1
+0130CF  9C 9E 05 01                  LDM   #1,AR_DG_SAYFA
+0130D3  9C 22 06 00          RTU_D1: LDM   #0,AR_GOSTER
+0130D7  20 45 BD                     JSR   AR_TANI
+0130DA  D8                           CLM
+0130DB  38                           SEC
+0130DC  60                           RTS
+0130DD                               .ASSUME M=1,X=0
+0130DD  9C 9E 05 00          RTU_0:  LDM   #0,AR_DG_SAYFA
+0130E1  AD 26 02                     LDA   A,KEY
+0130E4  C9 2A                        CMP   A,#'*'
+0130E6  F0 07                        BEQ   RTU_ESKI
+0130E8  C9 23                        CMP   A,#'#'
+0130EA  F0 10                        BEQ   RTU_YENI
+0130EC  D8                           CLM
+0130ED  18                           CLC
+0130EE  60                           RTS
+0130EF                               .ASSUME M=1,X=0
+0130EF  AD 24 06                     LDA   A,AR_SEC
+0130F2  CD 23 06                     CMP   A,AR_LN
+0130F5  B0 0D                        BCS   RTU_GOSTER                 ; en eskide kal
+0130F7  EE 24 06                     INC   AR_SEC
+0130FA  80 08                        BRA   RTU_GOSTER
+0130FC  AD 24 06                     LDA   A,AR_SEC
+0130FF  F0 03                        BEQ   RTU_GOSTER
+013101  CE 24 06                     DEC   AR_SEC
+013104  AD 24 06                     LDA   A,AR_SEC
+013107  D0 3C                        BNE   RTU_OGE
+013109  AD 23 06                     LDA   A,AR_LN                   ; liste boş ve '*': "EMPTY"
+01310C  D0 2D                        BNE   RTU_APRS
+01310E  AD 26 02                     LDA   A,KEY
+013111  C9 2A                        CMP   A,#'*'
+013113  D0 26                        BNE   RTU_APRS
+013115  D8                           CLM
+013116  A2 00 00                     LDX   #0
+013119  F8                           SEM
+01311A  3C 40 03 80 03               BBC   #$80,OPTIONS,RTU_BOS
+01311F  A2 08 00                     LDX   #8
+013122  D8                   RTU_BOS: CLM
+013123  A0 00 00                     LDY   #0
+013126  F8                           SEM
+013127  BF 60 31 01          RTU_B1:  LDA   A,>AR_METIN,X
+01312B  99 52 02                     STA   A,LCD,Y
+01312E  E8                           INX
+01312F  C8                           INY
+013130  C0 08 00                     CPY   #8
+013133  D0 F2                        BNE   RTU_B1
+013135  9C 22 06 7D                  LDM   #AR_SURE,AR_GOSTER
+013139  80 22                        BRA   RTU_EVET
+01313B  9C 22 06 00                  LDM   #0,AR_GOSTER              ; APRS ekranı
+01313F  D8                           CLM
+013140  20 22 27                     JSR   AP_EKRAN
+013143  80 18                        BRA   RTU_EVET
+013145                               .ASSUME M=1,X=0
+013145  1A                   RTU_OGE: DEC   A                         ; X = 7 * (sec - 1)
+013146  8D 27 06                     STA   A,AR_T
+013149  0A                           ASL   A
+01314A  0A                           ASL   A
+01314B  0A                           ASL   A
+01314C  38                           SEC
+01314D  ED 27 06                     SBC   A,AR_T
+013150  D8                           CLM
+013151  29 FF 00                     AND   A,#$00FF
+013154  AA                           TAX
+013155  F8                           SEM
+013156  20 DF 31                     JSR   AR_CAGRI_YAZ
+013159  9C 22 06 7D                  LDM   #AR_SURE,AR_GOSTER
+01315D  D8                           CLM
+01315E  38                           SEC
+01315F  60                           RTS
+013160  45 4D 50 54 59 20 …          .TEXT8 "EMPTY"
+013168  42 4F 53 20 20 20 …          .TEXT8 "BOS"
+013170                               .ASSUME M=1,X=0
+013170  9C 27 06 00                  LDM   #0,AR_T                   ; öğe sırası
+013174  A2 00 00                     LDX   #0                        ; X = öğenin başı
+013177  AD 27 06                     LDA   A,AR_T
+01317A  CD 23 06                     CMP   A,AR_LN
+01317D  B0 24                        BCS   RLY_YOK
+01317F  DA                           PHX
+013180  A0 00 00                     LDY   #0
+013183  BD 00 05             RLY_K:  LDA   A,AR_LISTE,X
+013186  D9 1B 06                     CMP   A,AR_YENI_ADR,Y
+013189  D0 0A                        BNE   RLY_FARKLI
+01318B  E8                           INX
+01318C  C8                           INY
+01318D  C0 07 00                     CPY   #7
+013190  D0 F1                        BNE   RLY_K
+013192  FA                           PLX                             ; bulundu: önündekiler bir kayar, bu öğenin üstüne
+013193  80 2C                        BRA   RLY_KAYDIR
+013195  FA                           PLX
+013196  D8                           CLM
+013197  8A                           TXA
+013198  18                           CLC
+013199  69 07 00                     ADC   A,#7
+01319C  AA                           TAX
+01319D  F8                           SEM
+01319E  EE 27 06                     INC   AR_T
+0131A1  80 D4                        BRA   RLY_ARA
+0131A3  AD 23 06                     LDA   A,AR_LN
+0131A6  C9 08                        CMP   A,#AR_N_MAX
+0131A8  B0 06                        BCS   RLY_DOLU
+0131AA  EE 23 06                     INC   AR_LN
+0131AD  AD 23 06                     LDA   A,AR_LN
+0131B0  1A                           DEC   A                         ; kayacak öğe sayısı = yeni sayı - 1
+0131B1  8D 27 06                     STA   A,AR_T
+0131B4  0A                           ASL   A
+0131B5  0A                           ASL   A
+0131B6  0A                           ASL   A
+0131B7  38                           SEC
+0131B8  ED 27 06                     SBC   A,AR_T
+0131BB  D8                           CLM
+0131BC  29 FF 00                     AND   A,#$00FF
+0131BF  AA                           TAX                             ; X = kayacak bayt sayısı
+0131C0  F8                           SEM
+0131C1  E0 00 00                     CPX   #0
+0131C4  F0 09                        BEQ   RLY_KOY
+0131C6  CA                           DEX
+0131C7  BD 00 05                     LDA   A,AR_LISTE,X
+0131CA  9D 07 05                     STA   A,AR_LISTE+7,X
+0131CD  80 F2                        BRA   RLY_KAYDIR
+0131CF  A2 00 00                     LDX   #0
+0131D2  BD 1B 06             RLY_K3: LDA   A,AR_YENI_ADR,X
+0131D5  9D 00 05                     STA   A,AR_LISTE,X
+0131D8  E8                           INX
+0131D9  E0 07 00                     CPX   #7
+0131DC  D0 F4                        BNE   RLY_K3
+0131DE  60                           RTS
+0131DF                               .ASSUME M=1,X=0
+0131DF  A0 00 00                     LDY   #0                        ; LCD konumu
+0131E2  9C 27 06 06                  LDM   #6,AR_T
+0131E6  BD 00 05             RCY_1:  LDA   A,AR_LISTE,X
+0131E9  4A                           LSR   A
+0131EA  C9 20                        CMP   A,#' '
+0131EC  F0 04                        BEQ   RCY_2
+0131EE  99 52 02                     STA   A,LCD,Y
+0131F1  C8                           INY
+0131F2  E8                   RCY_2:  INX
+0131F3  CE 27 06                     DEC   AR_T
+0131F6  D0 EE                        BNE   RCY_1
+0131F8  BD 00 05                     LDA   A,AR_LISTE,X              ; SSID baytı
+0131FB  4A                           LSR   A
+0131FC  29 0F                        AND   A,#$0F
+0131FE  F0 30                        BEQ   RCY_DOLDUR
+013200  8D 27 06                     STA   A,AR_T
+013203  C9 0A                        CMP   A,#10
+013205  B0 0B                        BCS   RCY_IKI
+013207  A9 2D                        LDA   A,#'-'
+013209  99 52 02                     STA   A,LCD,Y
+01320C  C8                           INY
+01320D  AD 27 06                     LDA   A,AR_T
+013210  80 17                        BRA   RCY_HANE
+013212  C0 06 00                     CPY   #6
+013215  B0 06                        BCS   RCY_I1
+013217  A9 2D                        LDA   A,#'-'
+013219  99 52 02                     STA   A,LCD,Y
+01321C  C8                           INY
+01321D  A9 31                RCY_I1: LDA   A,#'1'
+01321F  99 52 02                     STA   A,LCD,Y
+013222  C8                           INY
+013223  AD 27 06                     LDA   A,AR_T
+013226  38                           SEC
+013227  E9 0A                        SBC   A,#10
+013229  18                           CLC
+01322A  69 30                        ADC   A,#'0'
+01322C  99 52 02                     STA   A,LCD,Y
+01322F  C8                           INY
+013230  C0 08 00                     CPY   #8
+013233  B0 08                        BCS   RCY_SON
+013235  A9 20                        LDA   A,#' '
+013237  99 52 02                     STA   A,LCD,Y
+01323A  C8                           INY
+01323B  80 F3                        BRA   RCY_DOLDUR
+01323D  60                           RTS
+01323E                               .ORG $00F628                    ; durum 12 (PTT bırakıldı): kimlik gönder
 00F628                               .EXPECT $22,$5B,$E6,$00         ; JSRL F_00E65B
 00F628  EA EA EA EA                  .BYTE $EA,$EA,$EA,$EA           ; NOP
 00F62C  00 00 00 00 00 00 …          .ORG $00F67A                    ; durum 7: çağrı / transpond gönder
@@ -2199,7 +2258,7 @@
 00EBF2  EA EA EA EA                  .BYTE $EA,$EA,$EA,$EA
 00EBF6                               .ORG $00202C                    ; VEC_TA1: karar kesmesi yerine boş kesme
 00202C                               .EXPECT $5C,$C0,$C6,$01         ; JMPL L_01C6C0
-00202C  5C B1 31 01                  JMPL  SC_TA1
+00202C  5C 3E 32 01                  JMPL  SC_TA1
 002030  00 00 00 00 00 00 …          .ORG $003964                    ; # menüsü: numara tamam -> çağır
 003964                               .EXPECT $0C,$44,$02,$01,$00     ; SEB #$0001,$0244
 003964  EA EA EA EA EA               .BYTE $EA,$EA,$EA,$EA,$EA
@@ -2214,8 +2273,8 @@
 006900                               .SERBEST $01BBE4,$01C627-$01BBE4,$A3,$04,$0B,$5B,$84,$00           ; F_01BBE4
 006900                               .SERBEST $01C6C0,$01C8DE-$01C6C0,$C2,$39,$EB,$3F,$89,$C2,$00       ; TA1 kesmesi
 006900  00 00 00 00 00 00 …          .ORG SC_KOD_ADRES
-0131B1  40                   SC_TA1: RTI
-0131B2  00 00 00 00 00 00 …          .ORG $01BBE4
+01323E  40                   SC_TA1: RTI
+01323F  00 00 00 00 00 00 …          .ORG $01BBE4
 01BBE4                               .ASSUME M=1,X=0
 01BBE4  AD 28 02                     LDA   A,RADYO_DURUM
 01BBE7  C9 04                        CMP   A,#4
@@ -2382,91 +2441,170 @@
 01BD40  CE 3E 05                     DEC   AR_KI                     ; 255'te kal
 01BD43  7A                   KYZ_2:  PLY
 01BD44  60                           RTS
-01BD45                               .ORG $00854C                    ; F_00828C: CMP A,#$5B / BCS L_008575 (harf mi?)
+01BD45                               .ASSUME M=1,X=0
+01BD45  9C 9F 05 10                  LDM   #16,AR_DG_SURE
+01BD49  AD 9E 05                     LDA   A,AR_DG_SAYFA
+01BD4C  1A                           DEC   A
+01BD4D  0A                           ASL   A
+01BD4E  0A                           ASL   A
+01BD4F  0A                           ASL   A
+01BD50  D8                           CLM
+01BD51  29 FF 00                     AND   A,#$00FF
+01BD54  AA                           TAX
+01BD55  A0 00 00                     LDY   #0
+01BD58  F8                           SEM
+01BD59  BF F5 BD 01          RTN_1:  LDA   A,>AR_TANI_M,X
+01BD5D  99 52 02                     STA   A,LCD,Y
+01BD60  E8                           INX
+01BD61  C8                           INY
+01BD62  C0 08 00                     CPY   #8
+01BD65  D0 F2                        BNE   RTN_1
+01BD67  AD 9E 05                     LDA   A,AR_DG_SAYFA
+01BD6A  C9 02                        CMP   A,#2
+01BD6C  D0 17                        BNE   RTN_SAYI
+01BD6E  A9 30                        LDA   A,#'0'                    ; TSY: "TSY 1 1"
+01BD70  3C 3E 02 20 01               BBC   #$20,$023E,RTN_2
+01BD75  3A                           INC   A
+01BD76  8D 56 02             RTN_2:  STA   A,LCD+4
+01BD79  A9 30                        LDA   A,#'0'
+01BD7B  3C 40 00 40 01               BBC   #$40,R_TCSTART,RTN_3
+01BD80  3A                           INC   A
+01BD81  8D 58 02             RTN_3:  STA   A,LCD+6
+01BD84  60                           RTS
+01BD85  D8                           CLM
+01BD86  A2 00 00                     LDX   #0                        ; sayfa 1 KNR, 3 BYR, 4 CRC, 5 OK -> sayaç
+01BD89  C9 01 00                     CMP   A,#1
+01BD8C  D0 0A                        BNE   RTN_4
+01BD8E  AD 96 05                     LDA   A,AR_DG_KMAX
+01BD91  9C 96 05 00 00               LDM   #0,AR_DG_KMAX             ; bir sonraki gösterime kadarki en çok
+01BD96  80 17                        BRA   RTN_YAZ
+01BD98  C9 03 00             RTN_4:  CMP   A,#3
+01BD9B  D0 05                        BNE   RTN_5
+01BD9D  AD 98 05                     LDA   A,AR_DG_BYR
+01BDA0  80 0D                        BRA   RTN_YAZ
+01BDA2  C9 04 00             RTN_5:  CMP   A,#4
+01BDA5  D0 05                        BNE   RTN_6
+01BDA7  AD 9A 05                     LDA   A,AR_DG_CRC
+01BDAA  80 03                        BRA   RTN_YAZ
+01BDAC  AD 9C 05             RTN_6:  LDA   A,AR_DG_OK
+01BDAF  C9 10 27                     CMP   A,#10000
+01BDB2  90 03                        BCC   RTN_7
+01BDB4  A9 0F 27                     LDA   A,#9999
+01BDB7  8D 3E 05             RTN_7:  STA   A,AR_KI                   ; (AR_KI / AR_KX: kayan yazının geçicileri, burada boşta)
+01BDBA  A0 04 00                     LDY   #4
+01BDBD  A2 00 00                     LDX   #0
+01BDC0  F8                           SEM
+01BDC1  9C 27 06 30                  LDM   #'0',AR_T
+01BDC5  D8                           CLM
+01BDC6  AD 3E 05             RTN_8:  LDA   A,AR_KI
+01BDC9  DF ED BD 01                  CMP   A,>AR_BOLEN,X
+01BDCD  90 0E                        BCC   RTN_9
+01BDCF  FF ED BD 01                  SBC   A,>AR_BOLEN,X
+01BDD3  8D 3E 05                     STA   A,AR_KI
+01BDD6  F8                           SEM
+01BDD7  EE 27 06                     INC   AR_T
+01BDDA  D8                           CLM
+01BDDB  80 E9                        BRA   RTN_8
+01BDDD  F8                   RTN_9:  SEM
+01BDDE  AD 27 06                     LDA   A,AR_T
+01BDE1  99 52 02                     STA   A,LCD,Y
+01BDE4  C8                           INY
+01BDE5  E8                           INX
+01BDE6  E8                           INX
+01BDE7  E0 08 00                     CPX   #8
+01BDEA  D0 D4                        BNE   RTN_HANE
+01BDEC  60                           RTS
+01BDED  E8 03 64 00 0A 00 …          .WORD 1000,100,10,1
+01BDF5  4B 4E 52 20 20 20 …          .TEXT8 "KNR"
+01BDFD  54 53 59 20 20 20 …          .TEXT8 "TSY"
+01BE05  42 59 52 20 20 20 …          .TEXT8 "BYR"
+01BE0D  43 52 43 20 20 20 …          .TEXT8 "CRC"
+01BE15  4F 4B 20 20 20 20 …          .TEXT8 "OK"
+01BE1D                               .ORG $00854C                    ; F_00828C: CMP A,#$5B / BCS L_008575 (harf mi?)
 00854C                               .EXPECT $C9,$5B,$B0,$25
 00854C                               .ASSUME M=1,X=0
-00854C  5C 45 BD 01                  JMPL  GL_DENETIM
+00854C  5C 1D BE 01                  JMPL  GL_DENETIM
 008550  00 00 00 00 00 00 …          .ORG GL_ADRES
-01BD45                               .ASSUME M=1,X=0
-01BD45  DA                           PHX
-01BD46  A2 00 00                     LDX   #0
-01BD49  BF 7E BD 01          GL_1:   LDA   A,>GL_TABLO,X
-01BD4D  F0 09                        BEQ   GL_YOK
-01BD4F  C5 01                        CMP   A,$01
-01BD51  F0 14                        BEQ   GL_VAR
-01BD53  E8                           INX
-01BD54  E8                           INX
-01BD55  E8                           INX
-01BD56  80 F1                        BRA   GL_1
-01BD58  FA                   GL_YOK: PLX
-01BD59  A5 01                        LDA   A,$01
-01BD5B  C9 5B                        CMP   A,#$5B                    ; orijinal: CMP A,#$5B / BCS L_008575
-01BD5D  90 04                        BCC   GL_HARF
-01BD5F  5C 75 85 00                  JMPL  $008575                   ; harf değil: rakam / işaret denetimleri
-01BD63  5C 50 85 00                  JMPL  $008550                   ; orijinal: CMP A,#$41 ...
-01BD67  D8                   GL_VAR: CLM                             ; harf yolundaki gibi: $02 + 2*konum = segment sözcüğü
-01BD68                               .ASSUME M=0,X=0
-01BD68  BF 7F BD 01                  LDA   A,>GL_TABLO+1,X
-01BD6C  85 1A                        STA   A,$1A
-01BD6E  FA                           PLX
-01BD6F  A5 00                        LDA   A,$00
-01BD71  29 FF 00                     AND   A,#$00FF
-01BD74  0A                           ASL   A
-01BD75  AA                           TAX
-01BD76  A5 1A                        LDA   A,$1A
-01BD78  95 02                        STA   A,$02,X
-01BD7A  5C F5 86 00                  JMPL  $0086F5                   ; sonraki karaktere (orijinal yol da M = 0 ile gelir)
-01BD7E  79                           .BYTE 'y'
-01BD7F  46 25                        .WORD $2546                     ; '4' + alt
-01BD81  3E                           .BYTE '>'
-01BD82  A0 00                        .WORD $00A0                     ; sol çaprazlar
-01BD84  29                           .BYTE ')'
-01BD85  A0 00                        .WORD $00A0
-01BD87  28                           .BYTE '('
-01BD88  00 50                        .WORD $5000                     ; sağ çaprazlar ('<')
-01BD8A  2E                           .BYTE '.'
-01BD8B  10 00                        .WORD $0010                     ; orta alt dikey
-01BD8D  2C                           .BYTE ','
-01BD8E  20 00                        .WORD $0020                     ; sol alt çapraz
-01BD90  21                           .BYTE '!'
-01BD91  00 80                        .WORD $8000                     ; orta üst dikey
-01BD93  7C                           .BYTE '|'
-01BD94  10 80                        .WORD $8010
-01BD96  3D                           .BYTE '='
-01BD97  40 21                        .WORD $2140                     ; orta + alt
-01BD99  3F                           .BYTE '?'
-01BD9A  1C 20                        .WORD $201C                     ; üst, sağ üst, orta sağ, orta alt
-01BD9C  22                           .BYTE '"'
-01BD9D  04 80                        .WORD $8004
-01BD9F  27                           .BYTE $27                       ; '
-01BDA0  00 40                        .WORD $4000
-01BDA2  60                           .BYTE '`'
-01BDA3  80 00                        .WORD $0080
-01BDA5  23                           .BYTE '#'
-01BDA6  56 A0                        .WORD $A056
-01BDA8  40                           .BYTE '@'
-01BDA9  0E 27                        .WORD $270E
-01BDAB  24                           .BYTE '$'
-01BDAC  9A A1                        .WORD $A19A                     ; S + orta dikeyler
-01BDAE  3B                           .BYTE ';'
-01BDAF  20 80                        .WORD $8020
-01BDB1  25                           .BYTE '%'
-01BDB2  20 40                        .WORD $4020
-01BDB4  26                           .BYTE '&'
-01BDB5  50 A0                        .WORD $A050
-01BDB7  5B                           .BYTE '['
-01BDB8  08 07                        .WORD $0708
-01BDBA  5D                           .BYTE ']'
-01BDBB  0E 01                        .WORD $010E
-01BDBD  7B                           .BYTE '{'
-01BDBE  08 07                        .WORD $0708
-01BDC0  7D                           .BYTE '}'
-01BDC1  0E 01                        .WORD $010E
-01BDC3  5C                           .BYTE $5C                       ; \
-01BDC4  80 10                        .WORD $1080
-01BDC6  7E                           .BYTE '~'
-01BDC7  40 20                        .WORD $2040
-01BDC9  00                           .BYTE 0
+01BE1D                               .ASSUME M=1,X=0
+01BE1D  DA                           PHX
+01BE1E  A2 00 00                     LDX   #0
+01BE21  BF 56 BE 01          GL_1:   LDA   A,>GL_TABLO,X
+01BE25  F0 09                        BEQ   GL_YOK
+01BE27  C5 01                        CMP   A,$01
+01BE29  F0 14                        BEQ   GL_VAR
+01BE2B  E8                           INX
+01BE2C  E8                           INX
+01BE2D  E8                           INX
+01BE2E  80 F1                        BRA   GL_1
+01BE30  FA                   GL_YOK: PLX
+01BE31  A5 01                        LDA   A,$01
+01BE33  C9 5B                        CMP   A,#$5B                    ; orijinal: CMP A,#$5B / BCS L_008575
+01BE35  90 04                        BCC   GL_HARF
+01BE37  5C 75 85 00                  JMPL  $008575                   ; harf değil: rakam / işaret denetimleri
+01BE3B  5C 50 85 00                  JMPL  $008550                   ; orijinal: CMP A,#$41 ...
+01BE3F  D8                   GL_VAR: CLM                             ; harf yolundaki gibi: $02 + 2*konum = segment sözcüğü
+01BE40                               .ASSUME M=0,X=0
+01BE40  BF 57 BE 01                  LDA   A,>GL_TABLO+1,X
+01BE44  85 1A                        STA   A,$1A
+01BE46  FA                           PLX
+01BE47  A5 00                        LDA   A,$00
+01BE49  29 FF 00                     AND   A,#$00FF
+01BE4C  0A                           ASL   A
+01BE4D  AA                           TAX
+01BE4E  A5 1A                        LDA   A,$1A
+01BE50  95 02                        STA   A,$02,X
+01BE52  5C F5 86 00                  JMPL  $0086F5                   ; sonraki karaktere (orijinal yol da M = 0 ile gelir)
+01BE56  79                           .BYTE 'y'
+01BE57  46 25                        .WORD $2546                     ; '4' + alt
+01BE59  3E                           .BYTE '>'
+01BE5A  A0 00                        .WORD $00A0                     ; sol çaprazlar
+01BE5C  29                           .BYTE ')'
+01BE5D  A0 00                        .WORD $00A0
+01BE5F  28                           .BYTE '('
+01BE60  00 50                        .WORD $5000                     ; sağ çaprazlar ('<')
+01BE62  2E                           .BYTE '.'
+01BE63  10 00                        .WORD $0010                     ; orta alt dikey
+01BE65  2C                           .BYTE ','
+01BE66  20 00                        .WORD $0020                     ; sol alt çapraz
+01BE68  21                           .BYTE '!'
+01BE69  00 80                        .WORD $8000                     ; orta üst dikey
+01BE6B  7C                           .BYTE '|'
+01BE6C  10 80                        .WORD $8010
+01BE6E  3D                           .BYTE '='
+01BE6F  40 21                        .WORD $2140                     ; orta + alt
+01BE71  3F                           .BYTE '?'
+01BE72  1C 20                        .WORD $201C                     ; üst, sağ üst, orta sağ, orta alt
+01BE74  22                           .BYTE '"'
+01BE75  04 80                        .WORD $8004
+01BE77  27                           .BYTE $27                       ; '
+01BE78  00 40                        .WORD $4000
+01BE7A  60                           .BYTE '`'
+01BE7B  80 00                        .WORD $0080
+01BE7D  23                           .BYTE '#'
+01BE7E  56 A0                        .WORD $A056
+01BE80  40                           .BYTE '@'
+01BE81  0E 27                        .WORD $270E
+01BE83  24                           .BYTE '$'
+01BE84  9A A1                        .WORD $A19A                     ; S + orta dikeyler
+01BE86  3B                           .BYTE ';'
+01BE87  20 80                        .WORD $8020
+01BE89  25                           .BYTE '%'
+01BE8A  20 40                        .WORD $4020
+01BE8C  26                           .BYTE '&'
+01BE8D  50 A0                        .WORD $A050
+01BE8F  5B                           .BYTE '['
+01BE90  08 07                        .WORD $0708
+01BE92  5D                           .BYTE ']'
+01BE93  0E 01                        .WORD $010E
+01BE95  7B                           .BYTE '{'
+01BE96  08 07                        .WORD $0708
+01BE98  7D                           .BYTE '}'
+01BE99  0E 01                        .WORD $010E
+01BE9B  5C                           .BYTE $5C                       ; \
+01BE9C  80 10                        .WORD $1080
+01BE9E  7E                           .BYTE '~'
+01BE9F  40 20                        .WORD $2040
+01BEA1  00                           .BYTE 0
 
 ; semboller
 F_HATA_G                 $000001
@@ -2513,7 +2651,6 @@ R_TA1IC                  $000076
 R_TB1IC                  $00007B
 AR_SURE                  $00007D
 MOD_ISARET               $0000A5
-AR_KENAR_MAX             $000100
 AR_ESIK                  $000146
 TB1_9600                 $0001A3
 AR_BIT                   $0001A4
@@ -2538,6 +2675,7 @@ HANDLER_BK               $0002E1
 OPTIONS                  $000340
 SYN_YEDEK                $000363
 SYN_KAYIT                $000370
+AR_KENAR_MAX             $000400
 TIK_32MS                 $000457
 AP_ARALIK                $0004F0
 AP_SANIYE                $0004F2
@@ -2577,6 +2715,12 @@ VFO_TX_KAYIT             $000578
 VFO_METIN                $00057D
 VFO_RX_HANE              $00058D
 AR_KENAR                 $000594
+AR_DG_KMAX               $000596
+AR_DG_BYR                $000598
+AR_DG_CRC                $00059A
+AR_DG_OK                 $00059C
+AR_DG_SAYFA              $00059E
+AR_DG_SURE               $00059F
 AP_FAZ                   $0005A0
 AP_ARTIM                 $0005A2
 AP_ORNEK                 $0005A6
@@ -2899,55 +3043,63 @@ RBA_7                    $012ED3
 RBA_8                    $012EDF
 RBA_9                    $012EE5
 AR_BAYRAK                $012EED
-RBY_1                    $012F13
-RBY_MSJ                  $012F23
-RBY_2                    $012F38
-RBY_YENI                 $012F40
-AR_AC                    $012F56
-RAC_KUR                  $012F69
-RAC_SON                  $012FA2
-AR_KAPAT                 $012FA3
-RKP_SON                  $012FB8
-AR_SIFIRLA               $012FB9
-AR_ISLE                  $012FD6
-RIS_0                    $012FE6
-RIS_KAPAT                $012FFB
-RIS_1                    $012FFE
-RIS_K                    $01300A
-RIS_SURE                 $01300F
-RIS_2                    $013024
-RIS_3                    $013036
-RIS_LCD                  $01303E
-RIS_SON                  $013049
-AR_TUS                   $01304B
-RTU_ESKI                 $013062
-RTU_YENI                 $01306F
-RTU_GOSTER               $013077
-RTU_BOS                  $013095
-RTU_B1                   $01309A
-RTU_APRS                 $0130AE
-RTU_OGE                  $0130B8
-RTU_EVET                 $0130D0
-AR_METIN                 $0130D3
-AR_LISTEYE               $0130E3
-RLY_ARA                  $0130EA
-RLY_K                    $0130F6
-RLY_FARKLI               $013108
-RLY_YOK                  $013116
-RLY_DOLU                 $013123
-RLY_KAYDIR               $013134
-RLY_KOY                  $013142
-RLY_K3                   $013145
-AR_CAGRI_YAZ             $013152
-RCY_1                    $013159
-RCY_2                    $013165
-RCY_IKI                  $013185
-RCY_I1                   $013190
-RCY_HANE                 $01319C
-RCY_DOLDUR               $0131A3
-RCY_SON                  $0131B0
-SC_KOD_ADRES             $0131B1
-SC_TA1                   $0131B1
+RBY_IYI                  $012F14
+RBY_1                    $012F20
+RBY_MSJ                  $012F30
+RBY_2                    $012F45
+RBY_YENI                 $012F4D
+AR_AC                    $012F63
+RAC_KUR                  $012F76
+RAC_SON                  $012FAF
+AR_KAPAT                 $012FB0
+RKP_SON                  $012FC5
+AR_SIFIRLA               $012FC6
+AR_ISLE                  $013002
+RIS_00                   $013017
+RIS_0                    $01301D
+RIS_KAPAT                $01302D
+RIS_1                    $013030
+RIS_K                    $01303C
+RIS_SON0                 $013054
+RIS_DG                   $013056
+RIS_K1                   $01305B
+RIS_SURE                 $013060
+RIS_2                    $013075
+RIS_3                    $013087
+RIS_LCD                  $01308F
+RIS_SON                  $01309A
+AR_TUS                   $01309C
+RTU_D0                   $0130C5
+RTU_D1                   $0130D3
+RTU_0                    $0130DD
+RTU_ESKI                 $0130EF
+RTU_YENI                 $0130FC
+RTU_GOSTER               $013104
+RTU_BOS                  $013122
+RTU_B1                   $013127
+RTU_APRS                 $01313B
+RTU_OGE                  $013145
+RTU_EVET                 $01315D
+AR_METIN                 $013160
+AR_LISTEYE               $013170
+RLY_ARA                  $013177
+RLY_K                    $013183
+RLY_FARKLI               $013195
+RLY_YOK                  $0131A3
+RLY_DOLU                 $0131B0
+RLY_KAYDIR               $0131C1
+RLY_KOY                  $0131CF
+RLY_K3                   $0131D2
+AR_CAGRI_YAZ             $0131DF
+RCY_1                    $0131E6
+RCY_2                    $0131F2
+RCY_IKI                  $013212
+RCY_I1                   $01321D
+RCY_HANE                 $013229
+RCY_DOLDUR               $013230
+RCY_SON                  $01323D
+SC_KOD_ADRES             $01323E
+SC_TA1                   $01323E
 AR_KAYAN                 $01BBE4
 KY_HAYIR                 $01BBF8
 KY_RX                    $01BBFA
@@ -2975,11 +3127,26 @@ KA_SON                   $01BD1D
 KY_YAZ                   $01BD1E
 KYZ_1                    $01BD3B
 KYZ_2                    $01BD43
-GL_ADRES                 $01BD45
-GL_DENETIM               $01BD45
-GL_1                     $01BD49
-GL_YOK                   $01BD58
-GL_HARF                  $01BD63
-GL_VAR                   $01BD67
-GL_TABLO                 $01BD7E
+AR_TANI                  $01BD45
+RTN_1                    $01BD59
+RTN_2                    $01BD76
+RTN_3                    $01BD81
+RTN_SAYI                 $01BD85
+RTN_4                    $01BD98
+RTN_5                    $01BDA2
+RTN_6                    $01BDAC
+RTN_YAZ                  $01BDAF
+RTN_7                    $01BDB7
+RTN_HANE                 $01BDC0
+RTN_8                    $01BDC6
+RTN_9                    $01BDDD
+AR_BOLEN                 $01BDED
+AR_TANI_M                $01BDF5
+GL_ADRES                 $01BE1D
+GL_DENETIM               $01BE1D
+GL_1                     $01BE21
+GL_YOK                   $01BE30
+GL_HARF                  $01BE3B
+GL_VAR                   $01BE3F
+GL_TABLO                 $01BE56
 TB1_ORIJINAL             $01C627

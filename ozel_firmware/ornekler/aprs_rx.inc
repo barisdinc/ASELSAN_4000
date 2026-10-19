@@ -57,7 +57,14 @@ AR_D        .EQU $0625          ; 2 bayt: geçici
 AR_T        .EQU $0627          ; geçici (bayt)
 AR_IT       .EQU $0628          ; 2 bayt: kesmenin geçicisi
 AR_KENAR    .EQU OZEL_RAM+$94   ; 2 bayt: bu 32 ms'deki kenar sayısı (kesme seli koruması)
-AR_KENAR_MAX .EQU 256           ; 2200 Hz: ~141 kenar / 32 ms; fazlası titreşim
+AR_KENAR_MAX .EQU 1024          ; 2200 Hz: ~141 kenar / 32 ms; sıfır geçişlerindeki titreşime pay
+; teşhis (APRS'te '0' tuşu, AR_TANI): sayaçlar
+AR_DG_KMAX  .EQU OZEL_RAM+$96   ; 2 bayt: 32 ms'deki en çok kenar (son gösterimden beri)
+AR_DG_BYR   .EQU OZEL_RAM+$98   ; 2 bayt: görülen bayraklar
+AR_DG_CRC   .EQU OZEL_RAM+$9A   ; 2 bayt: sağlaması bozuk çerçeveler (>= 18 bayt, hizalı)
+AR_DG_OK    .EQU OZEL_RAM+$9C   ; 2 bayt: geçerli paketler
+AR_DG_SAYFA .EQU OZEL_RAM+$9E   ; 0 = kapalı, 1..5
+AR_DG_SURE  .EQU OZEL_RAM+$9F   ; yenilemeye kalan süre (32 ms)
 ; kayan mesaj (aprs_mesaj.inc)
 AR_KILIT    .EQU OZEL_RAM+$38   ; 1 = AR_MSJ'de gösterilecek / gösterilen paket var (kesme yazmaz)
 AR_MN       .EQU OZEL_RAM+$39   ; AR_MSJ'deki bayt sayısı (FCS'siz)
@@ -243,6 +250,9 @@ RBA_9:  DEX
 ; Bayrak (M = 1): biten çerçeveyi denetle, yenisine başla
 AR_BAYRAK:
         .ASSUME M=1,X=0
+        CLM
+        INC   AR_DG_BYR
+        SEM
         BBC   #$02,AR_DURUM,RBY_YENI
         LDA   A,AR_BITSAY
         CMP   A,#7                      ; bayrağın 7 biti: çerçeve bayta hizalı
@@ -253,7 +263,11 @@ AR_BAYRAK:
         BCC   RBY_YENI
         LDA   A,AR_CRC
         CMP   A,#$F0B8
-        BNE   RBY_YENI
+        BEQ   RBY_IYI
+        INC   AR_DG_CRC
+        BRA   RBY_YENI
+RBY_IYI:
+        INC   AR_DG_OK
         SEM
         LDA   A,AR_YENI
         BNE   RBY_MSJ                   ; öncekini ana döngü henüz almadı
@@ -331,6 +345,14 @@ RKP_SON:
 ; Açılışta (AP_ACILIS_DENETLE, M = 1): RAM rastgele
 AR_SIFIRLA:
         .ASSUME M=1,X=0
+        LDM   #0,AR_DG_SAYFA
+        CLM
+        LDM   #0,AR_DG_KMAX
+        LDM   #0,AR_DG_BYR
+        LDM   #0,AR_DG_CRC
+        LDM   #0,AR_DG_OK
+        LDM   #0,AR_KENAR
+        SEM
         LDM   #0,AR_DURUM
         LDM   #0,AR_YENI
         LDM   #0,AR_GOSTER
@@ -350,15 +372,18 @@ AR_ISLE:
         LDA   A,AP_FARK                 ; yeni 32 ms: kenar sayacı sıfırlanır
         BEQ   RIS_0
         CLM
-        LDM   #0,AR_KENAR
+        LDA   A,AR_KENAR
+        CMP   A,AR_DG_KMAX
+        BCC   RIS_00
+        STA   A,AR_DG_KMAX
+RIS_00: LDM   #0,AR_KENAR
         SEM
 RIS_0:  LDA   A,RADYO_DURUM             ; alma: 2..3
         CMP   A,#2
         BCC   RIS_KAPAT
         CMP   A,#4
         BCS   RIS_KAPAT
-        BBC   #$20,$023E,RIS_KAPAT      ; yalnız taşıyıcı varken (susturma açık): kapalıyken P66 boş ya da
-        JSR   AR_AC                     ; titreşiyor olabilir
+        JSR   AR_AC
         BRA   RIS_1
 RIS_KAPAT:
         JSR   AR_KAPAT
@@ -366,7 +391,23 @@ RIS_1:   LDA   A,AR_YENI
         BEQ   RIS_K
         JSR   AR_LISTEYE
         LDM   #0,AR_YENI
-RIS_K:  JSR   AR_KAYAN                  ; kayan mesaj (aprs_mesaj.inc); C = 1: ekran yazıldı
+RIS_K:  LDA   A,AR_DG_SAYFA
+        BEQ   RIS_K1
+        LDA   A,AP_FARK                 ; teşhis ekranı: ~0,5 s'de bir yenilenir
+        BEQ   RIS_SON0
+        LDA   A,AR_DG_SURE
+        SEC
+        SBC   A,AP_FARK
+        BCC   RIS_DG
+        BEQ   RIS_DG
+        STA   A,AR_DG_SURE
+RIS_SON0:
+        CLM
+        RTS
+        .ASSUME M=1,X=0
+RIS_DG: JSR   AR_TANI
+        BRA   RIS_LCD
+RIS_K1: JSR   AR_KAYAN                  ; kayan mesaj (aprs_mesaj.inc); C = 1: ekran yazıldı
         BCS   RIS_LCD
 RIS_SURE:
         LDA   A,AR_GOSTER
@@ -403,6 +444,33 @@ AR_TUS:
         SEM
         LDM   #0,AR_KDURUM              ; her tuş kayan mesajı keser
         LDM   #0,AR_KILIT
+        LDA   A,KEY                     ; rakam tuşu: KEY = 'd', rakam firmware'in tamponunda
+        CMP   A,#'d'
+        BNE   RTU_0
+        LDA   A,NDIGIT
+        DEC   A
+        CLM
+        AND   A,#$000F
+        TAX
+        SEM
+        LDA   A,DIGITS,X
+        LDM   #0,NDIGIT
+        CMP   A,#'0'
+        BEQ   RTU_D0
+        CMP   A,#0
+        BNE   RTU_0
+RTU_D0: INC   AR_DG_SAYFA               ; teşhis: sonraki sayfa
+        LDA   A,AR_DG_SAYFA
+        CMP   A,#6
+        BCC   RTU_D1
+        LDM   #1,AR_DG_SAYFA
+RTU_D1: LDM   #0,AR_GOSTER
+        JSR   AR_TANI
+        CLM
+        SEC
+        RTS
+        .ASSUME M=1,X=0
+RTU_0:  LDM   #0,AR_DG_SAYFA
         LDA   A,KEY
         CMP   A,#'*'
         BEQ   RTU_ESKI
@@ -473,6 +541,7 @@ RTU_EVET:
 AR_METIN:
         .TEXT8 "EMPTY"
         .TEXT8 "BOS"
+
 
 ; AR_YENI_ADR'yi listenin başına koy; aynı istasyon varsa oradan çıkar (M = 1)
 AR_LISTEYE:

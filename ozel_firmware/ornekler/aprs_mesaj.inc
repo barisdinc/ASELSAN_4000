@@ -197,3 +197,93 @@ KYZ_1:  INC   AR_KI
         DEC   AR_KI                     ; 255'te kal
 KYZ_2:  PLY
         RTS
+
+; ---------------------------------------------------------------------------------------------
+; (aprs_rx.inc) ; Teşhis sayfası (M = 1 giriş ve çıkış): 1 KNR en çok kenar / 32 ms, 2 TSY taşıyıcı ($023E bit 5)
+; ve çözücü (TB1) açık mı, 3 BYR bayrak, 4 CRC bozuk çerçeve, 5 OK geçerli paket
+AR_TANI:
+        .ASSUME M=1,X=0
+        LDM   #16,AR_DG_SURE
+        LDA   A,AR_DG_SAYFA
+        DEC   A
+        ASL   A
+        ASL   A
+        ASL   A
+        CLM
+        AND   A,#$00FF
+        TAX
+        LDY   #0
+        SEM
+RTN_1:  LDA   A,>AR_TANI_M,X
+        STA   A,LCD,Y
+        INX
+        INY
+        CPY   #8
+        BNE   RTN_1
+        LDA   A,AR_DG_SAYFA
+        CMP   A,#2
+        BNE   RTN_SAYI
+        LDA   A,#'0'                    ; TSY: "TSY 1 1"
+        BBC   #$20,$023E,RTN_2
+        INC   A
+RTN_2:  STA   A,LCD+4
+        LDA   A,#'0'
+        BBC   #$40,R_TCSTART,RTN_3
+        INC   A
+RTN_3:  STA   A,LCD+6
+        RTS
+RTN_SAYI:
+        CLM
+        LDX   #0                        ; sayfa 1 KNR, 3 BYR, 4 CRC, 5 OK -> sayaç
+        CMP   A,#1
+        BNE   RTN_4
+        LDA   A,AR_DG_KMAX
+        LDM   #0,AR_DG_KMAX             ; bir sonraki gösterime kadarki en çok
+        BRA   RTN_YAZ
+RTN_4:  CMP   A,#3
+        BNE   RTN_5
+        LDA   A,AR_DG_BYR
+        BRA   RTN_YAZ
+RTN_5:  CMP   A,#4
+        BNE   RTN_6
+        LDA   A,AR_DG_CRC
+        BRA   RTN_YAZ
+RTN_6:  LDA   A,AR_DG_OK
+RTN_YAZ:                                ; LCD+4..+7 = A (en çok 9999)
+        CMP   A,#10000
+        BCC   RTN_7
+        LDA   A,#9999
+RTN_7:  STA   A,AR_KI                   ; (AR_KI / AR_KX: kayan yazının geçicileri, burada boşta)
+        LDY   #4
+        LDX   #0
+RTN_HANE:
+        SEM
+        LDM   #'0',AR_T
+        CLM
+RTN_8:  LDA   A,AR_KI
+        CMP   A,>AR_BOLEN,X
+        BCC   RTN_9
+        SBC   A,>AR_BOLEN,X
+        STA   A,AR_KI
+        SEM
+        INC   AR_T
+        CLM
+        BRA   RTN_8
+RTN_9:  SEM
+        LDA   A,AR_T
+        STA   A,LCD,Y
+        INY
+        INX
+        INX
+        CPX   #8
+        BNE   RTN_HANE
+        RTS
+
+AR_BOLEN:
+        .WORD 1000,100,10,1
+AR_TANI_M:
+        .TEXT8 "KNR"
+        .TEXT8 "TSY"
+        .TEXT8 "BYR"
+        .TEXT8 "CRC"
+        .TEXT8 "OK"
