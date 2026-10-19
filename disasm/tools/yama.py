@@ -12,7 +12,18 @@ Safety rules, so that a patch cannot silently break the original code:
   * the ROM checksum (16-bit sum of 0x2000..0xFFFF, big-endian word at 0x010003,
     checked at power on: "ERR FLSH") is recomputed;
   * existing S-records are rewritten in place, new bytes go to new S2 records.
+
+--surum surum.json: the ROM header at 0x010000 (read by F_00E0E1 and by the serial
+"read header" command) gets our own version, build date and text.  The version goes
+up by one whenever the patched image differs from the last build of the same file
+(stored in surum.json), so rebuilding unchanged sources keeps version and date.
+  0x010000 'V', +1 major (0..9), +2 minor (F_00E0E1: tens digit, units digit or blank),
+  +3..4 ROM sum, +5 day, +6 month, +7..8 year (little-endian), +9..10 prefix ("AT"),
+  +11.. CR LF text NUL (the serial header read returns 128 bytes).
 """
+import datetime
+import hashlib
+import json
 import os
 import sys
 
@@ -109,6 +120,44 @@ def patch(base, sources, listing=None):
     return mem, report
 
 
+HDR, HDR_LEN = 0x010000, 0x80
+
+
+def minor_byte(n):
+    """F_00E0E1 prints minor // 10, then minor % 10 or a blank: 1..9 -> 10..90, 10..99 as is."""
+    return n * 10 if n < 10 else n
+
+
+def stamp_header(mem, path, name, today=None):
+    cfg = json.load(open(path, encoding='utf-8'))
+    body = bytes(mem.get(a, 0xFF) for a in range(0x2000, 0x20000) if not HDR <= a < HDR + HDR_LEN)
+    digest = hashlib.sha256(body).hexdigest()[:16]
+    rec = cfg.setdefault('kayitlar', {}).get(name)
+    if rec is None or rec['imza'] != digest:
+        major, minor = (rec['major'], rec['minor'] + 1) if rec else (cfg['ilk'][0], cfg['ilk'][1])
+        if minor > 99:
+            major, minor = major + 1, 1
+        if major > 9:
+            raise SystemExit('surum: ana sürüm 9\'u geçemez (F_00E0E1 tek hane)')
+        rec = {'major': major, 'minor': minor, 'tarih': (today or datetime.date.today()).isoformat(), 'imza': digest}
+        cfg['kayitlar'][name] = rec
+        with open(path, 'w', encoding='utf-8') as f:
+            json.dump(cfg, f, ensure_ascii=False, indent=2)
+            f.write('\n')
+    d = datetime.date.fromisoformat(rec['tarih'])
+    text = ('\r\n' + cfg['metin']).encode('ascii') + b'\0'
+    if 11 + len(text) > HDR_LEN:
+        raise SystemExit('surum: metin %d bayta sığmıyor' % (HDR_LEN - 11 - 1))
+    pre = cfg['on_ek'].encode('ascii')
+    hdr = [ord('V'), rec['major'], minor_byte(rec['minor']), 0, 0, d.day, d.month, d.year & 0xFF, d.year >> 8, pre[0], pre[1]]
+    hdr += list(text)
+    for i in range(HDR_LEN):
+        if i in (3, 4):
+            continue                                 # ROM toplamı ayrıca yazılır
+        mem[HDR + i] = hdr[i] if i < len(hdr) else 0xFF
+    return '%s V%d-%d, %s' % (cfg['on_ek'], rec['major'], rec['minor'], d.strftime('%d.%m.%Y'))
+
+
 def regions(ks):
     out = []
     for a in ks:
@@ -126,6 +175,7 @@ if __name__ == '__main__':
     ap.add_argument('out')
     ap.add_argument('sources', nargs='+')
     ap.add_argument('-l', '--list')
+    ap.add_argument('--surum', help='sürüm / tarih / metin kaydı (JSON)')
     o = ap.parse_args()
     recs, base, eol = read_srec(o.base)
     old = rom_sum(base)
@@ -135,10 +185,11 @@ if __name__ == '__main__':
         mem, report = patch(base, o.sources, o.list)
     except a77.AsmError as e:
         sys.exit('hata: %s' % e)
+    ver = stamp_header(mem, o.surum, os.path.basename(o.out)) if o.surum else None
     s = rom_sum(mem)
     mem[SUM_AT], mem[SUM_AT + 1] = s >> 8, s & 0xFF
     n_new = write_srec(recs, mem, o.out, eol)
     for src, n, ks, ne in report:
         print('%s: %d bayt, %d .EXPECT, bölgeler %s' %
               (src, n, ne, ' '.join('%06X-%06X' % (a, b) for a, b in regions(ks))))
-    print('%s: ROM toplamı %04X -> %04X, %d yeni S2 kaydı' % (o.out, old, s, n_new))
+    print('%s: ROM toplamı %04X -> %04X, %d yeni S2 kaydı%s' % (o.out, old, s, n_new, ', sürüm ' + ver if ver else ''))

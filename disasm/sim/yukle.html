@@ -40,6 +40,13 @@ main { max-width: 920px; margin: 0 auto; padding: 16px; display: grid; gap: 14px
 .mono { font-family: var(--mono); font-size: 12px; }
 .ok { color: var(--good); } .bad { color: var(--bad); } .warn { color: var(--warn); }
 .p4det { margin-top: 12px; } .p4det summary { cursor: pointer; font-weight: 600; margin-bottom: 8px; }
+.ws { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--line); }
+.ws h3 { margin: 0 0 4px; font-size: 14px; }
+#wsState { margin: 8px 0 10px; }
+pre.hex { overflow-x: auto; margin: 8px 0 0; line-height: 1.5; }
+pre.hex span[data-ea] { cursor: pointer; border-radius: 3px; }
+pre.hex span[data-ea]:hover { background: color-mix(in srgb, var(--accent) 20%, transparent); }
+pre.hex span.chg { color: var(--warn); font-weight: 700; }
 .banner { border-left: 3px solid var(--good); padding: 8px 12px; background: color-mix(in srgb, var(--good) 8%, transparent); border-radius: 4px; font-size: 13px; }
 .banner.warn { border-color: var(--warn); background: color-mix(in srgb, var(--warn) 10%, transparent); }
 .status { font-size: 13px; margin-left: 4px; }
@@ -94,13 +101,31 @@ label.mode { display: flex; gap: 6px; align-items: center; }
     <div class="kv" id="info"><div>Durum</div><div>Bağlandıktan sonra okunur</div></div>
   </section>
 
-  <section class="card">
-    <h2>3 · EEPROM yedeği</h2>
-    <p class="note">2 KB: kanallar, seçenekler, bant, güç kalibrasyonu, parola. Yaklaşık 10 saniye.</p>
+  <section class="card" id="eeCard">
+    <h2>3 · EEPROM yedeği ve programlama (P4000)</h2>
+    <p class="note">2 KB: kanallar, seçenekler, bant, güç kalibrasyonu, parola. Okuma yaklaşık 10 saniye.</p>
     <button id="eeBtn" disabled>EEPROM'u oku</button>
     <div class="prog" id="eeProg"><progress id="eeBar" max="1" value="0"></progress><span class="note" id="eeTxt"></span></div>
     <div class="dl" id="eeDl"></div>
     <div id="eeSum"></div>
+    <div class="ws" id="ws">
+      <h3>Programlama</h3>
+      <p class="note">P4000'in yerine geçer: aynı sayfalar ve alanlar, aynı <span class="mono">.p40</span> kütüğü (P4000 açabilir, P4000'in kütükleri burada açılır), artı APRS ve ham EEPROM. Telsizden okuyun ya da bir kütük / yedek açın. Değişiklikler önce bu sayfadaki kopyada yapılır; telsize <b>Telsize yaz</b> ile 6. adımdan, onay ve geri okuma doğrulamasıyla yazılır.</p>
+      <div class="row">
+        <input type="file" id="wsP40" accept=".p40,.P40" hidden><button id="wsP40Btn">Kütük aç (.p40)</button>
+        <input type="file" id="wsBin" accept=".bin,.BIN,.eep,.e2p" hidden><button id="wsBinBtn">EEPROM dosyası aç (.bin)</button>
+        <button id="wsSaveP40" disabled>Kütük sakla (.p40)</button>
+        <button id="wsSaveBin" disabled>EEPROM sakla (.bin)</button>
+        <button id="wsUndo" disabled>Değişiklikleri geri al</button>
+        <button id="wsWrite" class="primary" disabled>Telsize yaz…</button>
+      </div>
+      <p class="note" id="wsState">Telsizden okuyun ya da bir kütük açın.</p>
+      <div id="wsP4"></div>
+      <details class="p4det" id="wsHexDet"><summary>Ham EEPROM (onaltılık; bayta tıklayıp değiştirin)</summary>
+        <div class="row"><label class="note">Adres <select id="wsHexAddr"></select></label><span class="note">Sağlamalar <b>Telsize yaz</b> ve <b>sakla</b> sırasında düzeltilir.</span></div>
+        <pre class="mono hex" id="wsHex"></pre>
+      </details>
+    </div>
   </section>
 
   <section class="card">
@@ -195,7 +220,7 @@ function refresh() {
   $('erFileBtn').disabled = busy;
   document.querySelectorAll('input[name=mode]').forEach(r => r.disabled = on || busy);
   $('simFw').disabled = on || busy;
-  updateWrite(); updateEeWrite();
+  updateWrite(); updateEeWrite(); if (typeof wsState === 'function') wsState();
 }
 function mode() { return document.querySelector('input[name=mode]:checked').value; }
 function progress(barId, txtId, frac, t0) {
@@ -309,24 +334,113 @@ function showEeprom(ee, target) {
       chans.map(([n, c]) => '<tr><td class="num">' + String(n).padStart(2, '0') + '</td><td class="num">' + mhz(c.rx) + '</td><td class="num">' + mhz(c.tx) +
         '</td><td class="mono">' + esc(c.name) + '</td><td class="num">' + (c.rxTone || '–') + ' / ' + (c.txTone || '–') + '</td></tr>').join('') + '</tbody></table></div>';
   }
-  const edit = !target;                                  // 3. adım: telsizden okunan, düzenlenebilir
-  h += edit ? '<details class="p4det" id="p4Det"><summary>P4000 sayfaları ve APRS (düzenle)</summary><div class="p4host"></div>' +
-      '<div class="row" style="margin-top:8px"><button id="p4Apply" disabled>Değişiklikleri telsize yazmaya hazırla (6. adım)</button><span class="note" id="p4Note">Okunan EEPROM\'un bir kopyası düzenlenir; telsize 6. adımdan, onay ve doğrulamayla yazılır.</span></div></details>'
-    : '<details class="p4det"><summary>P4000 sayfaları (salt okunur)</summary><div class="p4host"></div></details>';
+  if (target) h += '<details class="p4det"><summary>P4000 sayfaları (salt okunur)</summary><div class="p4host"></div></details>';
   $(target || 'eeSum').innerHTML = h;
   P4000.injectCss(document);
-  const host = $(target || 'eeSum').querySelector('.p4host');
-  if (!edit) { P4000.render(host, ee, { editable: false }); return; }
-  const work = ee.slice();
-  P4000.render(host, work, { editable: true, onChange: () => { $('p4Apply').disabled = false; $('p4Note').textContent = 'yazılmamış değişiklik var'; } });
-  $('p4Apply').onclick = () => {
-    P4000.fixSums(work);
-    let d = 0; for (let a = 0; a < 2048; a++) if (work[a] !== ee[a]) d++;
-    log('EEPROM düzenlendi: ' + d + ' bayt değişti; 6. adıma aktarıldı');
-    loadEeFile('düzenlenmiş EEPROM', work.slice());
-    $('erCard').scrollIntoView({ behavior: 'smooth' });
-  };
+  if (target) P4000.render($(target).querySelector('.p4host'), ee, { editable: false });
+  else wsFromRadio(ee);                                   // 3. adım: okunan EEPROM programlama alanına
 }
+
+/* ---------------------------------------------------------------- programming (P4000) */
+/* ws.orig: what the work copy started from; ws.src 'telsiz' | 'bin' | 'p40' (a .p40 opened
+ * without a radio read: on top of the default EEPROM, only P4000's fields are meaningful) */
+let ws = null;
+P4000.injectCss(document);
+function wsSet(src, name, img) {
+  ws = { src, name, orig: img.slice(), work: img.slice() };
+  wsRender();
+}
+function wsDiff() { let d = 0; if (ws) for (let a = 0; a < 2048; a++) if (ws.work[a] !== ws.orig[a]) d++; return d; }
+function wsFromRadio(ee) {
+  if (ws && wsDiff()) { log('telsiz okundu; programlama alanındaki yazılmamış değişiklikler korundu'); wsState(); return; }
+  wsSet('telsiz', 'telsizden okunan', ee);
+}
+function wsRender() {
+  P4000.render($('wsP4'), ws.work, { editable: true, onChange: () => { wsState(); wsHex(); } });
+  wsState(); wsHex();
+}
+function wsState() {
+  const d = ws ? wsDiff() : 0, on = !!ws;
+  $('wsSaveP40').disabled = $('wsSaveBin').disabled = !on;
+  $('wsUndo').disabled = !d || busy;
+  const target = on && eeData ? wsTarget() : null;
+  let td = 0; if (target) for (let a = 0; a < 2048; a++) if (target[a] !== eeData[a]) td++;
+  $('wsWrite').disabled = !(client && eeData && target && td && !busy);
+  if (!on) { $('wsState').textContent = 'Telsizden okuyun ya da bir kütük açın.'; return; }
+  const src = ws.src === 'telsiz' ? 'telsizden okunan EEPROM' : ws.src === 'bin' ? 'EEPROM dosyası ' + ws.name
+    : 'kütük ' + ws.name + (eeData ? ' (telsizden okunanın üzerine)' : ' (varsayılan EEPROM üzerine; telsize yazarken yalnızca P4000 alanları aktarılır)');
+  $('wsState').innerHTML = 'Kaynak: ' + esc(src) + ' · ' + (d ? '<span class="warn">' + d + ' bayt değişti, yazılmadı</span>' : 'değişiklik yok') +
+    (!client ? ' · yazmak için bağlanın (1)' : !eeData ? ' · yazmak için önce telsizin EEPROM\'unu okuyun' : target && !td ? ' · telsizdekiyle aynı' : '');
+}
+/* the image that goes to the radio: P4000 semantics for a .p40 opened on the default image */
+function wsTarget() {
+  if (ws.src === 'p40' && ws.base !== 'telsiz') {
+    const t = P4000.fromP40(P4000.toP40(ws.work), eeData).ee;
+    if (P4000.aprsGecerli(ws.work)) t.set(ws.work.slice(P4000.APRS0, P4000.APRS0 + P4000.APRS_UZ + 2), P4000.APRS0);
+    return P4000.fixSums(t);
+  }
+  return P4000.fixSums(ws.work.slice());
+}
+function wsHex() {
+  if (!ws || !$('wsHexDet').open) return;
+  const a0 = +$('wsHexAddr').value, w = ws.work, o = ws.orig, h2 = v => v.toString(16).toUpperCase().padStart(2, '0');
+  let s = '';
+  for (let r = a0; r < a0 + 0x200; r += 16) {
+    s += r.toString(16).toUpperCase().padStart(3, '0') + '  ';
+    for (let i = 0; i < 16; i++) s += '<span data-ea="' + (r + i) + '"' + (w[r + i] !== o[r + i] ? ' class="chg"' : '') + '>' + h2(w[r + i]) + '</span> ';
+    s += ' ' + esc(Array.from(w.slice(r, r + 16), v => v >= 32 && v < 127 ? String.fromCharCode(v) : '.').join('')) + '\n';
+  }
+  $('wsHex').innerHTML = s;
+}
+for (let a = 0; a < 0x800; a += 0x200) $('wsHexAddr').add(new Option('0x' + a.toString(16).toUpperCase().padStart(3, '0') + '–0x' + (a + 0x1FF).toString(16).toUpperCase().padStart(3, '0'), a));
+$('wsHexAddr').onchange = wsHex;
+$('wsHexDet').ontoggle = wsHex;
+$('wsHex').onclick = e => {
+  const a = e.target.dataset && e.target.dataset.ea; if (a === undefined) return;
+  const v = prompt('EEPROM 0x' + (+a).toString(16).toUpperCase().padStart(3, '0') + ' yeni değer (onaltılık):', ws.work[+a].toString(16).toUpperCase().padStart(2, '0'));
+  if (v === null) return;
+  const n = parseInt(v, 16); if (isNaN(n) || n < 0 || n > 255) { alert('00–FF arası bir değer girin'); return; }
+  ws.work[+a] = n; wsRender();
+};
+$('wsP40Btn').onclick = () => $('wsP40').click();
+$('wsP40').onchange = async () => {
+  const f = $('wsP40').files[0]; $('wsP40').value = ''; if (!f) return;
+  try {
+    const raw = new Uint8Array(await f.arrayBuffer());
+    const fb = P4000.p40Base(raw), base = ws ? ws.work : eeData || B.defaultEeprom();
+    const onDefault = !ws && !eeData;
+    const r = P4000.fromP40(raw, base, { setBase: onDefault });
+    if (!onDefault && fb !== P4000.base(base)) throw new Error('Kütüğün frekans bandı (' + (fb * 0.025).toFixed(3) + ' MHz) telsizinkiyle (' + (P4000.base(base) * 0.025).toFixed(3) + ' MHz) aynı değil; P4000 de bu kütüğü bu telsize yazmaz.');
+    if (ws) ws.work.set(r.ee);                              // kütük, açık olan kopyanın üzerine (P4000'deki gibi)
+    else { wsSet('p40', f.name, base); ws.base = eeData ? 'telsiz' : 'varsayılan'; ws.work.set(r.ee); }
+    wsRender();
+    log('P4000 kütüğü açıldı: ' + f.name + (r.warnings.length ? ' (' + r.warnings.length + ' uyarı)' : ''));
+    if (r.warnings.length) alert(r.warnings.join('\n'));
+  } catch (e) { alert(f.name + ': ' + e.message); }
+};
+$('wsBinBtn').onclick = () => $('wsBin').click();
+$('wsBin').onchange = async () => {
+  const f = $('wsBin').files[0]; $('wsBin').value = ''; if (!f) return;
+  const raw = new Uint8Array(await f.arrayBuffer());
+  if (raw.length !== 2048) { alert(f.name + ': 2048 bayt değil (' + raw.length + ')'); return; }
+  if (ws && wsDiff() && !confirm('Programlama alanındaki yazılmamış değişiklikler atılacak. Devam edilsin mi?')) return;
+  wsSet('bin', f.name, raw);
+  log('EEPROM dosyası programlama alanına açıldı: ' + f.name);
+};
+$('wsSaveP40').onclick = () => saveBlob(P4000.toP40(ws.work), 'aselsan_' + stamp() + '.p40');
+$('wsSaveBin').onclick = () => saveBlob(P4000.fixSums(ws.work.slice()), 'aselsan_eeprom_' + stamp() + '.bin');
+function saveBlob(data, name) {
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([data], { type: 'application/octet-stream' }));
+  a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+$('wsUndo').onclick = () => { if (ws) { ws.work.set(ws.orig); wsRender(); } };
+$('wsWrite').onclick = () => {
+  const t = wsTarget();
+  let d = 0; for (let a = 0; a < 2048; a++) if (t[a] !== eeData[a]) d++;
+  log('programlama: ' + d + ' bayt telsize yazılmak üzere 6. adıma aktarıldı');
+  loadEeFile('programlama alanı (' + (ws.src === 'telsiz' ? 'düzenlenmiş' : ws.name) + ')', t);
+  $('erCard').scrollIntoView({ behavior: 'smooth' });
+};
 
 /* ---------------------------------------------------------------- flash */
 $('flashBtn').onclick = () => run(async () => {
@@ -530,7 +644,8 @@ $('erBtn').onclick = () => {
     await client.connect();
     const now = await client.readEeprom();
     let d = 0; for (let a = 0; a < 2048; a++) if (now[a] !== target[a]) d++;
-    eeData = now; showEeprom(now);
+    eeData = now; if (ws) ws.orig = now.slice(), ws.work = now.slice(), ws.src = 'telsiz', ws.name = 'telsizden okunan';
+    showEeprom(now);
     $('eeDl').innerHTML = ''; download($('eeDl'), 'aselsan_eeprom_' + stamp() + '.bin', now, 'application/octet-stream', 'Şu anki EEPROM\'u indir');
     $('erResult').innerHTML = d === 0
       ? '<p class="ok"><b>✓ EEPROM geri yüklendi.</b> Telsiz yeniden açıldı; okunan EEPROM dosyayla birebir aynı.</p>'
@@ -585,19 +700,38 @@ if (location.hash === '#otomatik-test-aprs') (async () => {
   const until = c => new Promise(r => { const t = setInterval(() => { if (c()) { clearInterval(t); r(); } }, 50); });
   $('connectBtn').click(); await until(() => client && !busy);
   $('eeBtn').click(); await until(() => !busy);
-  $('p4Det').open = true;
-  $('p4Det').querySelector('[data-pg=aprs]').click();
-  const setv = (k, v) => { const i = $('p4Det').querySelector('[data-aprs=' + k + ']'); i.value = v; i.onchange(); };
+  $('wsP4').querySelector('[data-pg=aprs]').click();
+  const setv = (k, v) => { const i = $('wsP4').querySelector('[data-aprs=' + k + ']'); i.value = v; i.onchange(); };
   setv('cagri', 'ta7w-7'); setv('yorum', 'Düzce 73!'); setv('aralik', '120');
-  const sel = $('p4Det').querySelector('[data-aprs=simge]'); sel.value = '/>'; sel.onchange();
-  const paket = $('p4Det').textContent.includes('TA7W-7>APIZCI,WIDE1-1,WIDE2-1:!3955.52N/03250.22E>');
-  $('p4Apply').click();
+  const sel = $('wsP4').querySelector('[data-aprs=simge]'); sel.value = '/>'; sel.onchange();
+  const paket = $('wsP4').textContent.includes('TA7W-7>APIZCI,WIDE1-1,WIDE2-1:!3955.52N/03250.22E>');
+  $('wsWrite').click();
   window.confirm = () => true;
   $('erC1').checked = true; updateEeWrite();
   $('erBtn').click(); await until(() => !busy);
   const a = P4000.aprsGet(port.b.eeprom.mem);
   const ok = paket && a.gecerli && a.cagri === 'TA7W-7' && a.yorum === 'Düzce 73!' && a.aralik === 120 && a.kod === '>' && /geri yüklendi/.test($('erResult').textContent);
   document.body.dataset.test = ok ? 'bitti' : 'hata paket=' + paket + ' ' + JSON.stringify(a) + ' ' + $('erResult').textContent;
+})();
+/* yukle.html#otomatik-test-p40: bağlanmadan bir P4000 kütüğü aç, sonra telsizi oku ve kütüğü
+ * yaz: yalnızca P4000 alanları değişmeli, kalibrasyon (0x578..) telsizdeki gibi kalmalı */
+if (location.hash === '#otomatik-test-p40') (async () => {
+  document.querySelector('input[value=sim]').checked = true; onMode();
+  const until = c => new Promise(r => { const t = setInterval(() => { if (c()) { clearInterval(t); r(); } }, 50); });
+  const k = B.defaultEeprom(); const c2 = P4000.channel(k, 2); c2.name = 'P40 TEST'; P4000.setChannel(k, 2, c2);
+  const dt = new DataTransfer(); dt.items.add(new File([P4000.toP40(k)], 'deneme.p40')); $('wsP40').files = dt.files; await $('wsP40').onchange();
+  const pre = ws && ws.src === 'p40' && $('wsWrite').disabled && P4000.channel(ws.work, 2).name.trim() === 'P40 TEST';
+  $('connectBtn').click(); await until(() => client && !busy);
+  port.b.eeprom.mem.fill(0x5A, 0x591, 0x59B); B.eeFixSums(port.b.eeprom.mem);   // telsizin kendi kalibrasyonu
+  $('eeBtn').click(); await until(() => !busy);
+  const kept = ws.src === 'p40' && !$('wsWrite').disabled;
+  $('wsWrite').click();
+  window.confirm = () => true;
+  $('erC1').checked = true; updateEeWrite();
+  $('erBtn').click(); await until(() => !busy);
+  const m = port.b.eeprom.mem, ok = P4000.channel(m, 2).name.trim() === 'P40 TEST' && m[0x591] === 0x5A && P4000.checkSums(m).every(x => x.ok);
+  document.body.dataset.test = pre && kept && ok && /geri yüklendi/.test($('erResult').textContent) ? 'bitti'
+    : 'hata pre=' + pre + ' kept=' + kept + ' ok=' + ok + ' ' + $('erResult').textContent;
 })();
 if (location.hash === '#otomatik-test') (async () => {
   document.querySelector('input[value=sim]').checked = true; onMode();

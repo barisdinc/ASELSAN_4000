@@ -1,0 +1,40 @@
+{
+  "on_ek": "AT",
+  "ilk": [
+    0,
+    1
+  ],
+  "metin": "yATOLYE 2026 - 4000/4100 SERISI TELSIZ YAZILIMI (BarisDInc)",
+  "kayitlar": {
+    "YA4000S_SAYI.HEX": {
+      "major": 0,
+      "minor": 1,
+      "tarih": "2026-10-19",
+      "imza": "3252d19f91bbc317"
+    },
+    "YA4000S_HESAP.HEX": {
+      "major": 0,
+      "minor": 1,
+      "tarih": "2026-10-19",
+      "imza": "2f95181e453138eb"
+    },
+    "YA4000S_OYUN.HEX": {
+      "major": 0,
+      "minor": 1,
+      "tarih": "2026-10-19",
+      "imza": "1587188bb8cb8df2"
+    },
+    "YA4000S_FREKANS.HEX": {
+      "major": 0,
+      "minor": 1,
+      "tarih": "2026-10-19",
+      "imza": "36cfa089a2b3c9b7"
+    },
+    "YA4000S_FREKANS_YATOLYE.HEX": {
+      "major": 0,
+      "minor": 1,
+      "tarih": "2026-10-19",
+      "imza": "fe51d7fdc570a909"
+    }
+  }
+}

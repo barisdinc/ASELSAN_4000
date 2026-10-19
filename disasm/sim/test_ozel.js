@@ -434,6 +434,12 @@ if (new Board(rom).rom[0xE0E1] === 0x5C) {
     for (const t of [0.6, 3.0, 5.4, 7.5]) { b.run(FCLK * (t - b.now / FCLK)); seen.push(lcd(b)); }
     check('açılış ekranı 5 s yATOLYE (' + name + ')', seen[0] === 'yATOLYE ' && seen[1] === 'yATOLYE ' && seen[2] === 'yATOLYE ' && seen[3] !== 'yATOLYE ', seen.join('|'));
   }
+  /* then the version from the ROM header (tools/yama.py --surum), shown by F_00E0E1's own code */
+  const b = radio(), seen = [];
+  for (let t = 0.5; t < 8; t += 0.1) { b.run(FCLK * 0.1); const s = lcd(b); if (s !== seen[seen.length - 1]) seen.push(s); }
+  const h = b.rom, minor = h[0x10002] % 10 ? h[0x10002] : h[0x10002] / 10;
+  const want = String.fromCharCode(h[0x10009], h[0x1000A]) + ' V' + h[0x10001] + '-' + minor;
+  check('yATOLYE\'den sonra sürüm "' + want + '"', seen[seen.indexOf('yATOLYE ') + 1] === want.padEnd(8), seen.join('|'));
 }
 
 /* the real device is programmed through the serial loader: flash the new image into a

@@ -2,7 +2,8 @@
 ;
 ; 1) Açılış ekranı. F_00E0E1 açılışta bir kez çağrılır (F_00E305, 0x00E431): bip sesini
 ;    çalıp "AS V2-3" sürüm yazısını gösterir. Girişine bank 1'deki ACILIS'e bir JMPL koyuyoruz;
-;    ACILIS aynı bip sesini çalar, "yATOLYE" yazar, 5 s bekler ve F_00E0E1'i çağırana döner.
+;    ACILIS aynı bip sesini çalar, "yATOLYE" yazar, 5 s bekler, sonra F_00E0E1'in kendi
+;    koduyla sürüm yazısını (ROM başlığından, "AT V0-1") gösterip çağırana döner.
 ;    Yazı görünürken arka ışıklar yanar: firmware'in kendi ışık yordamı F_008156 (Y = 1:
 ;    RAM $0242 bit 6 / 7 / 8 ve çıkışlar; tip B'de I2C 0x46 genişletici, tip A'da F_00755E).
 ;    Açılışın sonunda firmware ışığı kendisi söndürür (0x00E4A7, Y = 0) ve sonra ISIK
@@ -61,8 +62,22 @@ AC_YAZ: SEM
         JSRL  F_LCD
         LDY   #ACILIS_MS
         JSRL  F_DELAY                   ; bekler, bekçi köpeğini besler
+        SEM
+        .ASSUME M=1,X=0
+        LDA   A,#$20                    ; F_00E0E1 3. haneye (sürüm ön ekiyle 'V' arası) yazmaz
+        STA   A,LCD+2
+        CLM
+        .ASSUME M=0,X=0
         PLA
-        RTL
+; Ardından sürüm yazısı ("AT V0-1", ROM başlığı 0x010000; tools/yama.py --surum yazar):
+; F_00E0E1'in girişini (JMPL'in üzerine yazdığı ilk komutlar dahil) burada yapıp bip
+; sesinden sonrasına atlıyoruz. Orijinal kod yazıyı gösterir ve çağırana RTL ile döner.
+        LDA   A,$04,S
+        PHD
+        TAD
+        INC   A
+        PHA
+        JMPL  $00E0EE
 
 ACILIS_METNI:
         .TEXT8 "yATOLYE"

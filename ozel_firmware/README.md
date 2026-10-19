@@ -9,7 +9,17 @@ Orijinal YA4000S yazılımına eklenen özellikler. Her örnek önce simülatör
 | `YA4000S_HESAP.HEX` | SAYI + **HESAP**: dört işlemli hesap makinesi | `ornekler/hesap.asm` |
 | `YA4000S_OYUN.HEX` | SAYI + HESAP + **OYUN**: sayı tahmin oyunu (rastgele sayı, sesler) | `ornekler/oyun.asm` |
 | `YA4000S_FREKANS.HEX` | Önceki üçü + **FREKANS**: tuş takımından alma ve gönderme frekansı girip telsizi ayarlama (VFO modu; PTT'de ekranda gönderme frekansı) + **APRS**: PTT'de 144,800 MHz'de sabit konum paketi (1200 baud AFSK, AX.25). **Seçmeli çağrı (Select-5) tamamen kaldırıldı**, ~4,1 KB flash boşaldı | `ornekler/frekans.asm` |
-| `YA4000S_FREKANS_YATOLYE.HEX` | FREKANS ve APRS'in tamamı (seçmeli çağrı kaldırılmış) + açılışta 5 saniye **yATOLYE** (flash'a gömülü, EEPROM / programlayıcı değiştiremez; sürüm yazısı "AS V2-3" yerine) | `ornekler/frekans_yatolye.asm` |
+| `YA4000S_FREKANS_YATOLYE.HEX` | FREKANS ve APRS'in tamamı (seçmeli çağrı kaldırılmış) + açılışta 5 saniye **yATOLYE** (flash'a gömülü, EEPROM / programlayıcı değiştiremez), ardından kendi sürüm yazımız ("AT V0-1" …) | `ornekler/frekans_yatolye.asm` |
+
+## Sürüm, tarih ve metin
+
+`make -C disasm ozel` her `ornekler/*.asm` çıktısının ROM başlığını (0x010000) `surum.json`'a göre yazar (`tools/yama.py --surum`):
+
+- **Sürüm:** "AT V0-1"den başlar. Bir dosyanın içeriği son derlemeden farklıysa bir artar (V0-1 … V0-99, sonra V1-1). Kaynak değişmeden yeniden derlemek sürümü ve tarihi değiştirmez. Her dosyanın son sürümü, tarihi ve içerik imzası `surum.json`'daki `kayitlar`da durur. Bu dosyayı da commit edin.
+- **Tarih:** O sürümün derlendiği gün.
+- **Metin:** `metin` alanı: "yATOLYE 2026 - 4000/4100 SERISI TELSIZ YAZILIMI (BarisDInc)". En çok 114 karakter, ASCII.
+
+Bu başlık seri yükleyicinin 2. adımında ("Sürüm", "Tarih", "Metinler") ve T4000'de görünür. Açılışta orijinal firmware'in sürüm ekranı (F_00E0E1) da aynı alandan okur. YATOLYE yapısında bu ekran yATOLYE'den sonra gelir.
 
 Kaynak düzeni (`ornekler/`):
 
@@ -156,7 +166,7 @@ Menüde FREKANS'tan sonra gelir (`m` ile **APRS** başlığına gelip `s`).
 
 FREKANS'taki gibi APRS açıkken firmware'in ~4 s'lik menü zaman aşımı kapalıdır. Bant dışıysa (bant tabanı 144 MHz'in üstünde) ekranda `HATA` / `ERROR` yazar ve frekans değişmez.
 
-**Ayarlar EEPROM'daki APRS bölümünde.** APRS'e her girişte EEPROM 0x6E0–0x731 okunur ve paket buradan kurulur. Bu alanı ne P4000 ne de orijinal firmware kullanıyor (bkz. `docs/p4000_eeprom.md`, "Boş alanlar"). Bölüm, simülatörün **EEPROM / kanallar** sekmesindeki ya da yükleme sayfasının 3. adımındaki **APRS** sayfasından yazılır. Gerçek telsizde sıra şöyle: 3. adımda EEPROM'u oku, APRS sayfasında düzenle, **Değişiklikleri telsize yazmaya hazırla**'ya bas; 6. adım yalnız değişen sayfaları yazar, geri okuyup doğrular ve telsizi yeniden başlatır.
+**Ayarlar EEPROM'daki APRS bölümünde.** APRS'e her girişte EEPROM 0x6E0–0x731 okunur ve paket buradan kurulur. Bu alanı ne P4000 ne de orijinal firmware kullanıyor (bkz. `docs/p4000_eeprom.md`, "Boş alanlar"). Bölüm, simülatörün **EEPROM / kanallar** sekmesindeki ya da yükleme sayfasının 3. adımındaki **APRS** sayfasından yazılır. Gerçek telsizde sıra şöyle: 3. adımda EEPROM'u oku, **Programlama** bölümünün APRS sayfasında düzenle, **Telsize yaz**'a bas; 6. adım yalnız değişen sayfaları yazar, geri okuyup doğrular ve telsizi yeniden başlatır.
 
 | Yer | Ne | Varsayılan | Not |
 |---|---|---|---|

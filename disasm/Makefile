@@ -35,22 +35,22 @@ test: test-runtime test-boot test-funcs test-clean
 
 # assembler examples (tools/a77.py + tools/yama.py): ozel_firmware/ornekler/*.asm
 ORNEKLER := ../ozel_firmware/YA4000S_SAYI.HEX ../ozel_firmware/YA4000S_HESAP.HEX ../ozel_firmware/YA4000S_OYUN.HEX ../ozel_firmware/YA4000S_FREKANS.HEX ../ozel_firmware/YA4000S_FREKANS_YATOLYE.HEX
-ORNEK_SRC := ../ozel_firmware/ornekler/menu_altyapi.inc tools/a77.py tools/yama.py
+ORNEK_SRC := ../ozel_firmware/ornekler/menu_altyapi.inc tools/a77.py tools/yama.py ../ozel_firmware/surum.json
 
 ../ozel_firmware/YA4000S_SAYI.HEX: ../YA4000S.HEX ../ozel_firmware/ornekler/sayi_ters.asm ../ozel_firmware/ornekler/sayi_ters.inc $(ORNEK_SRC)
-	$(PY) tools/yama.py ../YA4000S.HEX $@ ../ozel_firmware/ornekler/sayi_ters.asm -l ../ozel_firmware/ornekler/sayi_ters.lst
+	$(PY) tools/yama.py ../YA4000S.HEX $@ ../ozel_firmware/ornekler/sayi_ters.asm -l ../ozel_firmware/ornekler/sayi_ters.lst --surum ../ozel_firmware/surum.json
 
 ../ozel_firmware/YA4000S_HESAP.HEX: ../YA4000S.HEX ../ozel_firmware/ornekler/hesap.asm ../ozel_firmware/ornekler/hesap.inc ../ozel_firmware/ornekler/sayi_ters.inc $(ORNEK_SRC)
-	$(PY) tools/yama.py ../YA4000S.HEX $@ ../ozel_firmware/ornekler/hesap.asm -l ../ozel_firmware/ornekler/hesap.lst
+	$(PY) tools/yama.py ../YA4000S.HEX $@ ../ozel_firmware/ornekler/hesap.asm -l ../ozel_firmware/ornekler/hesap.lst --surum ../ozel_firmware/surum.json
 
 ../ozel_firmware/YA4000S_OYUN.HEX: ../YA4000S.HEX ../ozel_firmware/ornekler/oyun.asm ../ozel_firmware/ornekler/oyun.inc ../ozel_firmware/ornekler/hesap.inc ../ozel_firmware/ornekler/sayi_ters.inc $(ORNEK_SRC)
-	$(PY) tools/yama.py ../YA4000S.HEX $@ ../ozel_firmware/ornekler/oyun.asm -l ../ozel_firmware/ornekler/oyun.lst
+	$(PY) tools/yama.py ../YA4000S.HEX $@ ../ozel_firmware/ornekler/oyun.asm -l ../ozel_firmware/ornekler/oyun.lst --surum ../ozel_firmware/surum.json
 
 ../ozel_firmware/YA4000S_FREKANS.HEX: ../YA4000S.HEX ../ozel_firmware/ornekler/frekans.asm ../ozel_firmware/ornekler/frekans.inc ../ozel_firmware/ornekler/aprs.inc ../ozel_firmware/ornekler/secmeli_kaldir.inc ../ozel_firmware/ornekler/oyun.inc ../ozel_firmware/ornekler/hesap.inc ../ozel_firmware/ornekler/sayi_ters.inc $(ORNEK_SRC)
-	$(PY) tools/yama.py ../YA4000S.HEX $@ ../ozel_firmware/ornekler/frekans.asm -l ../ozel_firmware/ornekler/frekans.lst
+	$(PY) tools/yama.py ../YA4000S.HEX $@ ../ozel_firmware/ornekler/frekans.asm -l ../ozel_firmware/ornekler/frekans.lst --surum ../ozel_firmware/surum.json
 
 ../ozel_firmware/YA4000S_FREKANS_YATOLYE.HEX: ../YA4000S.HEX ../ozel_firmware/ornekler/frekans_yatolye.asm ../ozel_firmware/ornekler/acilis_yatolye.inc ../ozel_firmware/ornekler/frekans.asm ../ozel_firmware/ornekler/frekans.inc ../ozel_firmware/ornekler/aprs.inc ../ozel_firmware/ornekler/secmeli_kaldir.inc ../ozel_firmware/ornekler/oyun.inc ../ozel_firmware/ornekler/hesap.inc ../ozel_firmware/ornekler/sayi_ters.inc $(ORNEK_SRC)
-	$(PY) tools/yama.py ../YA4000S.HEX $@ ../ozel_firmware/ornekler/frekans_yatolye.asm -l ../ozel_firmware/ornekler/frekans_yatolye.lst
+	$(PY) tools/yama.py ../YA4000S.HEX $@ ../ozel_firmware/ornekler/frekans_yatolye.asm -l ../ozel_firmware/ornekler/frekans_yatolye.lst --surum ../ozel_firmware/surum.json
 
 ozel: ../ozel_firmware/YA4000S_MERHABA.HEX $(ORNEKLER)
 

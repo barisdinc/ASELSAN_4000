@@ -2470,7 +2470,7 @@
 00E0E5                               .ORG $00854C                    ; F_00828C: CMP A,#$5B / BCS L_008575 (harf mi?)
 00854C                               .EXPECT $C9,$5B,$B0,$25
 00854C                               .ASSUME M=1,X=0
-00854C  5C 38 20 01                  JMPL  Y_DENETIM
+00854C  5C 48 20 01                  JMPL  Y_DENETIM
 008550  00 00 00 00 00 00 …          .ORG $012000
 012000                               .ASSUME M=0,X=0
 012000  A3 04                        LDA   A,$04,S
@@ -2482,7 +2482,7 @@
 012011  A2 00 00                     LDX   #$0000
 012014  F8                   AC_YAZ: SEM
 012015                               .ASSUME M=1,X=0
-012015  BF 30 20 01                  LDA   A,>ACILIS_METNI,X
+012015  BF 40 20 01                  LDA   A,>ACILIS_METNI,X
 012019  9D 52 02                     STA   A,LCD,X
 01201C  D8                           CLM
 01201D                               .ASSUME M=0,X=0
@@ -2492,25 +2492,36 @@
 012023  22 8C 82 00                  JSRL  F_LCD
 012027  A0 88 13                     LDY   #ACILIS_MS
 01202A  22 7F 7D 00                  JSRL  F_DELAY                   ; bekler, bekçi köpeğini besler
-01202E  68                           PLA
-01202F  6B                           RTL
-012030  79 41 54 4F 4C 59 …          .TEXT8 "yATOLYE"
-012038                               .ASSUME M=1,X=0
-012038  C9 79                        CMP   A,#$79                    ; 'y'
-01203A  F0 0C                        BEQ   Y_CIZ
-01203C  C9 5B                        CMP   A,#$5B                    ; orijinal: CMP A,#$5B / BCS L_008575
-01203E  90 04                        BCC   Y_HARF_MI
-012040  5C 75 85 00                  JMPL  $008575                   ; harf değil: rakam / işaret denetimleri
-012044  5C 50 85 00                  JMPL  $008550                   ; orijinal: CMP A,#$41 ...
-012048  D8                   Y_CIZ:  CLM                             ; harf yolundaki gibi: $02 + 2*konum = segment sözcüğü
-012049                               .ASSUME M=0,X=0
-012049  A5 00                        LDA   A,$00
-01204B  29 FF 00                     AND   A,#$00FF
-01204E  0A                           ASL   A
-01204F  AA                           TAX
-012050  A9 46 25                     LDA   A,#Y_SEGMENT
-012053  95 02                        STA   A,$02,X
-012055  5C F5 86 00                  JMPL  $0086F5                   ; sonraki karaktere (orijinal yol da M = 0 ile gelir)
+01202E  F8                           SEM
+01202F                               .ASSUME M=1,X=0
+01202F  A9 20                        LDA   A,#$20                    ; F_00E0E1 3. haneye (sürüm ön ekiyle 'V' arası) yazmaz
+012031  8D 54 02                     STA   A,LCD+2
+012034  D8                           CLM
+012035                               .ASSUME M=0,X=0
+012035  68                           PLA
+012036  A3 04                        LDA   A,$04,S
+012038  0B                           PHD
+012039  5B                           TAD
+01203A  3A                           INC   A
+01203B  48                           PHA
+01203C  5C EE E0 00                  JMPL  $00E0EE
+012040  79 41 54 4F 4C 59 …          .TEXT8 "yATOLYE"
+012048                               .ASSUME M=1,X=0
+012048  C9 79                        CMP   A,#$79                    ; 'y'
+01204A  F0 0C                        BEQ   Y_CIZ
+01204C  C9 5B                        CMP   A,#$5B                    ; orijinal: CMP A,#$5B / BCS L_008575
+01204E  90 04                        BCC   Y_HARF_MI
+012050  5C 75 85 00                  JMPL  $008575                   ; harf değil: rakam / işaret denetimleri
+012054  5C 50 85 00                  JMPL  $008550                   ; orijinal: CMP A,#$41 ...
+012058  D8                   Y_CIZ:  CLM                             ; harf yolundaki gibi: $02 + 2*konum = segment sözcüğü
+012059                               .ASSUME M=0,X=0
+012059  A5 00                        LDA   A,$00
+01205B  29 FF 00                     AND   A,#$00FF
+01205E  0A                           ASL   A
+01205F  AA                           TAX
+012060  A9 46 25                     LDA   A,#Y_SEGMENT
+012063  95 02                        STA   A,$02,X
+012065  5C F5 86 00                  JMPL  $0086F5                   ; sonraki karaktere (orijinal yol da M = 0 ile gelir)
 
 ; semboller
 N_YUKSEK                 $000000
@@ -2883,10 +2894,10 @@ TXT_FR_TX                $011F07
 TXT_FR_GONDER            $011F0F
 ACILIS                   $012000
 AC_YAZ                   $012014
-ACILIS_METNI             $012030
-Y_DENETIM                $012038
-Y_HARF_MI                $012044
-Y_CIZ                    $012048
+ACILIS_METNI             $012040
+Y_DENETIM                $012048
+Y_HARF_MI                $012054
+Y_CIZ                    $012058
 AP_KOD_ADRES             $012400
 AFSK_TB1                 $012400
 AT_URET                  $012413

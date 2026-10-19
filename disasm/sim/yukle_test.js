@@ -26,7 +26,9 @@ async function full(path, expectName) {
   await c.connect();
   check(expectName + ': ping', await c.ping());
   const h = await c.readHeader();
-  check(expectName + ': başlık', h.version === 'AS V2-3' && h.date === '23.11.1999' && h.texts.some(t => /SERISI TELSIZ/.test(t)), JSON.stringify(h));
+  const ozel = b.rom[0x01000A] === 0x54;   // 'AT': tools/yama.py --surum
+  check(expectName + ': başlık', ozel ? /^AT V\d-\d+$/.test(h.version) && /^\d\d\.\d\d\.20\d\d$/.test(h.date) && h.texts.some(t => /^yATOLYE 2026 - 4000\/4100 SERISI TELSIZ YAZILIMI \(BarisDInc\)$/.test(t))
+                                          : h.version === 'AS V2-3' && h.date === '23.11.1999' && h.texts.some(t => /SERISI TELSIZ/.test(t)), JSON.stringify(h));
   const ee = await c.readEeprom();
   check(expectName + ': EEPROM yedeği aynı', ee.every((v, i) => v === b.eeprom.mem[i]), ee.length + ' bayt');
   const ta = port.now();
