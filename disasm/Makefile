@@ -76,6 +76,11 @@ sim: ozel
 test-yukle:
 	cd sim && $(JSRUN) yukle_test.js $(JSSEP) ../../YA4000S.HEX ../../ozel_firmware/YA4000S_FREKANS_YATOLYE.HEX
 
+# P4000 EEPROM yerleşimi ve .p40 kütükleri (p4000.js); gerçek döküm / kütük de verilebilir:
+#   make test-p4000 P4000_DOSYA="~/eeprom.bin ~/P4000/aprs.p40"
+test-p4000:
+	cd sim && $(JSRUN) test_p4000.js $(JSSEP) $(P4000_DOSYA)
+
 test-sim:
 	cd sim && $(JSRUN) selftest.js $(JSSEP) ../$(HEX)
 

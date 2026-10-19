@@ -25,6 +25,8 @@ Orijinal makine kodunu (ya da yeni derlenen bir HEX'i) tarayıcıda, K3 kontrol 
 | `app.js`, `index.html` | Arayüz |
 | `yukle.html`, `seri_istemci.js` | Gerçek telsizle yedekleme ve firmware yükleme sayfası (Web Serial, Chrome / Edge): bağlantı, sürüm, EEPROM ve flash yedeği, firmware tanıma; yükleme yalnızca yedekler alındıktan sonra açılır; EEPROM yedeğini geri yükleme (yalnız farklı sayfalar, doğrulamalı). Simülatör moduyla donanımsız denenir (`yukle.html#otomatik-test`, `#otomatik-test-eeprom` akışı kendisi yürütür) |
 | `yukle_test.js` | Seri istemcinin simülatöre karşı testi (`make test-yukle`): okunan her bayt, okumada telsize yazılmadığı, yükleme + yeni firmware'in açılması, geri yükleme, yarıda kesilip tamamlama, kayıplı hatta otomatik yeniden deneme, tehlikeli dosyaların reddi |
+| `p4000.js` | ASELSAN P4000 programlama yazılımının EEPROM yerleşimi (P4000.EXE'den çıkarıldı, `docs/p4000_eeprom.md`), sayfaları ve `.p40` kütük okuma / yazma. Simülatörün EEPROM sekmesi ve `yukle.html` kullanır |
+| `test_p4000.js` | `p4000.js` testi (`make test-p4000`, isteğe bağlı gerçek döküm / kütük: `P4000_DOSYA=...`) |
 | `selftest.js` | Orijinal firmware ile regresyon testi (`make test-sim`) |
 | `test_ozel.js` | Özel firmware örneklerinin testi (`make test-ozel`): tuş senaryoları, orijinalle karşılaştırma, seri yükleyiciyle yazma |
 | `ram_kullanim.js` | Firmware'in yazdığı RAM adreslerini ölçer (örnekler için boş RAM aramak) |

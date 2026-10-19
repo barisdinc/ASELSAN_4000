@@ -237,30 +237,16 @@ input[type=range] { width: 160px; }
         </div>
         <p class="note">Firmware açılışta 4 bloğun toplamını kontrol eder (0x000–004, 0x008–015, 0x018–534, 0x578–5BC). Toplam tutmazsa ekranda "ARZ PRG" çıkar ve güç kapanır. Değişiklikler canlı EEPROM'a yazılır, yeniden başlatınca okunur.</p>
       </div>
-      <div class="grid2">
-        <div class="card"><h3>Bant ve seçenekler</h3>
-          <div class="kv">
-            <div>Taban frekans</div><div class="row"><input type="number" id="eeBase" step="0.025" style="width:120px"> MHz <span class="note">(0x58C–58D, 25 kHz birim)</span></div>
-            <div>Seçmeli çağrı</div><div><select id="eeSelStd"><option value="0">0 (tanımsız)</option><option value="1">CCIR (100 ms)</option><option value="2">ZVEI1 (70 ms)</option><option value="3">EEA (40 ms)</option></select> <span class="note">0x018 bit 1..0</span></div>
-            <div>Sç. modu 0x01A</div><div><input type="text" id="eeOpt01a" size="3" class="mono"> <span class="note">üst yarım bayt; 2 veya 4 = PTT'de kimlik gönder</span></div>
-            <div>Opsiyon 0x014</div><div><input type="text" id="eeOpt014" size="3" class="mono"> <span class="note">RAM 0x033F; bit 3 = tuş takımı</span></div>
-            <div>Opsiyon 0x58B</div><div><input type="text" id="eeOpt58b" size="3" class="mono"> <span class="note">RAM 0x0335</span></div>
-            <div>Dil 0x018 b7</div><div><label><input type="checkbox" id="eeLang"> İngilizce</label></div>
-          </div>
-          <button id="eeApply" style="margin-top:8px">Uygula ve yeniden başlat</button>
+      <div class="card"><h3>P4000 parametre sayfaları</h3>
+        <div class="row" style="margin-bottom:8px">
+          <input type="file" id="p4File" accept=".p40,.P40,*" hidden><button id="p4Open">Kütük aç (.p40)</button>
+          <button id="p4Save">Kütük sakla (.p40)</button>
+          <button id="p4Write" class="primary" disabled>Telsize yaz ve yeniden başlat</button><button id="p4Undo" disabled>Vazgeç</button>
+          <span class="note" id="p4State"></span>
         </div>
-        <div class="card"><h3>Kanal ekle / değiştir</h3>
-          <div class="row"><label>Kanal <input type="number" id="chN" min="1" max="98" value="1" style="width:64px"></label>
-            <label>Ad <input type="text" id="chName" maxlength="8" size="9" class="mono" title="8 karakter: A–Z 0–9 boşluk _ - /"></label></div>
-          <div class="row" style="margin-top:6px"><label>RX MHz <input type="number" id="chRx" step="0.0025" style="width:110px"></label>
-            <label>TX MHz <input type="number" id="chTx" step="0.0025" style="width:110px"></label></div>
-          <div class="row" style="margin-top:6px"><label>RX TKS <select id="chRxTone"></select></label><label>TX TKS <select id="chTxTone"></select></label></div>
-          <div class="row" style="margin-top:6px"><label><input type="checkbox" id="chSel"> Seçmeli çağrı</label><label><input type="checkbox" id="chXs"> Kristal kaydırma</label>
-            <button id="chSet" class="primary">Yaz</button><button id="chDel">Sil</button></div>
-          <p class="note">Kayıt 0x02E + 13·(n−1): +0..1 TX, +2..3 RX kelimesi (14 bit, 2,5 kHz adım), +4 RX TKS / kristal kaydırma / seçmeli çağrı, +5..12 ad (8 karakter, yalnız A–Z 0–9 boşluk _ - /; aksi hâlde ekranda "CH nn"; +5..11 baytlarının 7. bitlerinde TX TKS).</p>
-        </div>
+        <div id="p4"></div>
+        <p class="note">ASELSAN P4000 programlama yazılımının (1998) sayfaları ve alan adları. Yerleşim P4000.EXE'den çıkarıldı: her alanın üzerine gelince EEPROM adresi görünür. Değişiklikler önce ekranda toplanır, "Telsize yaz" sağlama toplamlarını düzeltip EEPROM'a yazar ve telsizi yeniden başlatır (P4000'deki Telsiz → Yaz gibi). Kütükler P4000 ile uyumludur.</p>
       </div>
-      <div class="card"><h3>Programlı kanallar</h3><div style="max-height:260px;overflow:auto"><table id="chTable"></table></div></div>
       <div class="card"><h3>Hex görünüm</h3>
         <div class="row"><label>Adres <input type="text" id="eeAddr" value="000" size="4" class="mono"></label><span class="note">Bir bayta tıklayıp yeni değeri yazın</span></div>
         <div class="dis" id="eeHex" style="max-height:260px"></div>
@@ -312,6 +298,7 @@ input[type=range] { width: 160px; }
 <script src="m7700.js"></script>
 <script src="board.js"></script>
 <script src="radio_view.js"></script>
+<script src="p4000.js"></script>
 <script src="updater.js"></script>
 <script src="firmware.js"></script>
 <script src="app.js"></script>

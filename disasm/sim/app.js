@@ -186,9 +186,6 @@ function renderLcd() {
 
 /* ------------------------------------------------------------ RX inputs */
 for (let i = 0; i < V.CTCSS.length; i++) { const o = document.createElement('option'); o.value = V.CTCSS[i]; o.textContent = (i + 1) + ': ' + V.CTCSS[i].toFixed(1) + ' Hz'; $('ctcssIn').appendChild(o); }
-for (const id of ['chRxTone', 'chTxTone']) {
-  $(id).innerHTML = '<option value="0">yok</option>' + V.CTCSS.map((f, i) => `<option value="${i + 1}">${i + 1}: ${f.toFixed(1)} Hz</option>`).join('');
-}
 function applyRxInputs() {
   if (!board) return;
   inp.P5 = $('carrier').checked ? (inp.P5 | 0x80) : (inp.P5 & ~0x80);   // P57 = 1: squelch open
@@ -318,27 +315,20 @@ function renderSerialInfo() {
 }
 
 /* ------------------------------------------------------------ EEPROM UI */
+/* P4000 sayfaları ekranda bir çalışma kopyası üzerinde düzenlenir; "Telsize yaz" EEPROM'a aktarır */
+let p4Work = null, p4Dirty = false;
+window.P4000.injectCss(document);
+function p4Opts() { return { editable: true, onChange: () => { p4Dirty = true; p4State(); } }; }
+function p4State() {
+  $('p4Write').disabled = $('p4Undo').disabled = !p4Dirty;
+  $('p4State').textContent = p4Dirty ? 'yazılmamış değişiklik var' : '';
+}
 function refreshEeUi() {
   if (!board) return;
   const ee = board.eeprom.mem, B = window.Board;
   const sums = B.eeCheckSums(ee);
   $('eeSums').innerHTML = sums.map((ok, i) => `<span class="pill ${ok ? 'ok' : 'bad'}">${hex(B.EE_SUMS[i][0], 3)}</span>`).join(' ');
-  $('eeBase').value = (B.eeBase(ee) * 0.025).toFixed(3);
-  $('eeOpt58b').value = hex(ee[0x58B], 2); $('eeOpt014').value = hex(ee[0x014], 2); $('eeOpt01a').value = hex(ee[0x01A], 2);
-  $('eeSelStd').value = ee[0x018] & 3;
-  $('eeLang').checked = !!(ee[0x018] & 0x80);
-  const tn = t => t ? t + ' (' + V.CTCSS[t - 1] + ')' : '—';
-  let rows = '<tr><th>Kanal</th><th>Ad</th><th>RX MHz</th><th>TX MHz</th><th>RX TKS</th><th>TX TKS</th><th>Sç</th><th>Ham kayıt</th></tr>';
-  for (let n = 1; n <= 98; n++) {
-    const c = B.eeChannel(ee, n); if (!c) continue;
-    rows += `<tr data-ch="${n}" style="cursor:pointer"><td>${n}</td><td class="mono">${c.name.replace(/</g, '&lt;')}</td><td class="mono">${(c.rx / 1e6).toFixed(4)}</td><td class="mono">${(c.tx / 1e6).toFixed(4)}</td><td>${tn(c.rxTone)}</td><td>${tn(c.txTone)}</td><td>${c.selcall ? '✓' : ''}</td><td class="mono">${c.bytes.map(x => hex(x, 2)).join(' ')}</td></tr>`;
-  }
-  $('chTable').innerHTML = rows;
-  $('chTable').querySelectorAll('tr[data-ch]').forEach(tr => tr.onclick = () => {
-    const n = +tr.dataset.ch, c = B.eeChannel(ee, n);
-    $('chN').value = n; $('chRx').value = (c.rx / 1e6).toFixed(4); $('chTx').value = (c.tx / 1e6).toFixed(4);
-    $('chName').value = c.name.trim(); $('chRxTone').value = c.rxTone; $('chTxTone').value = c.txTone; $('chSel').checked = !!c.selcall; $('chXs').checked = !!c.xshift;
-  });
+  if (!p4Dirty) { p4Work = ee.slice(); window.P4000.render($('p4'), p4Work, p4Opts()); }
   renderEeHex();
 }
 function renderEeHex() {
@@ -358,7 +348,7 @@ $('eeHex').onclick = e => {
   if (v === null) return; board.eeprom.mem[+a] = parseInt(v, 16) & 0xFF; saveEeprom(); refreshEeUi();
 };
 $('eeFix').onclick = () => { window.Board.eeFixSums(board.eeprom.mem); saveEeprom(); refreshEeUi(); };
-$('eeDefault').onclick = () => { board.eeprom.mem.set(window.Board.defaultEeprom()); saveEeprom(); boot(true); };
+$('eeDefault').onclick = () => { board.eeprom.mem.set(window.Board.defaultEeprom()); p4Dirty = false; p4State(); saveEeprom(); boot(true); };
 $('eeDown').onclick = () => {
   const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([board.eeprom.mem], { type: 'application/octet-stream' }));
   a.download = 'eeprom_24c16.bin'; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
@@ -366,29 +356,35 @@ $('eeDown').onclick = () => {
 $('eeUp').onclick = () => $('eeFile').click();
 $('eeFile').onchange = e => {
   const f = e.target.files[0]; if (!f) return;
-  f.arrayBuffer().then(b => { const a = new Uint8Array(b); board.eeprom.mem.fill(0xFF); board.eeprom.mem.set(a.slice(0, 2048)); saveEeprom(); boot(true); });
+  f.arrayBuffer().then(b => { const a = new Uint8Array(b); board.eeprom.mem.fill(0xFF); board.eeprom.mem.set(a.slice(0, 2048)); p4Dirty = false; p4State(); saveEeprom(); boot(true); });
 };
 $('eeKeep').onchange = () => { if ($('eeKeep').checked) saveEeprom(); };
-$('eeApply').onclick = () => {
-  const ee = board.eeprom.mem, B = window.Board;
-  const oldBase = B.eeBase(ee), chans = [];
-  for (let n = 1; n <= 98; n++) { const c = B.eeChannel(ee, n); if (c) chans.push([n, c]); }
-  const base = Math.round(parseFloat($('eeBase').value) / 0.025);
-  ee[B.EE_CFG + 1] = base >> 8; ee[B.EE_CFG + 2] = base & 0xFF;
-  if (base !== oldBase) for (const [n, c] of chans) { try { B.eeSetChannel(ee, n, c.rx, c.tx, c); } catch (err) { B.eeClearChannel(ee, n); } }
-  ee[0x58B] = parseInt($('eeOpt58b').value, 16) & 0xFF; ee[0x014] = parseInt($('eeOpt014').value, 16) & 0xFF;
-  ee[0x018] = (ee[0x018] & 0x7C) | ($('eeLang').checked ? 0x80 : 0) | (+$('eeSelStd').value & 3);
-  ee[0x01A] = parseInt($('eeOpt01a').value, 16) & 0xFF;
-  B.eeFixSums(ee); saveEeprom(); boot(true);
+$('p4Write').onclick = () => {
+  window.P4000.fixSums(p4Work); board.eeprom.mem.set(p4Work); p4Dirty = false; p4State(); saveEeprom(); boot(true);
 };
-$('chSet').onclick = () => {
-  try {
-    window.Board.eeSetChannel(board.eeprom.mem, +$('chN').value, parseFloat($('chRx').value) * 1e6, parseFloat($('chTx').value) * 1e6,
-      { name: $('chName').value, rxTone: +$('chRxTone').value, txTone: +$('chTxTone').value, selcall: $('chSel').checked, xshift: $('chXs').checked });
-    window.Board.eeFixSums(board.eeprom.mem); saveEeprom(); refreshEeUi();
-  } catch (err) { alert(err.message); }
+$('p4Undo').onclick = () => { p4Dirty = false; p4State(); refreshEeUi(); };
+$('p4Open').onclick = () => $('p4File').click();
+$('p4File').onchange = e => {
+  const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+  f.arrayBuffer().then(buf => {
+    const P = window.P4000, raw = new Uint8Array(buf), cur = p4Work || board.eeprom.mem;
+    try {
+      const fb = P.p40Base(raw);
+      const setBase = fb > 0 && fb !== P.base(cur) &&
+        confirm(f.name + ' kütüğünün bandı ' + (fb * 0.025).toFixed(3) + ' MHz, EEPROM\'unki ' + (P.base(cur) * 0.025).toFixed(3) + ' MHz.\n\nBant tabanı kütüktekine değiştirilsin mi? (Yalnız simülatörde; gerçek telsizde P4000 farklı banda yazmaz.)');
+      const r = P.fromP40(raw, cur, { setBase });
+      p4Work = r.ee; p4Dirty = true; p4State();
+      P.render($('p4'), p4Work, p4Opts());
+      $('p4State').textContent = f.name + ' açıldı, yazılmadı' + (r.warnings.length ? ' · ' + r.warnings.length + ' uyarı' : '');
+      if (r.warnings.length) alert(r.warnings.join('\n'));
+    } catch (err) { alert(f.name + ': ' + err.message); }
+  });
 };
-$('chDel').onclick = () => { window.Board.eeClearChannel(board.eeprom.mem, +$('chN').value); window.Board.eeFixSums(board.eeprom.mem); saveEeprom(); refreshEeUi(); };
+$('p4Save').onclick = () => {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([window.P4000.toP40(p4Work || board.eeprom.mem)], { type: 'application/octet-stream' }));
+  a.download = 'telsiz.p40'; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+};
 
 /* ------------------------------------------------------------ analog + pins */
 const ANA = [[3, 'AN3 sıcaklık'], [4, 'AN4 13,2 V'], [5, 'AN5 RSSI'], [6, 'AN6 yansıyan güç'], [7, 'AN7 giden güç']];

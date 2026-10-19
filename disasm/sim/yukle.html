@@ -39,6 +39,7 @@ main { max-width: 920px; margin: 0 auto; padding: 16px; display: grid; gap: 14px
 .note { color: var(--muted); font-size: 12.5px; }
 .mono { font-family: var(--mono); font-size: 12px; }
 .ok { color: var(--good); } .bad { color: var(--bad); } .warn { color: var(--warn); }
+.p4det { margin-top: 12px; } .p4det summary { cursor: pointer; font-weight: 600; margin-bottom: 8px; }
 .banner { border-left: 3px solid var(--good); padding: 8px 12px; background: color-mix(in srgb, var(--good) 8%, transparent); border-radius: 4px; font-size: 13px; }
 .banner.warn { border-color: var(--warn); background: color-mix(in srgb, var(--warn) 10%, transparent); }
 .status { font-size: 13px; margin-left: 4px; }
@@ -159,6 +160,7 @@ label.mode { display: flex; gap: 6px; align-items: center; }
 
 <script src="m7700.js"></script>
 <script src="board.js"></script>
+<script src="p4000.js"></script>
 <script src="updater.js"></script>
 <script src="seri_istemci.js"></script>
 <script src="firmware.js"></script>
@@ -278,6 +280,7 @@ $('eeBtn').onclick = () => run(async () => {
   const ee = await client.readEeprom(f => progress('eeBar', 'eeTxt', f, t0));
   log('EEPROM okundu (' + ee.length + ' bayt, ' + ((performance.now() - t0) / 1000).toFixed(1) + ' s)');
   download($('eeDl'), 'aselsan_eeprom_' + stamp() + '.bin', ee, 'application/octet-stream', 'EEPROM yedeğini indir');
+  download($('eeDl'), 'aselsan_' + stamp() + '.p40', P4000.toP40(ee), 'application/octet-stream', 'P4000 kütüğü olarak indir');
   eeDone = true; eeData = ee;
   showEeprom(ee);
   if (er) loadEeFile(er.name, er.raw);
@@ -306,7 +309,10 @@ function showEeprom(ee, target) {
       chans.map(([n, c]) => '<tr><td class="num">' + String(n).padStart(2, '0') + '</td><td class="num">' + mhz(c.rx) + '</td><td class="num">' + mhz(c.tx) +
         '</td><td class="mono">' + esc(c.name) + '</td><td class="num">' + (c.rxTone || '–') + ' / ' + (c.txTone || '–') + '</td></tr>').join('') + '</tbody></table></div>';
   }
+  h += '<details class="p4det"><summary>P4000 sayfaları (salt okunur)</summary><div class="p4host"></div></details>';
   $(target || 'eeSum').innerHTML = h;
+  P4000.injectCss(document);
+  P4000.render($(target || 'eeSum').querySelector('.p4host'), ee, { editable: false });
 }
 
 /* ---------------------------------------------------------------- flash */
