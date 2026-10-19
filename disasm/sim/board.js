@@ -359,6 +359,7 @@ class Board {
     this.analog = [0, 0, 0, 128, 180, 20, 0, 0];   // AN0..AN7 raw 8-bit values (assumption on scaling)
     this.inputs = { P4: 0xFF, P5: 0x7F, P6: 0xFF, P7: 0xFF, P8: 0xFF };   // P57 = 0: squelch closed (no signal)
     this.lockFault = false; this.lockModel = 'low';
+    this.hwArac = false;   // true: araç / sabit merkez kartı (EE 0x58B bit 1), P60 SDA hattına bağlı
     this.autoPower = true; this.powerGain = 1.0; this.reflRatio = 0.05;
     this.events = [];      // human readable log
     this.cbusLog = [];
@@ -440,6 +441,7 @@ class Board {
       case 0x0B: return this.inputs.P5;
       case 0x0E: {
         let v = this.inputs.P6 & ~0xFC;
+        if (this.hwArac) v = v & ~1 | this.i2cSda();          // araç/sabit kartı: P60 SDA hattına bağlı
         v |= this.i2cSda() << 2;
         v |= (this.i2cSclLine()) << 1;
         v |= (this.keypad.int || this.panel.int ? 0 : 1) << 3;   // P63 INT1 /INT of the expanders (wired-AND)
@@ -477,7 +479,10 @@ class Board {
   synthLocked() { return !this.lockFault && this.synth.loads > 0 && this.now >= this.synth.lockAt; }
   dirOf(port) { return this.sfr[{ 0x0A: 0x0C, 0x0B: 0x0D, 0x0E: 0x10, 0x0F: 0x11, 0x12: 0x14 }[port]]; }
   portRead(port) { const d = this.dirOf(port); return (this.latch[port] & d) | (this.pinsIn(port) & ~d); }
-  i2cSdaMaster() { const d = this.sfr[0x10]; return (d & 4) && !(this.latch[0x0E] & 4) ? 0 : 1; }
+  i2cSdaMaster() {
+    const d = this.sfr[0x10], l = this.latch[0x0E];
+    return (d & 4) && !(l & 4) || this.hwArac && (d & 1) && !(l & 1) ? 0 : 1;
+  }
   i2cSclLine() { const d = this.sfr[0x10]; return (d & 2) ? (this.latch[0x0E] >> 1 & 1) : 1; }
   i2cSda() { return this.i2cSdaMaster() & this.i2c.slaveSda; }
   i2cUpdate() { this.i2c.update(this.i2cSclLine(), this.i2cSdaMaster()); }

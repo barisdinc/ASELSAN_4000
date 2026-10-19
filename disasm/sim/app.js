@@ -67,7 +67,11 @@ function boot(keepEeprom) {
   const ee = keepEeprom && board ? board.eeprom.mem.slice() : loadEeprom();
   board = new Board(parseHex(text));
   board.eeprom.mem.set(ee);
+  board.hwArac = !!(ee[0x58B] & 2);   // kart tipi EEPROM'a uymazsa firmware "ARZ DN" verir; ona göre kur
   board.inputs = inp;
+  $('hwType').textContent = board.hwArac ? 'ARAÇ / SABİT' : 'EL';
+  $('btnIgn').title = board.hwArac ? 'P44: bu kart tipinde (0x58B bit 1 = 1) P44 = 1 TX yasağı; basılıyken 1' : 'P44 (kılavuzda KONTAK_ANAHTARI). Bu kart tipinde (0x58B bit 1 = 0) ikinci PTT girişi';
+  $('btnEmg').title = board.hwArac ? 'P45 ACIL_CAGRI, bu kart tipinde etkin 1' : 'P45 ACIL_CAGRI, etkin 0';
   font = V.buildFont(board.rom);
   fwName = sel === '__custom' ? fwName : sel;
   $('fwName').textContent = fwName.replace(/\.HEX$/i, '');
@@ -93,13 +97,18 @@ $('themeBtn').onclick = () => {
 /* ------------------------------------------------------------ front panel */
 function applyPanel() {
   if (!board) return;
-  // channel switch: high nibble = 16 - channel (original F_0058FB: 16 - (v >> 4))
-  const v = ((16 - chan) & 0x0F) << 4 | (panelBits & 0x0F);
+  // channel switch: high nibble = 16 - channel (original F_0058FB: 16 - (v >> 4)).
+  // Araç / sabit merkez kartında 0x46'nın düzeni başka (F_0074D8, F_0058FB): b0..b2 çıkış,
+  // b6 = bas-konuş (etkin 1, RAM 0x244 bit 4), kanal anahtarı yok
+  const v = board.hwArac ? 0xBF | (pttDown || pttLatched ? 0x40 : 0)
+                         : ((16 - chan) & 0x0F) << 4 | (panelBits & 0x0F);
   board.panel.setExt(v, board);
-  let p4 = 0xFF;
+  // araç / sabit merkez kartında P44 (TX yasağı) ve P45 (acil) etkin 1, el kartında etkin 0
+  const ters = board.hwArac ? 0x30 : 0;
+  let p4 = 0xFF ^ ters;
   if (pttDown || pttLatched) p4 &= ~0x80;
-  if ($('btnEmg').classList.contains('latched')) p4 &= ~0x20;
-  if ($('btnIgn').classList.contains('latched')) p4 &= ~0x10;
+  if ($('btnEmg').classList.contains('latched')) p4 ^= 0x20;
+  if ($('btnIgn').classList.contains('latched')) p4 ^= 0x10;
   inp.P4 = (inp.P4 & 0x0F) | (p4 & 0xF0);
   $('chanVal').textContent = chan;
   $('dial').style.setProperty('--rot', ((chan - 1) * 22.5 - 168) + 'deg');

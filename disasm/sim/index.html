@@ -118,7 +118,7 @@ input[type=range] { width: 160px; }
 <main>
   <section>
     <div class="radio">
-      <div class="brand"><span>ASELSAN</span><span id="fwName">4000</span></div>
+      <div class="brand"><span>ASELSAN</span><span id="fwName">4000</span><span id="hwType" title="Kart tipi, EEPROM 0x58B bit 1'den">EL</span></div>
       <div class="lcd" id="lcd">
         <div class="lcd-row"><div id="lcdChan"></div><div id="lcdText"></div></div>
         <div class="symbols" id="lcdSym"></div>
@@ -138,7 +138,7 @@ input[type=range] { width: 160px; }
         <div style="display:grid;gap:6px">
           <button class="rbtn" id="btnExt" title="P47 DIS_BAS_KONUS (kalıcı)">Harici PTT (P47)</button>
           <button class="rbtn" id="btnEmg" title="P45 ACIL_CAGRI">Acil (P45)</button>
-          <button class="rbtn" id="btnIgn" title="P44 (kılavuzda KONTAK_ANAHTARI). Bu kart tipinde (0x335 bit 1 = 0) ikinci PTT girişi; diğer tipte P44=1 TX yasağı">P44 (kontak)</button>
+          <button class="rbtn" id="btnIgn" title="P44 (kılavuzda KONTAK_ANAHTARI)">P44 (kontak)</button>
         </div>
         <button class="rbtn ptt" id="btnPtt" title="Basılı tut ya da boşluk tuşu">PTT · bas-konuş (P47)</button>
       </div>

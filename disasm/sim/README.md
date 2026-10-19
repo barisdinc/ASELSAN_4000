@@ -71,9 +71,15 @@ Bunlar orijinal kodun simülatörde davranışından çıkarıldı (önceki dok�
 - **Güç kalibrasyonu:** başlangıç PWM'i EE[0x591..], iki hedef tablosu EE[0x59B..] ve EE[0x5A5..].
 - **Susturma (P57):** 1 = susturma açık (kanalda sinyal var). Firmware bunu Timer A3'ün olay sayıcı modunda (TA3IN = P57) kenar bekleyerek ve ardından seviyeyi sayarak izliyor (F_007D35, TA3 kesmesi 0x01BB88) → RAM 0x023E bit 5. Tarama, seçmeli çağrı alma ve hoparlör (P46) buna bağlı.
 - **Tuş takımı:** EE[0x014] bit 3 ile açılıyor (varsayılan EEPROM'da açık). Menüler, tarama, tuşla seçmeli çağrı ve panel düğmeleri için bkz. `../tus_takimi.md`. Tuş kodu ROM 0x31EC'deki "*0#q789p456s123m" tablosundan geliyor.
-- **P44'ün görevi açılışta algılanan donanım tipine bağlı** (F_00DF55, RAM 0x335 bit 1; EE[0x58B] bit 1 bununla aynı olmalı, yoksa "ERR HW" verip kapanıyor):
+- **Kart tipi (EL / ARAÇ-SABİT MERKEZ):** firmware açılışta kartı yoklayıp (F_00DF55) RAM 0x335 bit 1'e yazıyor. EE[0x58B] bit 1 bununla aynı olmalı, yoksa "ERR HW" / "ARZ DN" verip kapanıyor. Yoklama: I2C'de 0x42'ye 0xF0 yazılır.
+  - EL kartı: P60 boşta 1 → tip 0.
+  - ARAÇ / SABİT MERKEZ kartı: P60 SDA hattına bağlı. ACK P60'ta da 0 görünüyor; P60 çıkış yapılıp sürülünce P62 onu izliyor → tip 1. Bu tipte bütün I2C okumaları (EEPROM dahil) P60'tan yapılıyor (F_006FA0, F_006EB3).
+  - Hiçbir cevap yoksa (0x42 yok, P60 = 1) firmware gücü kesip duruyor.
+  - Simülatör kart tipini yüklenen EEPROM'un 0x58B bit 1'inden seçiyor (ön panelin üstünde "EL" / "ARAÇ / SABİT" yazıyor; `board.hwArac`).
+  - ARAÇ kartında 0x46 genişleticisinin düzeni başka: b0..b2 çıkış (F_0074D8), b6 = bas-konuş, etkin 1 (F_0058FB → RAM 0x244 bit 4); kanal anahtarı yok. Simülatörde PTT düğmesi bu biti sürüyor, kanal düğmesi etkisiz. b5 / b7'nin anlamı bilinmiyor (1 bırakıldı).
+- **P44'ün görevi kart tipine bağlı:**
   - Tip bit 1 = 0 (simülatördeki kart): P44 = 0 ikinci bir bas-konuş girişi, P47 ile aynı (RAM 0x244 bit 4, P47 bit 5).
-  - Tip bit 1 = 1: P44 = 1 olunca TX yasaklanıyor; uyarı bipi (F_0080AA, 6) çalıyor ve PTT RX'te kalıyor (RAM 0x242 bit 0). P45 (acil) bu tipte ters polariteli.
+  - Tip bit 1 = 1: P44 = 1 olunca TX yasaklanıyor (simülatörde bu tipte P44 ve P45 boşta 0, düğme basılıyken 1); uyarı bipi (F_0080AA, 6) çalıyor ve PTT RX'te kalıyor (RAM 0x242 bit 0). P45 (acil) bu tipte ters polariteli.
   - Açılışta EE[0x014] bit 4 = 1, tip bit 1 = 0 ve P44 = 0 ise UART0 üzerinden bir seri haberleşme oturumuna giriliyor (F_01A3EF). Muhtemelen bilgisayardan programlama; henüz çözülmedi.
 
 ## Varsayımlar ve sınırlamalar

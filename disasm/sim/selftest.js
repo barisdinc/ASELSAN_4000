@@ -131,6 +131,18 @@ b = new Board(rom); b.font = V.buildFont(b.rom);
 b.run(FCLK * 1.0);
 check('boş EEPROM: ARZ PRG', lcd(b) === 'ARZ PRG ', lcd(b));
 
+/* 8b. board type: EE 0x58B bit 1 must match the probed hardware (F_00DF55). On the
+ * araç / sabit merkez board P60 is wired to SDA; P44 / P45 are active high there */
+{ const c = radio(ee => { ee[0x58B] |= 2; }); c.run(FCLK * 2.6);
+  check('el kartı + EE58B bit1 = 1: ERR HW', lcd(c) === ' ERR HW ', lcd(c));
+  const d = radio(ee => { ee[0x58B] |= 2; }); d.hwArac = true; d.inputs.P4 = 0xCF; d.run(FCLK * 2.6);
+  check('araç kartı algılandı (RAM 0x335 bit 1)', (d.ram[0x335] & 2) === 2, d.ram[0x335].toString(16));
+  check('araç kartı açılış: KANAL 01', lcd(d) === 'KANAL 01', lcd(d));
+  /* 0x46 on this board: b6 = PTT, active high (F_0058FB -> RAM 0x244 bit 4) */
+  d.panel.setExt(0xBF, d); d.run(FCLK * 0.5); const rx = d.outBit(0x0B, 5);
+  d.panel.setExt(0xFF, d); d.run(FCLK * 0.5); const tx = d.outBit(0x0B, 5);
+  check('araç kartı: 0x46 b6 = 1 → TX', rx === 1 && tx === 0, 'P55 ' + rx + '→' + tx); }
+
 /* 9. serial firmware update through the loader: new image = original with the
  * channel screen text "CH" (ROM 0x2DE9) changed to "KN"; after the update and
  * the reset the radio must run the new code */
