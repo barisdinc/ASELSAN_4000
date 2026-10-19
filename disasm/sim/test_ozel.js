@@ -401,6 +401,37 @@ if (RING.includes('APRS')) {
     r.run(FCLK * 14); r.pushAudio = push;
     check('APRS otomatik: aralık 0 ise gönderim yok', n === 0 && lcd(r) === 'APRS PTT', n + ' örnek');
   }
+  /* kapat-aç: APRS'teyken kapanırsa açılışta APRS'e döner (EEPROM 0x732 = $A5; çıkınca 0) */
+  {
+    const yenidenAc = (ee, arac) => { const r = new Board(rom); r.eeprom.mem.set(ee); if (arac) { r.hwArac = true; r.inputs.P4 = 0xCF; r.panel.setExt(0xBF, r); } r.font = b.font; boot(r, 2.5); r.run(FCLK * 0.5); return r; };
+    const r = radio(aprs(Object.assign({}, AYAR, { aralik: 12 }))); boot(r, 2.5);
+    const ee0 = Uint8Array.from(r.eeprom.mem);
+    check('APRS modu: ilk açılışta normal ekran (işaret yok)', lcd(r) === 'KANAL 01' && ee0[0x732] !== 0xA5, lcd(r) + ', 0x732 = ' + ee0[0x732].toString(16));
+    keys(r, enter); r.run(FCLK * 0.3);
+    const ee1 = Uint8Array.from(r.eeprom.mem), fark = [];
+    for (let a = 0; a < ee1.length; a++) if (ee1[a] !== ee0[a]) fark.push(a.toString(16));
+    check('APRS modu: menüye girince EEPROM 0x732 = A5, başka bayt değişmez', ee1[0x732] === 0xA5 && fark.join() === '732', 'değişen ' + fark.join(','));
+    const r2 = yenidenAc(ee1);
+    check('APRS modu: kapat-aç -> menü seçmeden APRS PTT, alma 144,800', lcd(r2) === 'APRS PTT' && vco(r2) === '189.8000' && r2.ram[0x227] === 0x17, lcd(r2) + ' ' + vco(r2));
+    const log = [], push = r2.pushAudio;
+    r2.pushAudio = (buf, v) => { if (buf === r2.audio.ta1) log.push(r2.now, v); push.call(r2, buf, v); };
+    r2.run(FCLK * 14); r2.pushAudio = push;
+    const f = AFSK.decode(log, FCLK);
+    check('APRS modu: kapat-aç sonrası otomatik gönderim sürüyor (12 s)', f.length === 1 && f[0].fcsOk && f[0].text === PAKET && lcd(r2) === 'APRS OK ', f.length + ' paket, ' + lcd(r2));
+    const r3 = yenidenAc(Uint8Array.from(r2.eeprom.mem));
+    check('APRS modu: ikinci kapat-aç da APRS\'te', lcd(r3) === 'APRS PTT' && r3.eeprom.mem[0x732] === 0xA5, lcd(r3));
+    keys(r3, 'm'); r3.run(FCLK * 0.3);
+    check('APRS modu: m ile çıkınca 0x732 = 0, kanala dönüş', lcd(r3) === 'KANAL 01' && r3.eeprom.mem[0x732] === 0 && vco(r3) === vco0, lcd(r3) + ', 0x732 = ' + r3.eeprom.mem[0x732] + ', ' + vco(r3));
+    const r4 = yenidenAc(Uint8Array.from(r3.eeprom.mem));
+    check('APRS modu: çıktıktan sonra kapat-aç -> normal ekran', lcd(r4) === 'KANAL 01' && r4.ram[0x227] === 0, lcd(r4));
+    keys(r4, 'm');
+    check('APRS modu: menü halkası normal', lcd(r4) === 'LIST    ', lcd(r4));
+    /* araç / sabit kart (EE 0x58B bit 1: I²C P60 üzerinden; kullanıcının telsizi) */
+    const ea = Uint8Array.from(ee0); ea[0x58B] |= 2; B.eeFixSums(ea);
+    const a1 = yenidenAc(ea, true); for (let k = 0; k < 16 && lcd(a1) !== 'APRS    '; k++) keys(a1, 'm'); keys(a1, 's'); a1.run(FCLK * 0.3);   // araçta menü halkası farklı (CHN SCAN ...)
+    const a2 = yenidenAc(Uint8Array.from(a1.eeprom.mem), true);
+    check('APRS modu (araç / sabit kart): kapat-aç -> APRS PTT', a1.eeprom.mem[0x732] === 0xA5 && lcd(a2) === 'APRS PTT', '0x732 = ' + a1.eeprom.mem[0x732].toString(16) + ', ' + lcd(a2));
+  }
   const kotu = b.events.filter(e => e[0] > t0 && /WATCHDOG|RESET/.test(e[1]));   // (açılıştakiler hariç)
   check('APRS: bekçi köpeği / yeniden başlama yok', kotu.length === 0, kotu.map(e => (e[0] / FCLK).toFixed(2) + ' ' + e[1]).join(', '));
 }

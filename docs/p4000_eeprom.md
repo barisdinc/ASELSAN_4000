@@ -169,6 +169,7 @@ Bu alanları hiçbir sağlama kapsamıyor. Not: yalnız sabit adresler tarandı;
 | 0x702 | 2 | otomatik gönderim aralığı, saniye, büyük uçlu (0 = kapalı, en az 10) |
 | 0x704 | 43 | yorum, 0 ile biter (baytlar olduğu gibi gönderilir; UTF-8) |
 | 0x730 | 2 | 0x6E0–0x72F'nin 16 bit toplamı, büyük uçlu |
+| 0x732 | 1 | APRS modu işareti (sağlamaya girmez): `A5` = telsiz APRS menüsündeyken kapandı, açılışta APRS'e döner. Firmware APRS'e girince `A5`, çıkınca `00` yazar |
 
 Bölüm geçersizse firmware ROM'daki varsayılanları kullanır: `TC19MK-10`, `/b` (bisiklet), 3955.52N 03250.22E (Ankara, Anıtkabir), yorum `ASELSAN 4000`, otomatik gönderim kapalı. `p4000.js`: `aprsGet`, `aprsSet`, `aprsPaket`; sayfa **APRS**.
 

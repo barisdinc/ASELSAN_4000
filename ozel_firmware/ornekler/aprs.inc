@@ -93,6 +93,9 @@ AP_HEDEF_P  .EQU OZEL_RAM+$EF   ; 2 bayt: AP_ALAN_OKU hedefi (bank 0)
 AP_ALAN_N   .EQU OZEL_RAM+$F1   ; 2 bayt: AP_ALAN_OKU bayt sayısı (alt bayt)
 AP_TOPLAM   .EQU OZEL_RAM+$F3   ; 2 bayt: bölüm sağlaması
 AP_YER      .EQU OZEL_RAM+$F5   ; 2 bayt: bölümdeki yer / EEPROM adresi
+AP_MOD_B    .EQU OZEL_RAM+$F7   ; EEPROM'daki APRS modu işaretinin okunan / yazılan kopyası
+AP_ACILIS   .EQU OZEL_RAM+$F8   ; 2 bayt: ACILIS_TAMAM ise açılış denetimi yapıldı
+AP_MOD_IST  .EQU OZEL_RAM+$FA   ; 2 bayt: AP_MOD_KUR'un istenen değeri
 ; AX.25 çerçevesi (en uzun 95 bayt) iki yığının arasındaki boş alanda: firmware'in çerçeve
 ; yığını 0x62A'dan yukarı ~0x6A0'a, donanım yığını 0x879'dan aşağı ~0x821'e kadar iniyor
 ; (sim/ram_kullanim.js); 0x740..0x79F iki yanda da 100 bayttan fazla pay bırakıyor
@@ -134,6 +137,11 @@ AB_ARALIK   .EQU 34             ; 2 bayt büyük uçlu
 AB_YORUM    .EQU 36             ; 43 bayt
 AB_YORUM_N  .EQU 43
 AB_UZ       .EQU 80             ; sağlama EE_APRS + 80 (büyük uçlu)
+; APRS modu işareti (bölümün dışında, sağlamaya girmez): APRS menüsüne girince MOD_ISARET,
+; menüden çıkınca 0 yazılır. Telsiz APRS'teyken kapanırsa açılışta APRS'e kendiliğinden döner.
+EE_MOD      .EQU $0732
+MOD_ISARET  .EQU $A5
+ACILIS_TAMAM .EQU $A55A         ; AP_ACILIS: RAM açılışta temizlenmez, rastgele eşleşme 1/65536
 
 R_P4        .EQU $000A          ; P46 SUSTURMA_BILGISI: 1 = hoparlör açık
 R_TCSTART   .EQU $0040          ; sayıcı başlatma (bit 1 TA1, bit 6 TB1)
@@ -147,6 +155,8 @@ R_TA1IC     .EQU $0076
 R_TB1IC     .EQU $007B
 TB1_ORIJINAL .EQU $01C627
 F_FX806     .EQU $00CB52        ; $029A / $029B'deki ayarı FX806'ya yazar
+F_EE_YAZ    .EQU $0073C6        ; EEPROM'a yaz: F_EE_OKU ile aynı çerçeve (+0 sayı, +1..+3 kaynak,
+                                ; +4..+5 adres); sayfa sınırını ve yazmanın bitişini kendisi bekler
 F_EE_OKU    .EQU $0072EE        ; EEPROM'dan oku. Y = $A0; çerçeve: +0 sayı, +1..+3 hedef (24 bit),
                                 ; +4..+5 EEPROM adresi; çerçevenin geri kalanını yerel olarak kullanır
 
@@ -532,6 +542,8 @@ APRS_GIR:
         LDA   A,$04,S
         STA   A,AP_F
         PHA
+        LDX   #MOD_ISARET               ; kapanıp açılırsa APRS'e dönülsün
+        JSR   AP_MOD_KUR
         LDM   #APRS_TUS & $FFFF,HANDLER
         SEM
         LDM   #bank(APRS_TUS),HANDLER_BK
@@ -1181,7 +1193,11 @@ AF_SON: LDA   A,AP_CRC
 ; APRS menüsünden çıkılmışsa (m, zaman aşımı) ve kayıt hâlâ APRS'inkiyse eski kaydı geri yükler.
 APRS_KANCA:
         .ASSUME M=0,X=0
-        SEM
+        LDA   A,AP_ACILIS
+        CMP   A,#ACILIS_TAMAM
+        BEQ   AKN_0
+        JMP   AP_ACILIS_DENETLE
+AKN_0:  SEM
         BBC   #F_AP_KURULU,AP_DURUM,AKN_SON
         LDA   A,MENU
         CMP   A,#ST_APRS_ON
@@ -1195,6 +1211,11 @@ AKN_ZAMAN:
         JMP   AP_OTO_ZAMAN
 AKN_CIKIS:
         LDM   #0,AP_DURUM
+        CLM                             ; menüden çıkıldı: açılışta APRS'e dönülmesin
+        LDA   A,$0E,S                   ; çerçeve göstericisi (VFO_KANCA $0C,S + JSR)
+        LDX   #0
+        JSR   AP_MOD_KUR
+        SEM
         LDA   A,AP_OTO                  ; otomatik gönderim isteği kalmasın
         BEQ   AKN_C1
         LDM   #0,AP_OTO
@@ -1219,6 +1240,98 @@ AKN_2:  LDA   A,AP_YEDEK,X
         LDM   #1,RADYO_DURUM
 AKN_SON:
         CLM
+        RTS
+
+; Açılıştan sonraki ilk uygun anda (APRS_KANCA'dan, M = 0; yığın APRS_KANCA'nın girişindeki gibi):
+; normal ekran (menü 0), alma bekleniyor (radyo durumu 2), bekleyen tuş yok. EEPROM'daki işaret
+; MOD_ISARET ise menü durumu APRS başlığına alınır ve 's' tuşu bırakılır: firmware'in tuş yolu
+; bir sonraki turda kullanıcı seçmiş gibi APRS_GIR'i çağırır.
+AP_ACILIS_DENETLE:
+        .ASSUME M=0,X=0
+        SEM
+        LDA   A,MENU
+        BNE   AAD_SON
+        LDA   A,RADYO_DURUM
+        CMP   A,#2
+        BNE   AAD_SON
+        LDA   A,KEY
+        CMP   A,#$0F
+        BNE   AAD_SON
+        LDM   #0,AP_DURUM               ; RAM açılışta rastgele: APRS değişkenlerini temizle
+        LDM   #0,AP_OTO
+        CLM
+        LDA   A,#ACILIS_TAMAM
+        STA   A,AP_ACILIS
+        LDA   A,$0E,S                   ; çerçeve göstericisi (VFO_KANCA $0C,S + JSR)
+        PHD
+        TAD
+        CLC                             ; oku
+        JSR   AP_MOD_ERIS
+        PLD
+        SEM
+        LDA   A,AP_MOD_B
+        CMP   A,#MOD_ISARET
+        BNE   AAD_SON
+        LDM   #ST_APRS,MENU
+        LDM   #'s',KEY
+AAD_SON:
+        CLM
+        RTS
+
+; EEPROM'daki APRS modu işaretini X'in alt baytı yap (farklıysa yazar). A = NC77 çerçeve
+; göstericisi (boş çerçeve alanı). M = 0 giriş ve çıkış; X, Y, D korunur.
+AP_MOD_KUR:
+        .ASSUME M=0,X=0
+        PHX
+        PHY
+        PHD
+        TAD
+        STX   AP_MOD_IST
+        CLC                             ; oku
+        JSR   AP_MOD_ERIS
+        SEM
+        LDA   A,AP_MOD_B
+        CMP   A,AP_MOD_IST
+        BEQ   AMK_SON
+        LDA   A,AP_MOD_IST
+        STA   A,AP_MOD_B
+        CLM
+        SEC                             ; yaz
+        JSR   AP_MOD_ERIS
+AMK_SON:
+        CLM
+        PLD
+        PLY
+        PLX
+        RTS
+
+; EE_MOD'daki bir baytı AP_MOD_B'ye oku (C = 0) ya da AP_MOD_B'yi oraya yaz (C = 1).
+; D = çerçeve. M = 0 giriş ve çıkış.
+AP_MOD_ERIS:
+        .ASSUME M=0,X=0
+        PHP
+        LDA   A,#EE_MOD
+        STA   A,$04
+        LDA   A,#AP_MOD_B
+        STA   A,$01
+        SEM
+        LDA   A,#1
+        STA   A,$00
+        LDA   A,#0
+        STA   A,$03
+        CLM
+        LDY   #$00A0
+        PLP
+        TDA
+        PHA
+        BCS   AME_YAZ
+        JSRL  F_EE_OKU
+        BRA   AME_SON
+AME_YAZ:
+        JSRL  F_EE_YAZ
+AME_SON:
+        CLM
+        PLA
         RTS
 
 ; Otomatik gönderim zamanlaması (APRS_KANCA'dan, M = 1; RTS ile M = 0 döner). Geçen 32 ms
