@@ -30,9 +30,9 @@
 ; kaymasında ve ±%0,3 baud farkında kayıpsız; bant sınırlı gürültü tepe genliğin %15'i iken
 ; paketlerin ~%90'ı çözülür.
 ;
-; Almada FX806'ya telsizin kendi ayarı yazılır (squelch açılınca ses yolu açık): çözücünün girişi
-; FX806'dan geçer. Tip A (el) kartta hoparlör P46 ile kapalı kalır; tip B (araç / sabit) kartta
-; hoparlörü yalnız FX806 kesebildiği için paketlerin sesi duyulur (ses düğmesiyle kısın).
+; Hoparlör: almada ses kapalı sayılır (aprs.inc APRS_SUS_KARAR). Taşıyıcı varken FX806'ya normal
+; alma ayarı yazılır, yalnız C-BUS $10 bit 7 (ses çıkışı) kapalı: firmware'in seçmeli çağrı / TKS
+; beklerken yaptığı susturma. Çözücünün girişi (FX806 süzgeci -> P66) açık kalır.
 
 ; RAM: liste OZEL_RAM+$00..$37 (bu derlemede SAYI / HESAP / OYUN yok, boş), durum $05FC..$0627
 AR_LISTE    .EQU OZEL_RAM+$00   ; 8 x 7 bayt: AX.25 adresi (karakterler <<1, SSID baytı)

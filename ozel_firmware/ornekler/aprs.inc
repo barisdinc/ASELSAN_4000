@@ -165,6 +165,9 @@ AP_KOD_ADRES .EQU *
         .ORG $002028                    ; VEC_TB1
         .EXPECT $5C,$27,$C6,$01
         JMPL  AFSK_TB1
+        .ORG $00CC44                    ; F_00CB52: ses kapalı mı ($00) kararı -> APRS almada kapalı
+        .EXPECT $D8,$A5,$00,$F8         ; CLM / LDA A,$00 / SEM
+        JMPL  APRS_SUS_KARAR
         .ORG $00EDA2                    ; durum 4: PTT'de kimlik gönderilecek mi? (5 ya da 8)
         .EXPECT $2C,$44,$02,$02,$00,$1C ; BBS #$0002,$0244,L_00EDC4
         .ASSUME M=0,X=0
@@ -321,6 +324,23 @@ APRS_HOPARLOR:
         JMPL  $00EA0E
 AH_AC:  SEB   #$40,R_P4                 ; orijinal
         JMPL  $00EA0E
+
+; F_00CB52, L_00CC44 (D = F_00CB52'nin çerçevesi; $00 = 1 ses kapalı). APRS menüsünde, almada
+; ses hep kapalı sayılır: seçmeli çağrı / TKS beklerken firmware'in yaptığı susturma. Taşıyıcı
+; varken ($023E bit 5) FX806'ya normal ayar yazılır, yalnız C-BUS $10 bit 7 (ses çıkışı) kapalı
+; kalır (L_00CD32); ses yolu, dolayısıyla P66'daki çözücünün girişi açık kalır. Tip A kartta
+; $0240 bit 0 ile ses yükselteci de kapanır. Vericide dokunulmaz.
+APRS_SUS_KARAR:
+        SEM
+        .ASSUME M=1,X=0
+        BBC   #$10,$023E,SSK_1          ; verici: orijinal karar
+        JSR   AP_ETKIN
+        BNE   SSK_1
+        LDM   #1,$00                    ; APRS: ses kapalı
+SSK_1:  CLM                             ; orijinal: CLM / LDA A,$00 / SEM
+        LDA   A,$00
+        SEM
+        JMPL  $00CC48
 
 ; Bip (F_0080AA girişi, JMPL ile: yığın girişteki gibi): APRS'te sessiz döner
 APRS_BIP:

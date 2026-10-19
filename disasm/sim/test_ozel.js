@@ -442,6 +442,16 @@ if (RING.includes('APRS')) {
       r.inputs.P5 |= 0x80; r.run(FCLK * (e[e.length - 1] + 0.05)); r.inputs.P5 &= ~0x80; r.run(FCLK * 0.3);
       return lcd(r);
     };
+    /* hoparlör: APRS'te taşıyıcı varken FX806 $10 bit 7 (ses çıkışı) kapalı, diğer ayarlar almadaki gibi
+     * (seçmeli çağrı / TKS beklerken firmware'in susturması; P66'ya giden ses yolu açık) */
+    const fxReg = (b, reg) => { const l = b.cbusLog.filter(e => e[1] === 'SEC1'); let v; for (let k = 0; k + 1 < l.length; k += 2) if (rev(l[k][2]) === reg) v = rev(l[k + 1][2]); return v; };
+    r.inputs.P5 |= 0x80; r.run(FCLK * 0.5);
+    const a10 = fxReg(r, 0x10), a11 = fxReg(r, 0x11), a13 = fxReg(r, 0x13);
+    r.inputs.P5 &= ~0x80; r.run(FCLK * 0.5);
+    const k = radio(aprs(AYAR)); boot(k, 2.5); k.inputs.P5 |= 0x80; k.run(FCLK * 0.5);
+    check('APRS: taşıyıcı varken hoparlör çıkışı kapalı (FX806 $10 bit 7 = 0), kanalda açık; ses yolu aynı',
+      a10 !== undefined && !(a10 & 0x80) && (fxReg(k, 0x10) & 0x80) && a11 === fxReg(k, 0x11) && a13 === fxReg(k, 0x13) && (a10 | 0x80) === fxReg(k, 0x10),
+      'APRS $10=' + a10 + ' $11=' + a11 + ' $13=' + a13 + ' / kanal $10=' + fxReg(k, 0x10) + ' $11=' + fxReg(k, 0x11) + ' $13=' + fxReg(k, 0x13));
     const ilk = al('TA7W-7>APRS,WIDE1-1:!4050.63N/03109.39E>hello');
     check('APRS alma: paket -> ekranda gönderen "TA7W-7"', ilk === 'TA7W-7  ', ilk);
     r.run(FCLK * 4.5);
