@@ -311,7 +311,12 @@ if (RING.includes('APRS')) {
   /* PTT: örnekleri toplayıp çöz */
   const log = [], push = b.pushAudio.bind(b);
   b.pushAudio = (buf, v) => { if (buf === b.audio.ta1) log.push(b.now, v); push(buf, v); };
+  /* FX806 modülatör seviyesi (C-BUS $13, F_00CB52 vericide $0201'den yazar): sıfırsa taşıyıcı boş gider */
+  const rev = x => { let r = 0; for (let k = 0; k < 8; k++) r |= (x >> k & 1) << (7 - k); return r; };   // F_007E4C: baytlar ters bit sırasıyla (tablo 0x2B06)
+  const mod13 = (b, t) => { const l = b.cbusLog.filter(e => e[1] === 'SEC1' && e[0] >= t); let v; for (let k = 0; k + 1 < l.length; k++) if (rev(l[k][2]) === 0x13) v = rev(l[++k][2]); return v; };
+  const tPtt = b.now;
   b.inputs.P4 = 0x7F; b.run(FCLK * 0.3);
+  check('APRS: PTT: FX806 modülatör seviyesi açık (C-BUS $13 = $0201, sıfır değil)', mod13(b, tPtt) !== undefined && mod13(b, tPtt) === b.ram[0x201] && b.ram[0x201] !== 0, 'C-BUS $13 = ' + mod13(b, tPtt) + ', $0201 = ' + b.ram[0x201]);
   check('APRS: PTT: TX 144,800, ekranda APRS TX', vco(b) === '144.8000' && lcd(b) === 'APRS TX ', vco(b) + ' ' + lcd(b));
   b.run(FCLK * 1.2);
   const fr = AFSK.decode(log, FCLK);

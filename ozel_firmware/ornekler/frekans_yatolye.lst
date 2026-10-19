@@ -76,9 +76,9 @@
 01106C  15                           .BYTE ST_FREKANS_ON             ; $15
 01106D  10 12 01                     .LONG FREKANS_TUS
 011070  17                           .BYTE ST_APRS_ON                ; $16
-011071  E2 26 01                     .LONG APRS_GIR
+011071  E8 26 01                     .LONG APRS_GIR
 011074  17                           .BYTE ST_APRS_ON                ; $17
-011075  11 27 01                     .LONG APRS_TUS
+011075  17 27 01                     .LONG APRS_TUS
 011078  20 20 20 43 48 20 …          .COPY $002DE6, 8*N_OLD
 011118  46 52 45 51 20 20 …          .TEXT8 "FREQ"
 011120  20 20 20 20 20 20 …          .TEXT8 ""
@@ -487,7 +487,7 @@
 0115B7  48                           PHA
 0115B8  DA                           PHX
 0115B9  5A                           PHY                             ; yığında 8 bayt: çerçeve göstericisi $0C,S
-0115BA  20 E2 2B                     JSR   APRS_KANCA                ; aprs.inc: APRS menüsünün zaman aşımı / çıkışı
+0115BA  20 E8 2B                     JSR   APRS_KANCA                ; aprs.inc: APRS menüsünün zaman aşımı / çıkışı
 0115BD  F8                           SEM                             ; FREKANS açıkken menü zaman aşımı yok (çıkış m ile):
 0115BE  AD 27 02                     LDA   A,MENU                    ; firmware ~4 s tuşa basılmazsa normal ekrana atıyor,
 0115C1  C9 15                        CMP   A,#ST_FREKANS_ON          ; ikinci frekansı girmeye vakit kalmıyordu
@@ -698,10 +698,10 @@
 00EA02  EA EA EA EA                  .BYTE $EA,$EA,$EA,$EA           ; (NOP, çalışmaz)
 00EA06                               .ORG $0080AA                    ; F_0080AA (tuş / onay / hata bipleri)
 0080AA                               .EXPECT $A3,$04,$0B,$5B         ; LDA A,$04,S / PHD / TAD
-0080AA  5C 49 25 01                  JMPL  APRS_BIP
+0080AA  5C 4F 25 01                  JMPL  APRS_BIP
 0080AE                               .ORG $008084                    ; F_008084 (uyarı tonu aç: TA0 -> P50)
 008084                               .EXPECT $A3,$04,$48,$F8         ; LDA A,$04,S / PHA / SEM
-008084  5C 5B 25 01                  JMPL  APRS_UYARI
+008084  5C 61 25 01                  JMPL  APRS_UYARI
 008088  00 00 00 00 00 00 …          .ORG $00CC44                    ; F_00CB52: ses kapalı mı ($00) kararı -> APRS'te hep kapalı
 00CC44                               .EXPECT $D8,$A5,$00,$F8         ; CLM / LDA A,$00 / SEM
 00CC44  5C 23 25 01                  JMPL  APRS_SUS_KARAR
@@ -710,7 +710,7 @@
 00CC92  5C 34 25 01                  JMPL  APRS_SUS_FX806
 00CC96  00 00 00 00 00 00 …          .ORG $00F4E4                    ; durum 5 -> 6: seçmeli çağrı kimliği yerine APRS
 00F4E4                               .EXPECT $22,$5B,$E6,$00
-00F4E4  22 8B 25 01                  JSRL  APRS_PTT
+00F4E4  22 91 25 01                  JSRL  APRS_PTT
 00F4E8  00 00 00 00 00 00 …          .ORG AP_KOD_ADRES
 012400  C2 39                        CLP   #$39
 012402                               .ASSUME M=0,X=0
@@ -805,7 +805,7 @@
 0124EB  40                           RTI
 0124EC                               .ASSUME M=0,X=0
 0124EC  F8                           SEM
-0124ED  20 7C 25                     JSR   AP_HAZIR
+0124ED  20 82 25                     JSR   AP_HAZIR
 0124F0  D0 0C                        BNE   AKR_ORJ
 0124F2  9C 28 02 05                  LDM   #5,RADYO_DURUM            ; durum 5; gecikme EEPROM'daki ton gönderme gecikmesi
 0124F6  9C 2A 02 04                  LDM   #AP_GECIKME,$022A         ; değil (0x342, 1,5 s'ye kadar): paketin kendi 300 ms
@@ -816,7 +816,7 @@
 012509  5C C4 ED 00          AKR_5:  JMPL  $00EDC4
 01250D                               .ASSUME M=1,X=0
 01250D  F8                           SEM
-01250E  20 6D 25                     JSR   AP_ETKIN
+01250E  20 73 25                     JSR   AP_ETKIN
 012511  D0 08                        BNE   AH_AC
 012513  1C 0A 00 40                  CLB   #$40,R_P4                 ; APRS: hoparlör kapalı
 012517  5C 0E EA 00                  JMPL  $00EA0E
@@ -824,823 +824,825 @@
 01251F  5C 0E EA 00                  JMPL  $00EA0E
 012523  F8                           SEM
 012524                               .ASSUME M=1,X=0
-012524  20 6D 25                     JSR   AP_ETKIN
+012524  20 73 25                     JSR   AP_ETKIN
 012527  D0 03                        BNE   SSK_1
 012529  64 00 01                     LDM   #1,$00                    ; APRS: ses kapalı
 01252C  D8                   SSK_1:  CLM                             ; orijinal: CLM / LDA A,$00 / SEM
 01252D  A5 00                        LDA   A,$00
 01252F  F8                           SEM
 012530  5C 48 CC 00                  JMPL  $00CC48
-012534                               .ASSUME M=1,X=0
-012534  20 6D 25                     JSR   AP_ETKIN
-012537  D0 04                        BNE   SSF_1
-012539  5C 3F CD 00                  JMPL  $00CD3F
-01253D  A5 00                SSF_1:  LDA   A,$00                     ; orijinal: LDA A,$00 / BEQ L_00CCA5
-01253F  D0 04                        BNE   SSF_2
-012541  5C A5 CC 00                  JMPL  $00CCA5
-012545  5C 96 CC 00          SSF_2:  JMPL  $00CC96
-012549                               .ASSUME M=0,X=0
-012549  08                           PHP
-01254A  F8                           SEM
-01254B  20 6D 25                     JSR   AP_ETKIN
-01254E  F0 09                        BEQ   ABP_SUS
-012550  28                           PLP
-012551  A3 04                        LDA   A,$04,S                   ; orijinal: LDA A,$04,S / PHD / TAD
-012553  0B                           PHD
-012554  5B                           TAD
-012555  5C AE 80 00                  JMPL  $0080AE
-012559  28                           PLP
-01255A  6B                           RTL
-01255B                               .ASSUME M=0,X=0
-01255B  08                           PHP
-01255C  F8                           SEM
-01255D  20 6D 25                     JSR   AP_ETKIN
-012560  F0 09                        BEQ   AUY_SUS
-012562  28                           PLP
-012563  A3 04                        LDA   A,$04,S                   ; orijinal: LDA A,$04,S / PHA / SEM (JMPL bu üçünü
-012565  48                           PHA                             ; kapladı), sonra 0x008088'den devam
-012566  F8                           SEM
-012567  5C 88 80 00                  JMPL  $008088
-01256B  28                           PLP
-01256C  6B                           RTL
-01256D                               .ASSUME M=1,X=0
-01256D  AD 27 02                     LDA   A,MENU
-012570  C9 17                        CMP   A,#ST_APRS_ON
-012572  D0 07                        BNE   AE_SON
-012574  AD AA 05                     LDA   A,AP_DURUM
-012577  29 01                        AND   A,#F_AP_KURULU
-012579  49 01                        EOR   A,#F_AP_KURULU            ; kuruluysa 0
-01257B  60                   AE_SON: RTS
-01257C                               .ASSUME M=1,X=0
-01257C  AD 27 02                     LDA   A,MENU
-01257F  C9 17                        CMP   A,#ST_APRS_ON
-012581  D0 07                        BNE   AHZ_SON
-012583  AD AA 05                     LDA   A,AP_DURUM
-012586  29 05                        AND   A,#F_AP_KURULU|F_AP_HATA
-012588  49 01                        EOR   A,#F_AP_KURULU
-01258A  60                           RTS
-01258B                               .ASSUME M=0,X=0
-01258B  A3 04                        LDA   A,$04,S
-01258D  48                           PHA
-01258E  F8                           SEM
-01258F  20 7C 25                     JSR   AP_HAZIR
-012592  D0 32                        BNE   AP_YOK
-012594  D8                           CLM
-012595  A2 00 00                     LDX   #0                        ; ekranda "APRS TX"
-012598  20 76 26                     JSR   AP_METIN_YAZ
-01259B  22 8C 82 00                  JSRL  F_LCD
-01259F  D8                           CLM
-0125A0  20 C9 25                     JSR   AFSK_GONDER
-0125A3  1C 44 02 04 00               CLB   #F_PTT_APRS,PTT_ISTEK     ; otomatik gönderimse PTT isteğini bırak: verici kapanır
-0125A8  9C F2 04 00 00               LDM   #0,AP_SANIYE              ; aralık yeniden başlar
-0125AD  9C F4 04 00 00               LDM   #0,AP_MS
-0125B2  F8                           SEM
-0125B3  9C F8 04 00                  LDM   #0,AP_OTO
-0125B7  0C AA 05 02                  SEB   #F_AP_GITTI,AP_DURUM
-0125BB  D8                           CLM
-0125BC  A2 08 00                     LDX   #8                        ; "APRS OK"
-0125BF  20 76 26                     JSR   AP_METIN_YAZ
-0125C2  22 8C 82 00                  JSRL  F_LCD
-0125C6  D8                   AP_YOK: CLM
-0125C7  68                           PLA
-0125C8  6B                           RTL
-0125C9                               .ASSUME M=0,X=0
-0125C9  A3 03                        LDA   A,$03,S                   ; APRS_PTT'nin koyduğu çerçeve (JSR 2 bayt)
-0125CB  48                           PHA
-0125CC  1C 3E 02 00 08               CLB   #$0800,$023E              ; FX806: F_00E65B'deki gibi ton yolu açık, mikrofon kapalı
-0125D1  AE 9A 02                     LDX   $029A                     ; (yığına değil: F_FX806 yığının tepesini çerçeve sanar)
-0125D4  8E C5 05                     STX   AP_029A
-0125D7  0C 9A 02 00 80               SEB   #$8000,$029A
-0125DC  1C 9A 02 00 40               CLB   #$4000,$029A
-0125E1  F8                           SEM
-0125E2  AD 9B 02                     LDA   A,$029B
-0125E5  29 F8                        AND   A,#$F8
-0125E7  09 06                        ORA   A,#$06
-0125E9  8D 9B 02                     STA   A,$029B
-0125EC  D8                           CLM
-0125ED  22 52 CB 00                  JSRL  F_FX806
-0125F1  D8                           CLM
-0125F2  AE C5 05                     LDX   AP_029A
-0125F5  8E 9A 02                     STX   $029A
-0125F8  F8                           SEM
-0125F9  9C 76 00 00                  LDM   #$00,R_TA1IC              ; TA1 tek atım, kesmesiz
-0125FD  9C 57 00 06                  LDM   #$06,R_TA1MOD
-012601  9C 5C 00 00                  LDM   #$00,R_TB1MOD             ; TB1 zamanlayıcı, f2
-012605  D8                           CLM
-012606  A9 A3 01                     LDA   A,#TB1_9600
-012609  8D 52 00                     STA   A,R_TB1
-01260C  AF FA 28 00                  LDA   A,>SINUS
-012610  8D 48 00                     STA   A,R_TA1
-012613  9C A0 05 00 00               LDM   #0,AP_FAZ
-012618  9C A2 05 00 20               LDM   #ARTIM_MARK,AP_ARTIM
-01261D  F8                           SEM
-01261E  9C CB 05 00                  LDM   #0,AP_ASAMA               ; baş bayrakları
-012622  9C CC 05 2D                  LDM   #ON_BAYRAK,AP_SAYAC
-012626  9C CD 05 00                  LDM   #0,AP_BITSAY
-01262A  9C CF 05 01                  LDM   #1,AP_TON                 ; mark ile başla
-01262E  9C A6 05 01                  LDM   #1,AP_ORNEK               ; ilk kesmede ilk bite geçilir
-012632  D8                           CLM
-012633  9C A8 05 01 00               LDM   #1,AP_GONDER
-012638  F8                           SEM
-012639  A9 01                        LDA   A,#$01                    ; IPL = 1 (F_00E65B gibi)
-01263B  08                           PHP
-01263C  83 02                        STA   A,$02,S
-01263E  28                           PLP
-01263F  F8                           SEM
-012640  9C 7B 00 06                  LDM   #$06,R_TB1IC              ; TB1 kesmesi, öncelik 6
-012644  0C 40 00 02                  SEB   #$02,R_TCSTART            ; TA1 ve TB1 başlasın
-012648  0C 40 00 40                  SEB   #$40,R_TCSTART
-01264C  0C 42 00 02                  SEB   #$02,R_TOSTART
-012650  9C 60 00 00                  LDM   #$00,R_WDT                ; bekçi köpeği
-012654  D8                           CLM
-012655  2C A8 05 01 00 02            BBS   #$0001,AP_GONDER,AG_BEKLE2
-01265B  80 03                        BRA   AG_BITTI
-01265D  F8                           SEM
-01265E  80 F0                        BRA   AG_BEKLE
-012660  F8                           SEM
-012661  1C 40 00 02                  CLB   #$02,R_TCSTART
-012665  1C 40 00 40                  CLB   #$40,R_TCSTART
-012669  9C 7B 00 00                  LDM   #$00,R_TB1IC
-01266D  A9 00                        LDA   A,#$00                    ; IPL = 0
-01266F  08                           PHP
-012670  83 02                        STA   A,$02,S
-012672  28                           PLP
-012673  D8                           CLM
-012674  68                           PLA
-012675  60                           RTS
-012676                               .ASSUME M=0,X=0
-012676  A0 00 00                     LDY   #0
-012679  F8                           SEM
-01267A  BF 8A 26 01          AMY_1:  LDA   A,>AP_METIN,X
-01267E  99 52 02                     STA   A,LCD,Y
-012681  E8                           INX
-012682  C8                           INY
-012683  C0 08 00                     CPY   #8
-012686  D0 F2                        BNE   AMY_1
-012688  D8                           CLM
-012689  60                           RTS
-01268A  41 50 52 53 20 54 …          .TEXT8 "APRS TX"                ; 0
-012692  41 50 52 53 20 4F …          .TEXT8 "APRS OK"                ; 8
-01269A  41 50 52 53 20 50 …          .TEXT8 "APRS PTT"               ; 16
-0126A2  45 52 52 4F 52 20 …          .TEXT8 "ERROR"                  ; 24 + 16 * (hata - 1) İngilizce, +8 Türkçe
-0126AA  48 41 54 41 20 20 …          .TEXT8 "HATA"
-0126B2  43 41 4C 4C 20 2D …          .TEXT8 "CALL -"                 ; (LCD fontunda '?' yok)
-0126BA  43 41 47 52 49 20 …          .TEXT8 "CAGRI -"
-0126C2  4C 41 54 20 2D 20 …          .TEXT8 "LAT -"
-0126CA  45 4E 4C 45 4D 20 …          .TEXT8 "ENLEM -"
-0126D2  4C 4F 4E 20 2D 20 …          .TEXT8 "LON -"
-0126DA  42 4F 59 4C 41 4D …          .TEXT8 "BOYLAM -"
-0126E2                               .ASSUME M=0,X=0
-0126E2  A3 04                        LDA   A,$04,S
-0126E4  8D D1 05                     STA   A,AP_F
-0126E7  48                           PHA
-0126E8  9C DF 02 11 27               LDM   #APRS_TUS & $FFFF,HANDLER
-0126ED  F8                           SEM
-0126EE  9C E1 02 01                  LDM   #bank(APRS_TUS),HANDLER_BK
-0126F2  D8                           CLM
-0126F3  20 4B 27                     JSR   AP_KUR
-0126F6  F8                           SEM
-0126F7  3C AA 05 01 11               BBC   #F_AP_KURULU,AP_DURUM,AG_1
-0126FC  D8                           CLM                             ; FX806 ses ayarını hemen yenile: APRS'te sessiz
-0126FD  22 52 CB 00                  JSRL  F_FX806
-012701  F8                           SEM
-012702  D8                           CLM
-012703  20 E8 27                     JSR   AP_HAZIRLA
-012706  F8                           SEM
-012707  90 04                        BCC   AG_1
-012709  0C AA 05 04                  SEB   #F_AP_HATA,AP_DURUM
-01270D  D8                   AG_1:   CLM
-01270E  4C 14 27                     JMP   AP_EKRAN_SON
-012711                               .ASSUME M=0,X=0
-012711  A3 04                        LDA   A,$04,S
-012713  48                           PHA
-012714  D8                           CLM
-012715  A2 10 00                     LDX   #16                       ; "APRS PTT"
-012718  F8                           SEM
-012719  3C AA 05 02 03               BBC   #F_AP_GITTI,AP_DURUM,AE_1
-01271E  A2 08 00                     LDX   #8                        ; "APRS OK"
-012721  3C AA 05 04 1F       AE_1:   BBC   #F_AP_HATA,AP_DURUM,AE_3
-012726  D8                           CLM                             ; X = 24 + 16 * (kod - 1) (+8 Türkçe)
-012727  AD D0 05                     LDA   A,AP_HATA_KOD
-01272A  29 FF 00                     AND   A,#$00FF
-01272D  1A                           DEC   A
-01272E  0A                           ASL   A
-01272F  0A                           ASL   A
-012730  0A                           ASL   A
-012731  0A                           ASL   A
-012732  18                           CLC
-012733  69 18 00                     ADC   A,#24
-012736  AA                           TAX
-012737  F8                           SEM
-012738  3C 40 03 80 08               BBC   #$80,OPTIONS,AE_3
-01273D  E8                           INX
-01273E  E8                           INX
-01273F  E8                           INX
-012740  E8                           INX
-012741  E8                           INX
-012742  E8                           INX
+012534  F8                           SEM                             ; (iki giriş yolunda da M = 1)
+012535                               .ASSUME M=1,X=0
+012535  3C 3E 02 10 09               BBC   #$10,$023E,SSF_1          ; verici: orijinal karar
+01253A  20 73 25                     JSR   AP_ETKIN
+01253D  D0 04                        BNE   SSF_1
+01253F  5C 3F CD 00                  JMPL  $00CD3F
+012543  A5 00                SSF_1:  LDA   A,$00                     ; orijinal: LDA A,$00 / BEQ L_00CCA5
+012545  D0 04                        BNE   SSF_2
+012547  5C A5 CC 00                  JMPL  $00CCA5
+01254B  5C 96 CC 00          SSF_2:  JMPL  $00CC96
+01254F                               .ASSUME M=0,X=0
+01254F  08                           PHP
+012550  F8                           SEM
+012551  20 73 25                     JSR   AP_ETKIN
+012554  F0 09                        BEQ   ABP_SUS
+012556  28                           PLP
+012557  A3 04                        LDA   A,$04,S                   ; orijinal: LDA A,$04,S / PHD / TAD
+012559  0B                           PHD
+01255A  5B                           TAD
+01255B  5C AE 80 00                  JMPL  $0080AE
+01255F  28                           PLP
+012560  6B                           RTL
+012561                               .ASSUME M=0,X=0
+012561  08                           PHP
+012562  F8                           SEM
+012563  20 73 25                     JSR   AP_ETKIN
+012566  F0 09                        BEQ   AUY_SUS
+012568  28                           PLP
+012569  A3 04                        LDA   A,$04,S                   ; orijinal: LDA A,$04,S / PHA / SEM (JMPL bu üçünü
+01256B  48                           PHA                             ; kapladı), sonra 0x008088'den devam
+01256C  F8                           SEM
+01256D  5C 88 80 00                  JMPL  $008088
+012571  28                           PLP
+012572  6B                           RTL
+012573                               .ASSUME M=1,X=0
+012573  AD 27 02                     LDA   A,MENU
+012576  C9 17                        CMP   A,#ST_APRS_ON
+012578  D0 07                        BNE   AE_SON
+01257A  AD AA 05                     LDA   A,AP_DURUM
+01257D  29 01                        AND   A,#F_AP_KURULU
+01257F  49 01                        EOR   A,#F_AP_KURULU            ; kuruluysa 0
+012581  60                   AE_SON: RTS
+012582                               .ASSUME M=1,X=0
+012582  AD 27 02                     LDA   A,MENU
+012585  C9 17                        CMP   A,#ST_APRS_ON
+012587  D0 07                        BNE   AHZ_SON
+012589  AD AA 05                     LDA   A,AP_DURUM
+01258C  29 05                        AND   A,#F_AP_KURULU|F_AP_HATA
+01258E  49 01                        EOR   A,#F_AP_KURULU
+012590  60                           RTS
+012591                               .ASSUME M=0,X=0
+012591  A3 04                        LDA   A,$04,S
+012593  48                           PHA
+012594  F8                           SEM
+012595  20 82 25                     JSR   AP_HAZIR
+012598  D0 32                        BNE   AP_YOK
+01259A  D8                           CLM
+01259B  A2 00 00                     LDX   #0                        ; ekranda "APRS TX"
+01259E  20 7C 26                     JSR   AP_METIN_YAZ
+0125A1  22 8C 82 00                  JSRL  F_LCD
+0125A5  D8                           CLM
+0125A6  20 CF 25                     JSR   AFSK_GONDER
+0125A9  1C 44 02 04 00               CLB   #F_PTT_APRS,PTT_ISTEK     ; otomatik gönderimse PTT isteğini bırak: verici kapanır
+0125AE  9C F2 04 00 00               LDM   #0,AP_SANIYE              ; aralık yeniden başlar
+0125B3  9C F4 04 00 00               LDM   #0,AP_MS
+0125B8  F8                           SEM
+0125B9  9C F8 04 00                  LDM   #0,AP_OTO
+0125BD  0C AA 05 02                  SEB   #F_AP_GITTI,AP_DURUM
+0125C1  D8                           CLM
+0125C2  A2 08 00                     LDX   #8                        ; "APRS OK"
+0125C5  20 7C 26                     JSR   AP_METIN_YAZ
+0125C8  22 8C 82 00                  JSRL  F_LCD
+0125CC  D8                   AP_YOK: CLM
+0125CD  68                           PLA
+0125CE  6B                           RTL
+0125CF                               .ASSUME M=0,X=0
+0125CF  A3 03                        LDA   A,$03,S                   ; APRS_PTT'nin koyduğu çerçeve (JSR 2 bayt)
+0125D1  48                           PHA
+0125D2  1C 3E 02 00 08               CLB   #$0800,$023E              ; FX806: F_00E65B'deki gibi ton yolu açık, mikrofon kapalı
+0125D7  AE 9A 02                     LDX   $029A                     ; (yığına değil: F_FX806 yığının tepesini çerçeve sanar)
+0125DA  8E C5 05                     STX   AP_029A
+0125DD  0C 9A 02 00 80               SEB   #$8000,$029A
+0125E2  1C 9A 02 00 40               CLB   #$4000,$029A
+0125E7  F8                           SEM
+0125E8  AD 9B 02                     LDA   A,$029B
+0125EB  29 F8                        AND   A,#$F8
+0125ED  09 06                        ORA   A,#$06
+0125EF  8D 9B 02                     STA   A,$029B
+0125F2  D8                           CLM
+0125F3  22 52 CB 00                  JSRL  F_FX806
+0125F7  D8                           CLM
+0125F8  AE C5 05                     LDX   AP_029A
+0125FB  8E 9A 02                     STX   $029A
+0125FE  F8                           SEM
+0125FF  9C 76 00 00                  LDM   #$00,R_TA1IC              ; TA1 tek atım, kesmesiz
+012603  9C 57 00 06                  LDM   #$06,R_TA1MOD
+012607  9C 5C 00 00                  LDM   #$00,R_TB1MOD             ; TB1 zamanlayıcı, f2
+01260B  D8                           CLM
+01260C  A9 A3 01                     LDA   A,#TB1_9600
+01260F  8D 52 00                     STA   A,R_TB1
+012612  AF FA 28 00                  LDA   A,>SINUS
+012616  8D 48 00                     STA   A,R_TA1
+012619  9C A0 05 00 00               LDM   #0,AP_FAZ
+01261E  9C A2 05 00 20               LDM   #ARTIM_MARK,AP_ARTIM
+012623  F8                           SEM
+012624  9C CB 05 00                  LDM   #0,AP_ASAMA               ; baş bayrakları
+012628  9C CC 05 2D                  LDM   #ON_BAYRAK,AP_SAYAC
+01262C  9C CD 05 00                  LDM   #0,AP_BITSAY
+012630  9C CF 05 01                  LDM   #1,AP_TON                 ; mark ile başla
+012634  9C A6 05 01                  LDM   #1,AP_ORNEK               ; ilk kesmede ilk bite geçilir
+012638  D8                           CLM
+012639  9C A8 05 01 00               LDM   #1,AP_GONDER
+01263E  F8                           SEM
+01263F  A9 01                        LDA   A,#$01                    ; IPL = 1 (F_00E65B gibi)
+012641  08                           PHP
+012642  83 02                        STA   A,$02,S
+012644  28                           PLP
+012645  F8                           SEM
+012646  9C 7B 00 06                  LDM   #$06,R_TB1IC              ; TB1 kesmesi, öncelik 6
+01264A  0C 40 00 02                  SEB   #$02,R_TCSTART            ; TA1 ve TB1 başlasın
+01264E  0C 40 00 40                  SEB   #$40,R_TCSTART
+012652  0C 42 00 02                  SEB   #$02,R_TOSTART
+012656  9C 60 00 00                  LDM   #$00,R_WDT                ; bekçi köpeği
+01265A  D8                           CLM
+01265B  2C A8 05 01 00 02            BBS   #$0001,AP_GONDER,AG_BEKLE2
+012661  80 03                        BRA   AG_BITTI
+012663  F8                           SEM
+012664  80 F0                        BRA   AG_BEKLE
+012666  F8                           SEM
+012667  1C 40 00 02                  CLB   #$02,R_TCSTART
+01266B  1C 40 00 40                  CLB   #$40,R_TCSTART
+01266F  9C 7B 00 00                  LDM   #$00,R_TB1IC
+012673  A9 00                        LDA   A,#$00                    ; IPL = 0
+012675  08                           PHP
+012676  83 02                        STA   A,$02,S
+012678  28                           PLP
+012679  D8                           CLM
+01267A  68                           PLA
+01267B  60                           RTS
+01267C                               .ASSUME M=0,X=0
+01267C  A0 00 00                     LDY   #0
+01267F  F8                           SEM
+012680  BF 90 26 01          AMY_1:  LDA   A,>AP_METIN,X
+012684  99 52 02                     STA   A,LCD,Y
+012687  E8                           INX
+012688  C8                           INY
+012689  C0 08 00                     CPY   #8
+01268C  D0 F2                        BNE   AMY_1
+01268E  D8                           CLM
+01268F  60                           RTS
+012690  41 50 52 53 20 54 …          .TEXT8 "APRS TX"                ; 0
+012698  41 50 52 53 20 4F …          .TEXT8 "APRS OK"                ; 8
+0126A0  41 50 52 53 20 50 …          .TEXT8 "APRS PTT"               ; 16
+0126A8  45 52 52 4F 52 20 …          .TEXT8 "ERROR"                  ; 24 + 16 * (hata - 1) İngilizce, +8 Türkçe
+0126B0  48 41 54 41 20 20 …          .TEXT8 "HATA"
+0126B8  43 41 4C 4C 20 2D …          .TEXT8 "CALL -"                 ; (LCD fontunda '?' yok)
+0126C0  43 41 47 52 49 20 …          .TEXT8 "CAGRI -"
+0126C8  4C 41 54 20 2D 20 …          .TEXT8 "LAT -"
+0126D0  45 4E 4C 45 4D 20 …          .TEXT8 "ENLEM -"
+0126D8  4C 4F 4E 20 2D 20 …          .TEXT8 "LON -"
+0126E0  42 4F 59 4C 41 4D …          .TEXT8 "BOYLAM -"
+0126E8                               .ASSUME M=0,X=0
+0126E8  A3 04                        LDA   A,$04,S
+0126EA  8D D1 05                     STA   A,AP_F
+0126ED  48                           PHA
+0126EE  9C DF 02 17 27               LDM   #APRS_TUS & $FFFF,HANDLER
+0126F3  F8                           SEM
+0126F4  9C E1 02 01                  LDM   #bank(APRS_TUS),HANDLER_BK
+0126F8  D8                           CLM
+0126F9  20 51 27                     JSR   AP_KUR
+0126FC  F8                           SEM
+0126FD  3C AA 05 01 11               BBC   #F_AP_KURULU,AP_DURUM,AG_1
+012702  D8                           CLM                             ; FX806 ses ayarını hemen yenile: APRS'te sessiz
+012703  22 52 CB 00                  JSRL  F_FX806
+012707  F8                           SEM
+012708  D8                           CLM
+012709  20 EE 27                     JSR   AP_HAZIRLA
+01270C  F8                           SEM
+01270D  90 04                        BCC   AG_1
+01270F  0C AA 05 04                  SEB   #F_AP_HATA,AP_DURUM
+012713  D8                   AG_1:   CLM
+012714  4C 1A 27                     JMP   AP_EKRAN_SON
+012717                               .ASSUME M=0,X=0
+012717  A3 04                        LDA   A,$04,S
+012719  48                           PHA
+01271A  D8                           CLM
+01271B  A2 10 00                     LDX   #16                       ; "APRS PTT"
+01271E  F8                           SEM
+01271F  3C AA 05 02 03               BBC   #F_AP_GITTI,AP_DURUM,AE_1
+012724  A2 08 00                     LDX   #8                        ; "APRS OK"
+012727  3C AA 05 04 1F       AE_1:   BBC   #F_AP_HATA,AP_DURUM,AE_3
+01272C  D8                           CLM                             ; X = 24 + 16 * (kod - 1) (+8 Türkçe)
+01272D  AD D0 05                     LDA   A,AP_HATA_KOD
+012730  29 FF 00                     AND   A,#$00FF
+012733  1A                           DEC   A
+012734  0A                           ASL   A
+012735  0A                           ASL   A
+012736  0A                           ASL   A
+012737  0A                           ASL   A
+012738  18                           CLC
+012739  69 18 00                     ADC   A,#24
+01273C  AA                           TAX
+01273D  F8                           SEM
+01273E  3C 40 03 80 08               BBC   #$80,OPTIONS,AE_3
 012743  E8                           INX
 012744  E8                           INX
-012745  D8                   AE_3:   CLM
-012746  20 76 26                     JSR   AP_METIN_YAZ
-012749  68                           PLA
-01274A  6B                           RTL
-01274B                               .ASSUME M=0,X=0
-01274B  F8                           SEM
-01274C  9C AA 05 00                  LDM   #0,AP_DURUM
-012750  A2 00 00                     LDX   #0
-012753  BD 70 03             AK_1:   LDA   A,SYN_KAYIT,X
-012756  9D AB 05                     STA   A,AP_YEDEK,X
-012759  E8                           INX
-01275A  E0 0D 00                     CPX   #13
-01275D  D0 F4                        BNE   AK_1
-01275F  A2 00 00                     LDX   #0                        ; haneler "1448000"
-012762  BF E1 27 01          AK_2:   LDA   A,>AP_HANELER,X
-012766  9D 40 05                     STA   A,FR_HANE,X
-012769  E8                           INX
-01276A  E0 07 00                     CPX   #7
-01276D  D0 F3                        BNE   AK_2
-01276F  9C 47 05 07                  LDM   #7,FR_NDIG
-012773  D8                           CLM
-012774  20 2C 13                     JSR   FR_HESAPLA
-012777  90 0B                        BCC   AK_GECERLI
-012779  F8                           SEM
-01277A  9C AA 05 04                  LDM   #F_AP_HATA,AP_DURUM
-01277E  9C D0 05 01                  LDM   #1,AP_HATA_KOD            ; bant dışı
-012782  D8                           CLM
-012783  60                           RTS
-012784  AD F9 01                     LDA   A,RX_KAYMA
-012787  20 AC 14                     JSR   FR_SENTEZ
-01278A  A2 00 00                     LDX   #0
-01278D  F8                           SEM
-01278E  BD 66 05             AK_3:   LDA   A,FR_KAYIT,X
-012791  9D 70 03                     STA   A,SYN_KAYIT,X
-012794  E8                           INX
-012795  E0 05 00                     CPX   #5
-012798  D0 F4                        BNE   AK_3
-01279A  D8                           CLM
-01279B  A9 00 00                     LDA   A,#0
-01279E  20 AC 14                     JSR   FR_SENTEZ
-0127A1  A2 00 00                     LDX   #0
-0127A4  F8                           SEM
-0127A5  BD 66 05             AK_4:   LDA   A,FR_KAYIT,X
-0127A8  9D 77 03                     STA   A,SYN_KAYIT+7,X
-0127AB  E8                           INX
-0127AC  E0 05 00                     CPX   #5
-0127AF  D0 F4                        BNE   AK_4
-0127B1  AD 75 03                     LDA   A,SYN_KAYIT+5             ; TKS kapalı (alt 6 bit); seçmeli çağrı biti (7) de
-0127B4  29 40                        AND   A,#$40
-0127B6  8D 75 03                     STA   A,SYN_KAYIT+5
-0127B9  AD 7C 03                     LDA   A,SYN_KAYIT+12
-0127BC  29 C0                        AND   A,#$C0
-0127BE  8D 7C 03                     STA   A,SYN_KAYIT+12
-0127C1  A2 00 00                     LDX   #0
-0127C4  BD 70 03             AK_5:   LDA   A,SYN_KAYIT,X             ; kopya ($0363) ve karşılaştırma için
-0127C7  9D 63 03                     STA   A,SYN_YEDEK,X
-0127CA  9D B8 05                     STA   A,AP_KAYIT,X
-0127CD  E8                           INX
-0127CE  E0 0D 00                     CPX   #13
-0127D1  D0 F1                        BNE   AK_5
-0127D3  9C AA 05 01                  LDM   #F_AP_KURULU,AP_DURUM
-0127D7  1C 0A 00 40                  CLB   #$40,R_P4                 ; hoparlör kapalı (APRS_HOPARLOR açık tutmaz)
-0127DB  9C 28 02 01                  LDM   #1,RADYO_DURUM            ; RX'e yeniden gir, sentezörü yükle
-0127DF  D8                           CLM
-0127E0  60                           RTS
-0127E1  31 34 34 38 30 30 …          .BYTE "1448000"
-0127E8                               .ASSUME M=0,X=0
-0127E8  20 65 29                     JSR   AP_BLOK_DENETLE
-0127EB  A9 0E 00                     LDA   A,#AB_SEMBOL
-0127EE  A0 02 00                     LDY   #2
-0127F1  20 FA 28                     JSR   AP_ALAN_AD
-0127F4  F8                           SEM
-0127F5  20 E6 29                     JSR   AP_SEMBOL_AL
-0127F8  D8                           CLM
-0127F9  A9 04 00                     LDA   A,#AB_CAGRI
-0127FC  A0 0A 00                     LDY   #10
-0127FF  20 FA 28                     JSR   AP_ALAN_AD
-012802  A0 00 00                     LDY   #0                        ; Y = çerçevede yazma yeri (kopyalarken; sonra X)
-012805  A2 00 00                     LDX   #0
-012808  F8                           SEM
-012809  BF 92 28 01          AHA_1:  LDA   A,>AP_HEDEF,X             ; hedef APIZCI (uzun adres yalnız X ile indekslenir)
-01280D  99 40 07                     STA   A,AP_CER,Y
-012810  E8                           INX
-012811  C8                           INY
-012812  E0 07 00                     CPX   #7
-012815  D0 F2                        BNE   AHA_1
-012817  BB                           TYX
-012818  20 23 2A                     JSR   AP_CAGRI_YAZ              ; kaynak
-01281B  90 04                        BCC   AHA_2
-01281D  A9 02                        LDA   A,#2
-01281F  80 6B                        BRA   AHA_HATA
-012821  9B                   AHA_2:  TXY
-012822  A2 00 00                     LDX   #0
-012825  BF 99 28 01          AHA_3:  LDA   A,>AP_YOL,X               ; WIDE1-1, WIDE2-1, kontrol, PID, '!'
-012829  99 40 07                     STA   A,AP_CER,Y
-01282C  E8                           INX
-01282D  C8                           INY
-01282E  E0 11 00                     CPX   #17
-012831  D0 F2                        BNE   AHA_3
-012833  BB                           TYX
-012834  D8                           CLM
-012835  A9 10 00                     LDA   A,#AB_ENLEM
-012838  A0 08 00                     LDY   #8
-01283B  20 FA 28                     JSR   AP_ALAN_AD
-01283E  F8                           SEM
-01283F  A9 04                        LDA   A,#4                      ; DDMM.mm
-012841  A0 4E 53                     LDY   #'N'+'S'*256
-012844  20 F2 2A                     JSR   AP_KONUM_YAZ
-012847  90 04                        BCC   AHA_4
-012849  A9 03                        LDA   A,#3
-01284B  80 3F                        BRA   AHA_HATA
-01284D  AD D5 05             AHA_4:  LDA   A,AP_SEMBOL               ; simge tablosu
-012850  9D 40 07                     STA   A,AP_CER,X
-012853  E8                           INX
-012854  D8                           CLM
-012855  A9 18 00                     LDA   A,#AB_BOYLAM
-012858  A0 09 00                     LDY   #9
-01285B  20 FA 28                     JSR   AP_ALAN_AD
-01285E  F8                           SEM
-01285F  A9 05                        LDA   A,#5                      ; DDDMM.mm
-012861  A0 45 57                     LDY   #'E'+'W'*256
-012864  20 F2 2A                     JSR   AP_KONUM_YAZ
-012867  90 04                        BCC   AHA_5
-012869  A9 04                        LDA   A,#4
-01286B  80 1F                        BRA   AHA_HATA
-01286D  AD D6 05             AHA_5:  LDA   A,AP_SEMBOL+1             ; simge kodu
-012870  9D 40 07                     STA   A,AP_CER,X
-012873  E8                           INX
-012874  D8                           CLM
-012875  20 4F 2B                     JSR   AP_YORUM_YAZ
-012878  8E C7 05                     STX   AP_UZ
-01287B  20 AA 2B                     JSR   AP_FCS
-01287E  A9 22 00                     LDA   A,#AB_ARALIK              ; otomatik gönderim aralığı
-012881  A0 02 00                     LDY   #2
-012884  20 FA 28                     JSR   AP_ALAN_AD
-012887  20 75 2B                     JSR   AP_ARALIK_AL
-01288A  18                           CLC
-01288B  60                           RTS
-01288C                               .ASSUME M=1,X=0
-01288C  8D D0 05                     STA   A,AP_HATA_KOD
-01288F  D8                           CLM
-012890  38                           SEC
+012745  E8                           INX
+012746  E8                           INX
+012747  E8                           INX
+012748  E8                           INX
+012749  E8                           INX
+01274A  E8                           INX
+01274B  D8                   AE_3:   CLM
+01274C  20 7C 26                     JSR   AP_METIN_YAZ
+01274F  68                           PLA
+012750  6B                           RTL
+012751                               .ASSUME M=0,X=0
+012751  F8                           SEM
+012752  9C AA 05 00                  LDM   #0,AP_DURUM
+012756  A2 00 00                     LDX   #0
+012759  BD 70 03             AK_1:   LDA   A,SYN_KAYIT,X
+01275C  9D AB 05                     STA   A,AP_YEDEK,X
+01275F  E8                           INX
+012760  E0 0D 00                     CPX   #13
+012763  D0 F4                        BNE   AK_1
+012765  A2 00 00                     LDX   #0                        ; haneler "1448000"
+012768  BF E7 27 01          AK_2:   LDA   A,>AP_HANELER,X
+01276C  9D 40 05                     STA   A,FR_HANE,X
+01276F  E8                           INX
+012770  E0 07 00                     CPX   #7
+012773  D0 F3                        BNE   AK_2
+012775  9C 47 05 07                  LDM   #7,FR_NDIG
+012779  D8                           CLM
+01277A  20 2C 13                     JSR   FR_HESAPLA
+01277D  90 0B                        BCC   AK_GECERLI
+01277F  F8                           SEM
+012780  9C AA 05 04                  LDM   #F_AP_HATA,AP_DURUM
+012784  9C D0 05 01                  LDM   #1,AP_HATA_KOD            ; bant dışı
+012788  D8                           CLM
+012789  60                           RTS
+01278A  AD F9 01                     LDA   A,RX_KAYMA
+01278D  20 AC 14                     JSR   FR_SENTEZ
+012790  A2 00 00                     LDX   #0
+012793  F8                           SEM
+012794  BD 66 05             AK_3:   LDA   A,FR_KAYIT,X
+012797  9D 70 03                     STA   A,SYN_KAYIT,X
+01279A  E8                           INX
+01279B  E0 05 00                     CPX   #5
+01279E  D0 F4                        BNE   AK_3
+0127A0  D8                           CLM
+0127A1  A9 00 00                     LDA   A,#0
+0127A4  20 AC 14                     JSR   FR_SENTEZ
+0127A7  A2 00 00                     LDX   #0
+0127AA  F8                           SEM
+0127AB  BD 66 05             AK_4:   LDA   A,FR_KAYIT,X
+0127AE  9D 77 03                     STA   A,SYN_KAYIT+7,X
+0127B1  E8                           INX
+0127B2  E0 05 00                     CPX   #5
+0127B5  D0 F4                        BNE   AK_4
+0127B7  AD 75 03                     LDA   A,SYN_KAYIT+5             ; TKS kapalı (alt 6 bit); seçmeli çağrı biti (7) de
+0127BA  29 40                        AND   A,#$40
+0127BC  8D 75 03                     STA   A,SYN_KAYIT+5
+0127BF  AD 7C 03                     LDA   A,SYN_KAYIT+12
+0127C2  29 C0                        AND   A,#$C0
+0127C4  8D 7C 03                     STA   A,SYN_KAYIT+12
+0127C7  A2 00 00                     LDX   #0
+0127CA  BD 70 03             AK_5:   LDA   A,SYN_KAYIT,X             ; kopya ($0363) ve karşılaştırma için
+0127CD  9D 63 03                     STA   A,SYN_YEDEK,X
+0127D0  9D B8 05                     STA   A,AP_KAYIT,X
+0127D3  E8                           INX
+0127D4  E0 0D 00                     CPX   #13
+0127D7  D0 F1                        BNE   AK_5
+0127D9  9C AA 05 01                  LDM   #F_AP_KURULU,AP_DURUM
+0127DD  1C 0A 00 40                  CLB   #$40,R_P4                 ; hoparlör kapalı (APRS_HOPARLOR açık tutmaz)
+0127E1  9C 28 02 01                  LDM   #1,RADYO_DURUM            ; RX'e yeniden gir, sentezörü yükle
+0127E5  D8                           CLM
+0127E6  60                           RTS
+0127E7  31 34 34 38 30 30 …          .BYTE "1448000"
+0127EE                               .ASSUME M=0,X=0
+0127EE  20 6B 29                     JSR   AP_BLOK_DENETLE
+0127F1  A9 0E 00                     LDA   A,#AB_SEMBOL
+0127F4  A0 02 00                     LDY   #2
+0127F7  20 00 29                     JSR   AP_ALAN_AD
+0127FA  F8                           SEM
+0127FB  20 EC 29                     JSR   AP_SEMBOL_AL
+0127FE  D8                           CLM
+0127FF  A9 04 00                     LDA   A,#AB_CAGRI
+012802  A0 0A 00                     LDY   #10
+012805  20 00 29                     JSR   AP_ALAN_AD
+012808  A0 00 00                     LDY   #0                        ; Y = çerçevede yazma yeri (kopyalarken; sonra X)
+01280B  A2 00 00                     LDX   #0
+01280E  F8                           SEM
+01280F  BF 98 28 01          AHA_1:  LDA   A,>AP_HEDEF,X             ; hedef APIZCI (uzun adres yalnız X ile indekslenir)
+012813  99 40 07                     STA   A,AP_CER,Y
+012816  E8                           INX
+012817  C8                           INY
+012818  E0 07 00                     CPX   #7
+01281B  D0 F2                        BNE   AHA_1
+01281D  BB                           TYX
+01281E  20 29 2A                     JSR   AP_CAGRI_YAZ              ; kaynak
+012821  90 04                        BCC   AHA_2
+012823  A9 02                        LDA   A,#2
+012825  80 6B                        BRA   AHA_HATA
+012827  9B                   AHA_2:  TXY
+012828  A2 00 00                     LDX   #0
+01282B  BF 9F 28 01          AHA_3:  LDA   A,>AP_YOL,X               ; WIDE1-1, WIDE2-1, kontrol, PID, '!'
+01282F  99 40 07                     STA   A,AP_CER,Y
+012832  E8                           INX
+012833  C8                           INY
+012834  E0 11 00                     CPX   #17
+012837  D0 F2                        BNE   AHA_3
+012839  BB                           TYX
+01283A  D8                           CLM
+01283B  A9 10 00                     LDA   A,#AB_ENLEM
+01283E  A0 08 00                     LDY   #8
+012841  20 00 29                     JSR   AP_ALAN_AD
+012844  F8                           SEM
+012845  A9 04                        LDA   A,#4                      ; DDMM.mm
+012847  A0 4E 53                     LDY   #'N'+'S'*256
+01284A  20 F8 2A                     JSR   AP_KONUM_YAZ
+01284D  90 04                        BCC   AHA_4
+01284F  A9 03                        LDA   A,#3
+012851  80 3F                        BRA   AHA_HATA
+012853  AD D5 05             AHA_4:  LDA   A,AP_SEMBOL               ; simge tablosu
+012856  9D 40 07                     STA   A,AP_CER,X
+012859  E8                           INX
+01285A  D8                           CLM
+01285B  A9 18 00                     LDA   A,#AB_BOYLAM
+01285E  A0 09 00                     LDY   #9
+012861  20 00 29                     JSR   AP_ALAN_AD
+012864  F8                           SEM
+012865  A9 05                        LDA   A,#5                      ; DDDMM.mm
+012867  A0 45 57                     LDY   #'E'+'W'*256
+01286A  20 F8 2A                     JSR   AP_KONUM_YAZ
+01286D  90 04                        BCC   AHA_5
+01286F  A9 04                        LDA   A,#4
+012871  80 1F                        BRA   AHA_HATA
+012873  AD D6 05             AHA_5:  LDA   A,AP_SEMBOL+1             ; simge kodu
+012876  9D 40 07                     STA   A,AP_CER,X
+012879  E8                           INX
+01287A  D8                           CLM
+01287B  20 55 2B                     JSR   AP_YORUM_YAZ
+01287E  8E C7 05                     STX   AP_UZ
+012881  20 B0 2B                     JSR   AP_FCS
+012884  A9 22 00                     LDA   A,#AB_ARALIK              ; otomatik gönderim aralığı
+012887  A0 02 00                     LDY   #2
+01288A  20 00 29                     JSR   AP_ALAN_AD
+01288D  20 7B 2B                     JSR   AP_ARALIK_AL
+012890  18                           CLC
 012891  60                           RTS
-012892  82 A0 92 B4 86 92 …          .BYTE 'A'*2,'P'*2,'I'*2,'Z'*2,'C'*2,'I'*2,$E0
-012899  AE 92 88 8A 62 40 …          .BYTE 'W'*2,'I'*2,'D'*2,'E'*2,'1'*2,' '*2,$62
-0128A0  AE 92 88 8A 64 40 …          .BYTE 'W'*2,'I'*2,'D'*2,'E'*2,'2'*2,' '*2,$63
-0128A7  03 F0 21                     .BYTE $03,$F0,'!'
-0128AA  41 50 01 00                  .BYTE "AP",AB_SURUM_NO,0        ; +0
-0128AE  54 43 31 39 4D 4B …          .BYTE "TC19MK-10",0             ; +4  çağrı işareti
-0128B8  2F 62                        .BYTE "/b"                      ; +14 simge
-0128BA  33 39 35 35 2E 35 …          .BYTE "3955.52N"                ; +16 enlem
-0128C2  30 33 32 35 30 2E …          .BYTE "03250.22E",0             ; +24 boylam
-0128CC  00 00                        .BYTE 0,0                       ; +34 aralık
-0128CE  41 53 45 4C 53 41 …          .BYTE "ASELSAN 4000"            ; +36 yorum
-0128DA  00 00 00 00 00 00 …          .FILL AP_VARSAYILAN+AB_UZ-*,0
-0128FA                               .ASSUME M=0,X=0
-0128FA  48                           PHA
-0128FB  A9 DE 05                     LDA   A,#AP_AD
-0128FE  8D EF 05                     STA   A,AP_HEDEF_P
-012901  68                           PLA
-012902  8C F1 05                     STY   AP_ALAN_N
-012905                               .ASSUME M=0,X=0
-012905  DA                           PHX
-012906  5A                           PHY
-012907  8D F5 05                     STA   A,AP_YER
-01290A  F8                           SEM
-01290B  AD EE 05                     LDA   A,AP_EE_OK
-01290E  D8                           CLM
-01290F  D0 1E                        BNE   AAK_EE
-012911  AE F5 05                     LDX   AP_YER
-012914  AC EF 05                     LDY   AP_HEDEF_P
-012917  F8                           SEM
-012918  AD F1 05             AAK_1:  LDA   A,AP_ALAN_N
-01291B  F0 0E                        BEQ   AAK_SON
-01291D  BF AA 28 01                  LDA   A,>AP_VARSAYILAN,X
-012921  99 00 00                     STA   A,!$0000,Y
-012924  E8                           INX
-012925  C8                           INY
-012926  CE F1 05                     DEC   AP_ALAN_N
-012929  80 ED                        BRA   AAK_1
-01292B  D8                           CLM
-01292C  7A                           PLY
-01292D  FA                           PLX
-01292E  60                           RTS
-01292F  AD F5 05             AAK_EE: LDA   A,AP_YER
-012932  18                           CLC
-012933  69 E0 06                     ADC   A,#EE_APRS
-012936  20 3C 29                     JSR   AP_EE_OKU
-012939  7A                           PLY
-01293A  FA                           PLX
-01293B  60                           RTS
-01293C                               .ASSUME M=0,X=0
-01293C  DA                           PHX
-01293D  5A                           PHY
-01293E  0B                           PHD
-01293F  A8                           TAY
-012940  AD D1 05                     LDA   A,AP_F
-012943  5B                           TAD
-012944  84 04                        STY   $04                       ; EEPROM adresi
-012946  AD EF 05                     LDA   A,AP_HEDEF_P              ; hedef (bank 0)
-012949  85 01                        STA   A,$01
-01294B  F8                           SEM
-01294C  AD F1 05                     LDA   A,AP_ALAN_N
-01294F  85 00                        STA   A,$00
-012951  A9 00                        LDA   A,#0
-012953  85 03                        STA   A,$03
-012955  D8                           CLM
-012956  7B                           TDA
-012957  48                           PHA
-012958  A0 A0 00                     LDY   #$00A0
-01295B  22 EE 72 00                  JSRL  F_EE_OKU
-01295F  D8                           CLM
-012960  68                           PLA
-012961  2B                           PLD
-012962  7A                           PLY
-012963  FA                           PLX
-012964  60                           RTS
-012965                               .ASSUME M=0,X=0
-012965  F8                           SEM
-012966  9C EE 05 00                  LDM   #0,AP_EE_OK
-01296A  D8                           CLM
-01296B  9C F3 05 00 00               LDM   #0,AP_TOPLAM
-012970  9C F1 05 10 00               LDM   #16,AP_ALAN_N
-012975  A9 DE 05                     LDA   A,#AP_AD
-012978  8D EF 05                     STA   A,AP_HEDEF_P
-01297B  A9 E0 06                     LDA   A,#EE_APRS
-01297E  8D F5 05                     STA   A,AP_YER
-012981  AD F5 05             ABD_1:  LDA   A,AP_YER
-012984  20 3C 29                     JSR   AP_EE_OKU
-012987  AD F5 05                     LDA   A,AP_YER
-01298A  C9 E0 06                     CMP   A,#EE_APRS
-01298D  D0 13                        BNE   ABD_TOPLA
-01298F  AD DE 05                     LDA   A,AP_AD                   ; ilk parça: imza ve sürüm
-012992  C9 41 50                     CMP   A,#'A'+'P'*256
-012995  D0 4E                        BNE   ABD_SON
-012997  AD E0 05                     LDA   A,AP_AD+2
-01299A  29 FF 00                     AND   A,#$00FF
-01299D  C9 01 00                     CMP   A,#AB_SURUM_NO
-0129A0  D0 43                        BNE   ABD_SON
-0129A2  A2 00 00                     LDX   #0
-0129A5  BD DE 05             ABD_2:  LDA   A,AP_AD,X
-0129A8  29 FF 00                     AND   A,#$00FF
-0129AB  18                           CLC
-0129AC  6D F3 05                     ADC   A,AP_TOPLAM
-0129AF  8D F3 05                     STA   A,AP_TOPLAM
-0129B2  E8                           INX
-0129B3  E0 10 00                     CPX   #16
-0129B6  D0 ED                        BNE   ABD_2
-0129B8  AD F5 05                     LDA   A,AP_YER
-0129BB  18                           CLC
-0129BC  69 10 00                     ADC   A,#16
-0129BF  8D F5 05                     STA   A,AP_YER
-0129C2  C9 30 07                     CMP   A,#EE_APRS+AB_UZ
-0129C5  D0 BA                        BNE   ABD_1
-0129C7  9C F1 05 02 00               LDM   #2,AP_ALAN_N              ; sağlama, büyük uçlu
-0129CC  20 3C 29                     JSR   AP_EE_OKU                 ; A = EE_APRS + AB_UZ
-0129CF  F8                           SEM
-0129D0  AD DE 05                     LDA   A,AP_AD
-0129D3  CD F4 05                     CMP   A,AP_TOPLAM+1
-0129D6  D0 0C                        BNE   ABD_S
-0129D8  AD DF 05                     LDA   A,AP_AD+1
-0129DB  CD F3 05                     CMP   A,AP_TOPLAM
-0129DE  D0 04                        BNE   ABD_S
-0129E0  9C EE 05 01                  LDM   #1,AP_EE_OK
-0129E4  D8                   ABD_S:  CLM
-0129E5  60                           RTS
-0129E6                               .ASSUME M=1,X=0
-0129E6  AD DE 05                     LDA   A,AP_AD
-0129E9  20 0C 2A                     JSR   AP_YAZILIR
-0129EC  B0 15                        BCS   ASA_V
-0129EE  AD DF 05                     LDA   A,AP_AD+1
-0129F1  20 0C 2A                     JSR   AP_YAZILIR
-0129F4  B0 0D                        BCS   ASA_V
-0129F6  AD DE 05                     LDA   A,AP_AD
-0129F9  8D D5 05                     STA   A,AP_SEMBOL
-0129FC  AD DF 05                     LDA   A,AP_AD+1
-0129FF  8D D6 05                     STA   A,AP_SEMBOL+1
-012A02  60                           RTS
-012A03  9C D5 05 2F          ASA_V:  LDM   #'/',AP_SEMBOL
-012A07  9C D6 05 62                  LDM   #'b',AP_SEMBOL+1
-012A0B  60                           RTS
-012A0C                               .ASSUME M=1,X=0
-012A0C  C9 21                        CMP   A,#'!'
-012A0E  90 06                        BCC   AYZ_H
-012A10  C9 7F                        CMP   A,#$7F
-012A12  B0 02                        BCS   AYZ_H
-012A14  18                           CLC
-012A15  60                           RTS
-012A16  38                   AYZ_H:  SEC
-012A17  60                           RTS
-012A18                               .ASSUME M=1,X=0
-012A18  C9 61                        CMP   A,#'a'
-012A1A  90 06                        BCC   ABY_X
-012A1C  C9 7B                        CMP   A,#'z'+1
-012A1E  B0 02                        BCS   ABY_X
-012A20  29 DF                        AND   A,#$DF
-012A22  60                   ABY_X:  RTS
-012A23                               .ASSUME M=1,X=0
-012A23  9C DA 05 00                  LDM   #0,AP_SAY
-012A27  A0 00 00                     LDY   #0
-012A2A  C0 0A 00             ACY_1:  CPY   #10
-012A2D  F0 27                        BEQ   ACY_DOLDUR
-012A2F  B9 DE 05                     LDA   A,AP_AD,Y
-012A32  F0 22                        BEQ   ACY_DOLDUR
-012A34  C9 2D                        CMP   A,#'-'
-012A36  F0 1E                        BEQ   ACY_DOLDUR
-012A38  C9 20                        CMP   A,#' '
-012A3A  F0 1A                        BEQ   ACY_DOLDUR
-012A3C  20 18 2A                     JSR   AP_BUYUK
-012A3F  20 C5 2A                     JSR   AP_HARF_RAKAM
-012A42  B0 7F                        BCS   ACY_HATA
-012A44  0A                           ASL   A
-012A45  9D 40 07                     STA   A,AP_CER,X
-012A48  E8                           INX
-012A49  C8                           INY
-012A4A  EE DA 05                     INC   AP_SAY
-012A4D  AD DA 05                     LDA   A,AP_SAY
-012A50  C9 07                        CMP   A,#7
-012A52  B0 6F                        BCS   ACY_HATA
-012A54  80 D4                        BRA   ACY_1
-012A56  AD DA 05                     LDA   A,AP_SAY
-012A59  F0 68                        BEQ   ACY_HATA
-012A5B  AD DA 05             ACY_D1: LDA   A,AP_SAY                  ; 6 karaktere boşlukla tamamla
-012A5E  C9 06                        CMP   A,#6
-012A60  F0 0B                        BEQ   ACY_SSID
-012A62  A9 40                        LDA   A,#' '*2
-012A64  9D 40 07                     STA   A,AP_CER,X
-012A67  E8                           INX
-012A68  EE DA 05                     INC   AP_SAY
-012A6B  80 EE                        BRA   ACY_D1
-012A6D  9C DB 05 00                  LDM   #0,AP_SSID
-012A71  C0 0A 00                     CPY   #10
-012A74  F0 41                        BEQ   ACY_YAZ
-012A76  B9 DE 05                     LDA   A,AP_AD,Y
-012A79  C9 2D                        CMP   A,#'-'
-012A7B  D0 3A                        BNE   ACY_YAZ
-012A7D  C8                           INY
-012A7E  C0 0A 00                     CPY   #10
-012A81  F0 40                        BEQ   ACY_HATA
-012A83  B9 DE 05                     LDA   A,AP_AD,Y
-012A86  20 D9 2A                     JSR   AP_RAKAM
-012A89  B0 38                        BCS   ACY_HATA
-012A8B  8D DB 05                     STA   A,AP_SSID
-012A8E  C8                           INY
-012A8F  C0 0A 00                     CPY   #10
-012A92  F0 23                        BEQ   ACY_YAZ
-012A94  B9 DE 05                     LDA   A,AP_AD,Y
-012A97  20 D9 2A                     JSR   AP_RAKAM
-012A9A  B0 1B                        BCS   ACY_YAZ                   ; tek haneli SSID
-012A9C  8D DC 05                     STA   A,AP_T1                   ; SSID = 10 * ilk + ikinci
-012A9F  AD DB 05                     LDA   A,AP_SSID
-012AA2  0A                           ASL   A
-012AA3  8D DD 05                     STA   A,AP_T2
-012AA6  0A                           ASL   A
-012AA7  0A                           ASL   A
-012AA8  18                           CLC
-012AA9  6D DD 05                     ADC   A,AP_T2
-012AAC  18                           CLC
-012AAD  6D DC 05                     ADC   A,AP_T1
-012AB0  8D DB 05                     STA   A,AP_SSID
-012AB3  C9 10                        CMP   A,#16
-012AB5  B0 0C                        BCS   ACY_HATA
-012AB7  AD DB 05                     LDA   A,AP_SSID
-012ABA  0A                           ASL   A
-012ABB  09 60                        ORA   A,#$60
-012ABD  9D 40 07                     STA   A,AP_CER,X
-012AC0  E8                           INX
-012AC1  18                           CLC
-012AC2  60                           RTS
-012AC3  38                           SEC
-012AC4  60                           RTS
-012AC5                               .ASSUME M=1,X=0
-012AC5  C9 30                        CMP   A,#'0'
-012AC7  90 0C                        BCC   AHR_H
-012AC9  C9 3A                        CMP   A,#'9'+1
-012ACB  90 0A                        BCC   AHR_E
-012ACD  C9 41                        CMP   A,#'A'
-012ACF  90 04                        BCC   AHR_H
-012AD1  C9 5B                        CMP   A,#'Z'+1
-012AD3  90 02                        BCC   AHR_E
-012AD5  38                   AHR_H:  SEC
-012AD6  60                           RTS
-012AD7  18                   AHR_E:  CLC
-012AD8  60                           RTS
-012AD9                               .ASSUME M=1,X=0
-012AD9  38                           SEC
-012ADA  E9 30                        SBC   A,#'0'
-012ADC  90 06                        BCC   AR_H
-012ADE  C9 0A                        CMP   A,#10
-012AE0  B0 02                        BCS   AR_H
-012AE2  18                           CLC
-012AE3  60                           RTS
-012AE4  38                   AR_H:   SEC
-012AE5  60                           RTS
-012AE6                               .ASSUME M=1,X=0
-012AE6  C9 30                        CMP   A,#'0'
-012AE8  90 06                        BCC   ARM_H
-012AEA  C9 3A                        CMP   A,#'9'+1
-012AEC  B0 02                        BCS   ARM_H
-012AEE  18                           CLC
-012AEF  60                           RTS
-012AF0  38                   ARM_H:  SEC
-012AF1  60                           RTS
-012AF2                               .ASSUME M=1,X=0
-012AF2  8D DD 05                     STA   A,AP_T2
-012AF5  8C D3 05                     STY   AP_CRC                    ; izin verilen harfler (geçici)
-012AF8  A0 00 00                     LDY   #0
-012AFB  B9 DE 05             AKY_1:  LDA   A,AP_AD,Y
-012AFE  20 E6 2A                     JSR   AP_RAKAM_MI
-012B01  B0 4A                        BCS   AKY_HATA
-012B03  C8                           INY
-012B04  98                           TYA
-012B05  CD DD 05                     CMP   A,AP_T2
-012B08  D0 F1                        BNE   AKY_1
-012B0A  B9 DE 05                     LDA   A,AP_AD,Y
-012B0D  C9 2E                        CMP   A,#'.'
-012B0F  D0 3C                        BNE   AKY_HATA
-012B11  C8                           INY
-012B12  B9 DE 05                     LDA   A,AP_AD,Y
-012B15  20 E6 2A                     JSR   AP_RAKAM_MI
-012B18  B0 33                        BCS   AKY_HATA
-012B1A  C8                           INY
-012B1B  B9 DE 05                     LDA   A,AP_AD,Y
-012B1E  20 E6 2A                     JSR   AP_RAKAM_MI
-012B21  B0 2A                        BCS   AKY_HATA
-012B23  C8                           INY
-012B24  B9 DE 05                     LDA   A,AP_AD,Y
-012B27  20 18 2A                     JSR   AP_BUYUK
-012B2A  CD D3 05                     CMP   A,AP_CRC
-012B2D  F0 05                        BEQ   AKY_2
-012B2F  CD D4 05                     CMP   A,AP_CRC+1
-012B32  D0 19                        BNE   AKY_HATA
-012B34  99 DE 05             AKY_2:  STA   A,AP_AD,Y
-012B37  C8                           INY
-012B38  8C D7 05                     STY   AP_HSAY                   ; uzunluk
-012B3B  A0 00 00                     LDY   #0
-012B3E  B9 DE 05             AKY_3:  LDA   A,AP_AD,Y
-012B41  9D 40 07                     STA   A,AP_CER,X
-012B44  E8                           INX
-012B45  C8                           INY
-012B46  CC D7 05                     CPY   AP_HSAY
-012B49  D0 F3                        BNE   AKY_3
-012B4B  18                           CLC
-012B4C  60                           RTS
-012B4D  38                           SEC
-012B4E  60                           RTS
-012B4F                               .ASSUME M=0,X=0
-012B4F  8A                           TXA
-012B50  18                           CLC
-012B51  69 40 07                     ADC   A,#AP_CER
-012B54  8D EF 05                     STA   A,AP_HEDEF_P
-012B57  A9 2B 00                     LDA   A,#AB_YORUM_N
-012B5A  8D F1 05                     STA   A,AP_ALAN_N
-012B5D  A9 24 00                     LDA   A,#AB_YORUM
-012B60  20 05 29                     JSR   AP_ALAN_OKU
-012B63  A0 00 00                     LDY   #0
-012B66  F8                           SEM
-012B67  BD 40 07             AYY_1:  LDA   A,AP_CER,X
-012B6A  F0 07                        BEQ   AYY_SON
-012B6C  E8                           INX
-012B6D  C8                           INY
-012B6E  C0 2B 00                     CPY   #AB_YORUM_N
-012B71  D0 F4                        BNE   AYY_1
-012B73  D8                           CLM
-012B74  60                           RTS
-012B75                               .ASSUME M=0,X=0
-012B75  F8                           SEM
-012B76  AD DE 05                     LDA   A,AP_AD
-012B79  8D F1 04                     STA   A,AP_ARALIK+1
-012B7C  AD DF 05                     LDA   A,AP_AD+1
-012B7F  8D F0 04                     STA   A,AP_ARALIK
-012B82  D8                           CLM
-012B83  9C F2 04 00 00               LDM   #0,AP_SANIYE
-012B88  9C F4 04 00 00               LDM   #0,AP_MS
-012B8D  AD F0 04                     LDA   A,AP_ARALIK
-012B90  F0 0B                        BEQ   AAL_X
-012B92  C9 0A 00                     CMP   A,#AP_EN_KISA
-012B95  B0 06                        BCS   AAL_X
-012B97  A9 0A 00                     LDA   A,#AP_EN_KISA
-012B9A  8D F0 04                     STA   A,AP_ARALIK
-012B9D  F8                   AAL_X:  SEM
-012B9E  AD 57 04                     LDA   A,TIK_32MS
-012BA1  8D F6 04                     STA   A,AP_SONTIK
-012BA4  9C F8 04 00                  LDM   #0,AP_OTO
-012BA8  D8                           CLM
-012BA9  60                           RTS
-012BAA                               .ASSUME M=0,X=0
-012BAA  A9 FF FF                     LDA   A,#$FFFF
-012BAD  8D D3 05                     STA   A,AP_CRC
-012BB0  A2 00 00                     LDX   #0
-012BB3  EC C7 05             AF_1:   CPX   AP_UZ
-012BB6  F0 1B                        BEQ   AF_SON
-012BB8  BD 40 07                     LDA   A,AP_CER,X
-012BBB  29 FF 00                     AND   A,#$00FF
-012BBE  4D D3 05                     EOR   A,AP_CRC
-012BC1  A0 08 00                     LDY   #8
-012BC4  4A                   AF_2:   LSR   A
-012BC5  90 03                        BCC   AF_3
-012BC7  49 08 84                     EOR   A,#$8408
-012BCA  88                   AF_3:   DEY
-012BCB  D0 F7                        BNE   AF_2
-012BCD  8D D3 05                     STA   A,AP_CRC
-012BD0  E8                           INX
-012BD1  80 E0                        BRA   AF_1
-012BD3  AD D3 05             AF_SON: LDA   A,AP_CRC
-012BD6  49 FF FF                     EOR   A,#$FFFF
-012BD9  9D 40 07                     STA   A,AP_CER,X
-012BDC  E8                           INX
-012BDD  E8                           INX
-012BDE  8E C7 05                     STX   AP_UZ
-012BE1  60                           RTS
-012BE2                               .ASSUME M=0,X=0
-012BE2  F8                           SEM
-012BE3  3C AA 05 01 54               BBC   #F_AP_KURULU,AP_DURUM,AKN_SON
-012BE8  AD 27 02                     LDA   A,MENU
-012BEB  C9 17                        CMP   A,#ST_APRS_ON
-012BED  D0 12                        BNE   AKN_CIKIS
-012BEF  1C 0A 00 40                  CLB   #$40,R_P4                 ; hoparlör her turda yeniden kapatılır
-012BF3  AD 31 02                     LDA   A,MENU_OLAY               ; açıkken menü zaman aşımı yok
-012BF6  C9 14                        CMP   A,#$14
-012BF8  D0 04                        BNE   AKN_ZAMAN
-012BFA  9C 30 02 3F                  LDM   #$3F,MENU_SAYAC
-012BFE  4C 3E 2C                     JMP   AP_OTO_ZAMAN
-012C01  9C AA 05 00                  LDM   #0,AP_DURUM
-012C05  AD F8 04                     LDA   A,AP_OTO                  ; otomatik gönderim isteği kalmasın
-012C08  F0 0B                        BEQ   AKN_C1
-012C0A  9C F8 04 00                  LDM   #0,AP_OTO
-012C0E  D8                           CLM
-012C0F  1C 44 02 04 00               CLB   #F_PTT_APRS,PTT_ISTEK
-012C14  F8                           SEM
-012C15  A2 00 00                     LDX   #0                        ; kayıt hâlâ bizimki mi? (kanal anahtarı çevrildiyse dokunma)
-012C18  BD 70 03             AKN_1:  LDA   A,SYN_KAYIT,X
-012C1B  DD B8 05                     CMP   A,AP_KAYIT,X
-012C1E  D0 1C                        BNE   AKN_SON
-012C20  E8                           INX
-012C21  E0 0D 00                     CPX   #13
-012C24  D0 F2                        BNE   AKN_1
-012C26  A2 00 00                     LDX   #0
-012C29  BD AB 05             AKN_2:  LDA   A,AP_YEDEK,X
-012C2C  9D 70 03                     STA   A,SYN_KAYIT,X
-012C2F  9D 63 03                     STA   A,SYN_YEDEK,X
-012C32  E8                           INX
-012C33  E0 0D 00                     CPX   #13
-012C36  D0 F1                        BNE   AKN_2
-012C38  9C 28 02 01                  LDM   #1,RADYO_DURUM
-012C3C  D8                           CLM
-012C3D  60                           RTS
-012C3E                               .ASSUME M=1,X=0
-012C3E  AD 57 04                     LDA   A,TIK_32MS                ; geçen adım
-012C41  38                           SEC
-012C42  ED F6 04                     SBC   A,AP_SONTIK
-012C45  8D F7 04                     STA   A,AP_FARK
-012C48  AD 57 04                     LDA   A,TIK_32MS
-012C4B  8D F6 04                     STA   A,AP_SONTIK
-012C4E  20 7C 25                     JSR   AP_HAZIR                  ; paket hazır değilse sayma
-012C51  D0 65                        BNE   AOZ_SON
-012C53  D8                           CLM
-012C54  AD F0 04                     LDA   A,AP_ARALIK
-012C57  F0 5F                        BEQ   AOZ_SON
-012C59  F8                           SEM
-012C5A  AD F8 04                     LDA   A,AP_OTO
-012C5D  F0 21                        BEQ   AOZ_SAY
-012C5F  AD F9 04                     LDA   A,AP_OTO_SURE             ; istek bekliyor: süresi dolarsa bırak
-012C62  38                           SEC
-012C63  ED F7 04                     SBC   A,AP_FARK
-012C66  B0 02                        BCS   AOZ_S1
-012C68  A9 00                        LDA   A,#0
-012C6A  8D F9 04             AOZ_S1: STA   A,AP_OTO_SURE
-012C6D  D0 49                        BNE   AOZ_SON
-012C6F  9C F8 04 00                  LDM   #0,AP_OTO
-012C73  D8                           CLM
-012C74  1C 44 02 04 00               CLB   #F_PTT_APRS,PTT_ISTEK
-012C79  9C F2 04 00 00               LDM   #0,AP_SANIYE
-012C7E  80 38                        BRA   AOZ_SON
-012C80                               .ASSUME M=1,X=0
-012C80  AD F7 04                     LDA   A,AP_FARK
-012C83  F0 33                        BEQ   AOZ_SON
-012C85  D8                           CLM
-012C86  AD F4 04             AOZ_1:  LDA   A,AP_MS                   ; her adım 32 ms
-012C89  18                           CLC
-012C8A  69 20 00                     ADC   A,#32
-012C8D  C9 E8 03                     CMP   A,#1000
-012C90  90 06                        BCC   AOZ_2
-012C92  E9 E8 03                     SBC   A,#1000
-012C95  EE F2 04                     INC   AP_SANIYE
-012C98  8D F4 04             AOZ_2:  STA   A,AP_MS
-012C9B  F8                           SEM
-012C9C  CE F7 04                     DEC   AP_FARK
-012C9F  D8                           CLM
-012CA0  D0 E4                        BNE   AOZ_1
-012CA2  AD F2 04                     LDA   A,AP_SANIYE
-012CA5  CD F0 04                     CMP   A,AP_ARALIK
-012CA8  90 0E                        BCC   AOZ_SON
-012CAA  0C 44 02 04 00               SEB   #F_PTT_APRS,PTT_ISTEK     ; zamanı geldi: PTT isteği
-012CAF  F8                           SEM
-012CB0  9C F8 04 01                  LDM   #1,AP_OTO
-012CB4  9C F9 04 5E                  LDM   #94,AP_OTO_SURE           ; ~3 s
-012CB8  D8                           CLM
-012CB9  60                           RTS
-012CBA                               .ORG $00F628                    ; durum 12 (PTT bırakıldı): kimlik gönder
+012892                               .ASSUME M=1,X=0
+012892  8D D0 05                     STA   A,AP_HATA_KOD
+012895  D8                           CLM
+012896  38                           SEC
+012897  60                           RTS
+012898  82 A0 92 B4 86 92 …          .BYTE 'A'*2,'P'*2,'I'*2,'Z'*2,'C'*2,'I'*2,$E0
+01289F  AE 92 88 8A 62 40 …          .BYTE 'W'*2,'I'*2,'D'*2,'E'*2,'1'*2,' '*2,$62
+0128A6  AE 92 88 8A 64 40 …          .BYTE 'W'*2,'I'*2,'D'*2,'E'*2,'2'*2,' '*2,$63
+0128AD  03 F0 21                     .BYTE $03,$F0,'!'
+0128B0  41 50 01 00                  .BYTE "AP",AB_SURUM_NO,0        ; +0
+0128B4  54 43 31 39 4D 4B …          .BYTE "TC19MK-10",0             ; +4  çağrı işareti
+0128BE  2F 62                        .BYTE "/b"                      ; +14 simge
+0128C0  33 39 35 35 2E 35 …          .BYTE "3955.52N"                ; +16 enlem
+0128C8  30 33 32 35 30 2E …          .BYTE "03250.22E",0             ; +24 boylam
+0128D2  00 00                        .BYTE 0,0                       ; +34 aralık
+0128D4  41 53 45 4C 53 41 …          .BYTE "ASELSAN 4000"            ; +36 yorum
+0128E0  00 00 00 00 00 00 …          .FILL AP_VARSAYILAN+AB_UZ-*,0
+012900                               .ASSUME M=0,X=0
+012900  48                           PHA
+012901  A9 DE 05                     LDA   A,#AP_AD
+012904  8D EF 05                     STA   A,AP_HEDEF_P
+012907  68                           PLA
+012908  8C F1 05                     STY   AP_ALAN_N
+01290B                               .ASSUME M=0,X=0
+01290B  DA                           PHX
+01290C  5A                           PHY
+01290D  8D F5 05                     STA   A,AP_YER
+012910  F8                           SEM
+012911  AD EE 05                     LDA   A,AP_EE_OK
+012914  D8                           CLM
+012915  D0 1E                        BNE   AAK_EE
+012917  AE F5 05                     LDX   AP_YER
+01291A  AC EF 05                     LDY   AP_HEDEF_P
+01291D  F8                           SEM
+01291E  AD F1 05             AAK_1:  LDA   A,AP_ALAN_N
+012921  F0 0E                        BEQ   AAK_SON
+012923  BF B0 28 01                  LDA   A,>AP_VARSAYILAN,X
+012927  99 00 00                     STA   A,!$0000,Y
+01292A  E8                           INX
+01292B  C8                           INY
+01292C  CE F1 05                     DEC   AP_ALAN_N
+01292F  80 ED                        BRA   AAK_1
+012931  D8                           CLM
+012932  7A                           PLY
+012933  FA                           PLX
+012934  60                           RTS
+012935  AD F5 05             AAK_EE: LDA   A,AP_YER
+012938  18                           CLC
+012939  69 E0 06                     ADC   A,#EE_APRS
+01293C  20 42 29                     JSR   AP_EE_OKU
+01293F  7A                           PLY
+012940  FA                           PLX
+012941  60                           RTS
+012942                               .ASSUME M=0,X=0
+012942  DA                           PHX
+012943  5A                           PHY
+012944  0B                           PHD
+012945  A8                           TAY
+012946  AD D1 05                     LDA   A,AP_F
+012949  5B                           TAD
+01294A  84 04                        STY   $04                       ; EEPROM adresi
+01294C  AD EF 05                     LDA   A,AP_HEDEF_P              ; hedef (bank 0)
+01294F  85 01                        STA   A,$01
+012951  F8                           SEM
+012952  AD F1 05                     LDA   A,AP_ALAN_N
+012955  85 00                        STA   A,$00
+012957  A9 00                        LDA   A,#0
+012959  85 03                        STA   A,$03
+01295B  D8                           CLM
+01295C  7B                           TDA
+01295D  48                           PHA
+01295E  A0 A0 00                     LDY   #$00A0
+012961  22 EE 72 00                  JSRL  F_EE_OKU
+012965  D8                           CLM
+012966  68                           PLA
+012967  2B                           PLD
+012968  7A                           PLY
+012969  FA                           PLX
+01296A  60                           RTS
+01296B                               .ASSUME M=0,X=0
+01296B  F8                           SEM
+01296C  9C EE 05 00                  LDM   #0,AP_EE_OK
+012970  D8                           CLM
+012971  9C F3 05 00 00               LDM   #0,AP_TOPLAM
+012976  9C F1 05 10 00               LDM   #16,AP_ALAN_N
+01297B  A9 DE 05                     LDA   A,#AP_AD
+01297E  8D EF 05                     STA   A,AP_HEDEF_P
+012981  A9 E0 06                     LDA   A,#EE_APRS
+012984  8D F5 05                     STA   A,AP_YER
+012987  AD F5 05             ABD_1:  LDA   A,AP_YER
+01298A  20 42 29                     JSR   AP_EE_OKU
+01298D  AD F5 05                     LDA   A,AP_YER
+012990  C9 E0 06                     CMP   A,#EE_APRS
+012993  D0 13                        BNE   ABD_TOPLA
+012995  AD DE 05                     LDA   A,AP_AD                   ; ilk parça: imza ve sürüm
+012998  C9 41 50                     CMP   A,#'A'+'P'*256
+01299B  D0 4E                        BNE   ABD_SON
+01299D  AD E0 05                     LDA   A,AP_AD+2
+0129A0  29 FF 00                     AND   A,#$00FF
+0129A3  C9 01 00                     CMP   A,#AB_SURUM_NO
+0129A6  D0 43                        BNE   ABD_SON
+0129A8  A2 00 00                     LDX   #0
+0129AB  BD DE 05             ABD_2:  LDA   A,AP_AD,X
+0129AE  29 FF 00                     AND   A,#$00FF
+0129B1  18                           CLC
+0129B2  6D F3 05                     ADC   A,AP_TOPLAM
+0129B5  8D F3 05                     STA   A,AP_TOPLAM
+0129B8  E8                           INX
+0129B9  E0 10 00                     CPX   #16
+0129BC  D0 ED                        BNE   ABD_2
+0129BE  AD F5 05                     LDA   A,AP_YER
+0129C1  18                           CLC
+0129C2  69 10 00                     ADC   A,#16
+0129C5  8D F5 05                     STA   A,AP_YER
+0129C8  C9 30 07                     CMP   A,#EE_APRS+AB_UZ
+0129CB  D0 BA                        BNE   ABD_1
+0129CD  9C F1 05 02 00               LDM   #2,AP_ALAN_N              ; sağlama, büyük uçlu
+0129D2  20 42 29                     JSR   AP_EE_OKU                 ; A = EE_APRS + AB_UZ
+0129D5  F8                           SEM
+0129D6  AD DE 05                     LDA   A,AP_AD
+0129D9  CD F4 05                     CMP   A,AP_TOPLAM+1
+0129DC  D0 0C                        BNE   ABD_S
+0129DE  AD DF 05                     LDA   A,AP_AD+1
+0129E1  CD F3 05                     CMP   A,AP_TOPLAM
+0129E4  D0 04                        BNE   ABD_S
+0129E6  9C EE 05 01                  LDM   #1,AP_EE_OK
+0129EA  D8                   ABD_S:  CLM
+0129EB  60                           RTS
+0129EC                               .ASSUME M=1,X=0
+0129EC  AD DE 05                     LDA   A,AP_AD
+0129EF  20 12 2A                     JSR   AP_YAZILIR
+0129F2  B0 15                        BCS   ASA_V
+0129F4  AD DF 05                     LDA   A,AP_AD+1
+0129F7  20 12 2A                     JSR   AP_YAZILIR
+0129FA  B0 0D                        BCS   ASA_V
+0129FC  AD DE 05                     LDA   A,AP_AD
+0129FF  8D D5 05                     STA   A,AP_SEMBOL
+012A02  AD DF 05                     LDA   A,AP_AD+1
+012A05  8D D6 05                     STA   A,AP_SEMBOL+1
+012A08  60                           RTS
+012A09  9C D5 05 2F          ASA_V:  LDM   #'/',AP_SEMBOL
+012A0D  9C D6 05 62                  LDM   #'b',AP_SEMBOL+1
+012A11  60                           RTS
+012A12                               .ASSUME M=1,X=0
+012A12  C9 21                        CMP   A,#'!'
+012A14  90 06                        BCC   AYZ_H
+012A16  C9 7F                        CMP   A,#$7F
+012A18  B0 02                        BCS   AYZ_H
+012A1A  18                           CLC
+012A1B  60                           RTS
+012A1C  38                   AYZ_H:  SEC
+012A1D  60                           RTS
+012A1E                               .ASSUME M=1,X=0
+012A1E  C9 61                        CMP   A,#'a'
+012A20  90 06                        BCC   ABY_X
+012A22  C9 7B                        CMP   A,#'z'+1
+012A24  B0 02                        BCS   ABY_X
+012A26  29 DF                        AND   A,#$DF
+012A28  60                   ABY_X:  RTS
+012A29                               .ASSUME M=1,X=0
+012A29  9C DA 05 00                  LDM   #0,AP_SAY
+012A2D  A0 00 00                     LDY   #0
+012A30  C0 0A 00             ACY_1:  CPY   #10
+012A33  F0 27                        BEQ   ACY_DOLDUR
+012A35  B9 DE 05                     LDA   A,AP_AD,Y
+012A38  F0 22                        BEQ   ACY_DOLDUR
+012A3A  C9 2D                        CMP   A,#'-'
+012A3C  F0 1E                        BEQ   ACY_DOLDUR
+012A3E  C9 20                        CMP   A,#' '
+012A40  F0 1A                        BEQ   ACY_DOLDUR
+012A42  20 1E 2A                     JSR   AP_BUYUK
+012A45  20 CB 2A                     JSR   AP_HARF_RAKAM
+012A48  B0 7F                        BCS   ACY_HATA
+012A4A  0A                           ASL   A
+012A4B  9D 40 07                     STA   A,AP_CER,X
+012A4E  E8                           INX
+012A4F  C8                           INY
+012A50  EE DA 05                     INC   AP_SAY
+012A53  AD DA 05                     LDA   A,AP_SAY
+012A56  C9 07                        CMP   A,#7
+012A58  B0 6F                        BCS   ACY_HATA
+012A5A  80 D4                        BRA   ACY_1
+012A5C  AD DA 05                     LDA   A,AP_SAY
+012A5F  F0 68                        BEQ   ACY_HATA
+012A61  AD DA 05             ACY_D1: LDA   A,AP_SAY                  ; 6 karaktere boşlukla tamamla
+012A64  C9 06                        CMP   A,#6
+012A66  F0 0B                        BEQ   ACY_SSID
+012A68  A9 40                        LDA   A,#' '*2
+012A6A  9D 40 07                     STA   A,AP_CER,X
+012A6D  E8                           INX
+012A6E  EE DA 05                     INC   AP_SAY
+012A71  80 EE                        BRA   ACY_D1
+012A73  9C DB 05 00                  LDM   #0,AP_SSID
+012A77  C0 0A 00                     CPY   #10
+012A7A  F0 41                        BEQ   ACY_YAZ
+012A7C  B9 DE 05                     LDA   A,AP_AD,Y
+012A7F  C9 2D                        CMP   A,#'-'
+012A81  D0 3A                        BNE   ACY_YAZ
+012A83  C8                           INY
+012A84  C0 0A 00                     CPY   #10
+012A87  F0 40                        BEQ   ACY_HATA
+012A89  B9 DE 05                     LDA   A,AP_AD,Y
+012A8C  20 DF 2A                     JSR   AP_RAKAM
+012A8F  B0 38                        BCS   ACY_HATA
+012A91  8D DB 05                     STA   A,AP_SSID
+012A94  C8                           INY
+012A95  C0 0A 00                     CPY   #10
+012A98  F0 23                        BEQ   ACY_YAZ
+012A9A  B9 DE 05                     LDA   A,AP_AD,Y
+012A9D  20 DF 2A                     JSR   AP_RAKAM
+012AA0  B0 1B                        BCS   ACY_YAZ                   ; tek haneli SSID
+012AA2  8D DC 05                     STA   A,AP_T1                   ; SSID = 10 * ilk + ikinci
+012AA5  AD DB 05                     LDA   A,AP_SSID
+012AA8  0A                           ASL   A
+012AA9  8D DD 05                     STA   A,AP_T2
+012AAC  0A                           ASL   A
+012AAD  0A                           ASL   A
+012AAE  18                           CLC
+012AAF  6D DD 05                     ADC   A,AP_T2
+012AB2  18                           CLC
+012AB3  6D DC 05                     ADC   A,AP_T1
+012AB6  8D DB 05                     STA   A,AP_SSID
+012AB9  C9 10                        CMP   A,#16
+012ABB  B0 0C                        BCS   ACY_HATA
+012ABD  AD DB 05                     LDA   A,AP_SSID
+012AC0  0A                           ASL   A
+012AC1  09 60                        ORA   A,#$60
+012AC3  9D 40 07                     STA   A,AP_CER,X
+012AC6  E8                           INX
+012AC7  18                           CLC
+012AC8  60                           RTS
+012AC9  38                           SEC
+012ACA  60                           RTS
+012ACB                               .ASSUME M=1,X=0
+012ACB  C9 30                        CMP   A,#'0'
+012ACD  90 0C                        BCC   AHR_H
+012ACF  C9 3A                        CMP   A,#'9'+1
+012AD1  90 0A                        BCC   AHR_E
+012AD3  C9 41                        CMP   A,#'A'
+012AD5  90 04                        BCC   AHR_H
+012AD7  C9 5B                        CMP   A,#'Z'+1
+012AD9  90 02                        BCC   AHR_E
+012ADB  38                   AHR_H:  SEC
+012ADC  60                           RTS
+012ADD  18                   AHR_E:  CLC
+012ADE  60                           RTS
+012ADF                               .ASSUME M=1,X=0
+012ADF  38                           SEC
+012AE0  E9 30                        SBC   A,#'0'
+012AE2  90 06                        BCC   AR_H
+012AE4  C9 0A                        CMP   A,#10
+012AE6  B0 02                        BCS   AR_H
+012AE8  18                           CLC
+012AE9  60                           RTS
+012AEA  38                   AR_H:   SEC
+012AEB  60                           RTS
+012AEC                               .ASSUME M=1,X=0
+012AEC  C9 30                        CMP   A,#'0'
+012AEE  90 06                        BCC   ARM_H
+012AF0  C9 3A                        CMP   A,#'9'+1
+012AF2  B0 02                        BCS   ARM_H
+012AF4  18                           CLC
+012AF5  60                           RTS
+012AF6  38                   ARM_H:  SEC
+012AF7  60                           RTS
+012AF8                               .ASSUME M=1,X=0
+012AF8  8D DD 05                     STA   A,AP_T2
+012AFB  8C D3 05                     STY   AP_CRC                    ; izin verilen harfler (geçici)
+012AFE  A0 00 00                     LDY   #0
+012B01  B9 DE 05             AKY_1:  LDA   A,AP_AD,Y
+012B04  20 EC 2A                     JSR   AP_RAKAM_MI
+012B07  B0 4A                        BCS   AKY_HATA
+012B09  C8                           INY
+012B0A  98                           TYA
+012B0B  CD DD 05                     CMP   A,AP_T2
+012B0E  D0 F1                        BNE   AKY_1
+012B10  B9 DE 05                     LDA   A,AP_AD,Y
+012B13  C9 2E                        CMP   A,#'.'
+012B15  D0 3C                        BNE   AKY_HATA
+012B17  C8                           INY
+012B18  B9 DE 05                     LDA   A,AP_AD,Y
+012B1B  20 EC 2A                     JSR   AP_RAKAM_MI
+012B1E  B0 33                        BCS   AKY_HATA
+012B20  C8                           INY
+012B21  B9 DE 05                     LDA   A,AP_AD,Y
+012B24  20 EC 2A                     JSR   AP_RAKAM_MI
+012B27  B0 2A                        BCS   AKY_HATA
+012B29  C8                           INY
+012B2A  B9 DE 05                     LDA   A,AP_AD,Y
+012B2D  20 1E 2A                     JSR   AP_BUYUK
+012B30  CD D3 05                     CMP   A,AP_CRC
+012B33  F0 05                        BEQ   AKY_2
+012B35  CD D4 05                     CMP   A,AP_CRC+1
+012B38  D0 19                        BNE   AKY_HATA
+012B3A  99 DE 05             AKY_2:  STA   A,AP_AD,Y
+012B3D  C8                           INY
+012B3E  8C D7 05                     STY   AP_HSAY                   ; uzunluk
+012B41  A0 00 00                     LDY   #0
+012B44  B9 DE 05             AKY_3:  LDA   A,AP_AD,Y
+012B47  9D 40 07                     STA   A,AP_CER,X
+012B4A  E8                           INX
+012B4B  C8                           INY
+012B4C  CC D7 05                     CPY   AP_HSAY
+012B4F  D0 F3                        BNE   AKY_3
+012B51  18                           CLC
+012B52  60                           RTS
+012B53  38                           SEC
+012B54  60                           RTS
+012B55                               .ASSUME M=0,X=0
+012B55  8A                           TXA
+012B56  18                           CLC
+012B57  69 40 07                     ADC   A,#AP_CER
+012B5A  8D EF 05                     STA   A,AP_HEDEF_P
+012B5D  A9 2B 00                     LDA   A,#AB_YORUM_N
+012B60  8D F1 05                     STA   A,AP_ALAN_N
+012B63  A9 24 00                     LDA   A,#AB_YORUM
+012B66  20 0B 29                     JSR   AP_ALAN_OKU
+012B69  A0 00 00                     LDY   #0
+012B6C  F8                           SEM
+012B6D  BD 40 07             AYY_1:  LDA   A,AP_CER,X
+012B70  F0 07                        BEQ   AYY_SON
+012B72  E8                           INX
+012B73  C8                           INY
+012B74  C0 2B 00                     CPY   #AB_YORUM_N
+012B77  D0 F4                        BNE   AYY_1
+012B79  D8                           CLM
+012B7A  60                           RTS
+012B7B                               .ASSUME M=0,X=0
+012B7B  F8                           SEM
+012B7C  AD DE 05                     LDA   A,AP_AD
+012B7F  8D F1 04                     STA   A,AP_ARALIK+1
+012B82  AD DF 05                     LDA   A,AP_AD+1
+012B85  8D F0 04                     STA   A,AP_ARALIK
+012B88  D8                           CLM
+012B89  9C F2 04 00 00               LDM   #0,AP_SANIYE
+012B8E  9C F4 04 00 00               LDM   #0,AP_MS
+012B93  AD F0 04                     LDA   A,AP_ARALIK
+012B96  F0 0B                        BEQ   AAL_X
+012B98  C9 0A 00                     CMP   A,#AP_EN_KISA
+012B9B  B0 06                        BCS   AAL_X
+012B9D  A9 0A 00                     LDA   A,#AP_EN_KISA
+012BA0  8D F0 04                     STA   A,AP_ARALIK
+012BA3  F8                   AAL_X:  SEM
+012BA4  AD 57 04                     LDA   A,TIK_32MS
+012BA7  8D F6 04                     STA   A,AP_SONTIK
+012BAA  9C F8 04 00                  LDM   #0,AP_OTO
+012BAE  D8                           CLM
+012BAF  60                           RTS
+012BB0                               .ASSUME M=0,X=0
+012BB0  A9 FF FF                     LDA   A,#$FFFF
+012BB3  8D D3 05                     STA   A,AP_CRC
+012BB6  A2 00 00                     LDX   #0
+012BB9  EC C7 05             AF_1:   CPX   AP_UZ
+012BBC  F0 1B                        BEQ   AF_SON
+012BBE  BD 40 07                     LDA   A,AP_CER,X
+012BC1  29 FF 00                     AND   A,#$00FF
+012BC4  4D D3 05                     EOR   A,AP_CRC
+012BC7  A0 08 00                     LDY   #8
+012BCA  4A                   AF_2:   LSR   A
+012BCB  90 03                        BCC   AF_3
+012BCD  49 08 84                     EOR   A,#$8408
+012BD0  88                   AF_3:   DEY
+012BD1  D0 F7                        BNE   AF_2
+012BD3  8D D3 05                     STA   A,AP_CRC
+012BD6  E8                           INX
+012BD7  80 E0                        BRA   AF_1
+012BD9  AD D3 05             AF_SON: LDA   A,AP_CRC
+012BDC  49 FF FF                     EOR   A,#$FFFF
+012BDF  9D 40 07                     STA   A,AP_CER,X
+012BE2  E8                           INX
+012BE3  E8                           INX
+012BE4  8E C7 05                     STX   AP_UZ
+012BE7  60                           RTS
+012BE8                               .ASSUME M=0,X=0
+012BE8  F8                           SEM
+012BE9  3C AA 05 01 54               BBC   #F_AP_KURULU,AP_DURUM,AKN_SON
+012BEE  AD 27 02                     LDA   A,MENU
+012BF1  C9 17                        CMP   A,#ST_APRS_ON
+012BF3  D0 12                        BNE   AKN_CIKIS
+012BF5  1C 0A 00 40                  CLB   #$40,R_P4                 ; hoparlör her turda yeniden kapatılır
+012BF9  AD 31 02                     LDA   A,MENU_OLAY               ; açıkken menü zaman aşımı yok
+012BFC  C9 14                        CMP   A,#$14
+012BFE  D0 04                        BNE   AKN_ZAMAN
+012C00  9C 30 02 3F                  LDM   #$3F,MENU_SAYAC
+012C04  4C 44 2C                     JMP   AP_OTO_ZAMAN
+012C07  9C AA 05 00                  LDM   #0,AP_DURUM
+012C0B  AD F8 04                     LDA   A,AP_OTO                  ; otomatik gönderim isteği kalmasın
+012C0E  F0 0B                        BEQ   AKN_C1
+012C10  9C F8 04 00                  LDM   #0,AP_OTO
+012C14  D8                           CLM
+012C15  1C 44 02 04 00               CLB   #F_PTT_APRS,PTT_ISTEK
+012C1A  F8                           SEM
+012C1B  A2 00 00                     LDX   #0                        ; kayıt hâlâ bizimki mi? (kanal anahtarı çevrildiyse dokunma)
+012C1E  BD 70 03             AKN_1:  LDA   A,SYN_KAYIT,X
+012C21  DD B8 05                     CMP   A,AP_KAYIT,X
+012C24  D0 1C                        BNE   AKN_SON
+012C26  E8                           INX
+012C27  E0 0D 00                     CPX   #13
+012C2A  D0 F2                        BNE   AKN_1
+012C2C  A2 00 00                     LDX   #0
+012C2F  BD AB 05             AKN_2:  LDA   A,AP_YEDEK,X
+012C32  9D 70 03                     STA   A,SYN_KAYIT,X
+012C35  9D 63 03                     STA   A,SYN_YEDEK,X
+012C38  E8                           INX
+012C39  E0 0D 00                     CPX   #13
+012C3C  D0 F1                        BNE   AKN_2
+012C3E  9C 28 02 01                  LDM   #1,RADYO_DURUM
+012C42  D8                           CLM
+012C43  60                           RTS
+012C44                               .ASSUME M=1,X=0
+012C44  AD 57 04                     LDA   A,TIK_32MS                ; geçen adım
+012C47  38                           SEC
+012C48  ED F6 04                     SBC   A,AP_SONTIK
+012C4B  8D F7 04                     STA   A,AP_FARK
+012C4E  AD 57 04                     LDA   A,TIK_32MS
+012C51  8D F6 04                     STA   A,AP_SONTIK
+012C54  20 82 25                     JSR   AP_HAZIR                  ; paket hazır değilse sayma
+012C57  D0 65                        BNE   AOZ_SON
+012C59  D8                           CLM
+012C5A  AD F0 04                     LDA   A,AP_ARALIK
+012C5D  F0 5F                        BEQ   AOZ_SON
+012C5F  F8                           SEM
+012C60  AD F8 04                     LDA   A,AP_OTO
+012C63  F0 21                        BEQ   AOZ_SAY
+012C65  AD F9 04                     LDA   A,AP_OTO_SURE             ; istek bekliyor: süresi dolarsa bırak
+012C68  38                           SEC
+012C69  ED F7 04                     SBC   A,AP_FARK
+012C6C  B0 02                        BCS   AOZ_S1
+012C6E  A9 00                        LDA   A,#0
+012C70  8D F9 04             AOZ_S1: STA   A,AP_OTO_SURE
+012C73  D0 49                        BNE   AOZ_SON
+012C75  9C F8 04 00                  LDM   #0,AP_OTO
+012C79  D8                           CLM
+012C7A  1C 44 02 04 00               CLB   #F_PTT_APRS,PTT_ISTEK
+012C7F  9C F2 04 00 00               LDM   #0,AP_SANIYE
+012C84  80 38                        BRA   AOZ_SON
+012C86                               .ASSUME M=1,X=0
+012C86  AD F7 04                     LDA   A,AP_FARK
+012C89  F0 33                        BEQ   AOZ_SON
+012C8B  D8                           CLM
+012C8C  AD F4 04             AOZ_1:  LDA   A,AP_MS                   ; her adım 32 ms
+012C8F  18                           CLC
+012C90  69 20 00                     ADC   A,#32
+012C93  C9 E8 03                     CMP   A,#1000
+012C96  90 06                        BCC   AOZ_2
+012C98  E9 E8 03                     SBC   A,#1000
+012C9B  EE F2 04                     INC   AP_SANIYE
+012C9E  8D F4 04             AOZ_2:  STA   A,AP_MS
+012CA1  F8                           SEM
+012CA2  CE F7 04                     DEC   AP_FARK
+012CA5  D8                           CLM
+012CA6  D0 E4                        BNE   AOZ_1
+012CA8  AD F2 04                     LDA   A,AP_SANIYE
+012CAB  CD F0 04                     CMP   A,AP_ARALIK
+012CAE  90 0E                        BCC   AOZ_SON
+012CB0  0C 44 02 04 00               SEB   #F_PTT_APRS,PTT_ISTEK     ; zamanı geldi: PTT isteği
+012CB5  F8                           SEM
+012CB6  9C F8 04 01                  LDM   #1,AP_OTO
+012CBA  9C F9 04 5E                  LDM   #94,AP_OTO_SURE           ; ~3 s
+012CBE  D8                           CLM
+012CBF  60                           RTS
+012CC0                               .ORG $00F628                    ; durum 12 (PTT bırakıldı): kimlik gönder
 00F628                               .EXPECT $22,$5B,$E6,$00         ; JSRL F_00E65B
 00F628  EA EA EA EA                  .BYTE $EA,$EA,$EA,$EA           ; NOP
 00F62C  00 00 00 00 00 00 …          .ORG $00F67A                    ; durum 7: çağrı / transpond gönder
@@ -1651,7 +1653,7 @@
 00EBF2  EA EA EA EA                  .BYTE $EA,$EA,$EA,$EA
 00EBF6                               .ORG $00202C                    ; VEC_TA1: karar kesmesi yerine boş kesme
 00202C                               .EXPECT $5C,$C0,$C6,$01         ; JMPL L_01C6C0
-00202C  5C BA 2C 01                  JMPL  SC_TA1
+00202C  5C C0 2C 01                  JMPL  SC_TA1
 002030  00 00 00 00 00 00 …          .ORG $003964                    ; # menüsü: numara tamam -> çağır
 003964                               .EXPECT $0C,$44,$02,$01,$00     ; SEB #$0001,$0244
 003964  EA EA EA EA EA               .BYTE $EA,$EA,$EA,$EA,$EA
@@ -1666,8 +1668,8 @@
 006900                               .SERBEST $01BBE4,$01C627-$01BBE4,$A3,$04,$0B,$5B,$84,$00           ; F_01BBE4
 006900                               .SERBEST $01C6C0,$01C8DE-$01C6C0,$C2,$39,$EB,$3F,$89,$C2,$00       ; TA1 kesmesi
 006900  00 00 00 00 00 00 …          .ORG SC_KOD_ADRES
-012CBA  40                   SC_TA1: RTI
-012CBB                               .ORG $00E0E1                    ; F_00E0E1: LDA A,$04,S / PHD / TAD
+012CC0  40                   SC_TA1: RTI
+012CC1                               .ORG $00E0E1                    ; F_00E0E1: LDA A,$04,S / PHD / TAD
 00E0E1                               .EXPECT $A3,$04,$0B,$5B
 00E0E1                               .ASSUME M=0,X=0
 00E0E1  5C 00 20 01                  JMPL  ACILIS
@@ -1981,109 +1983,109 @@ AH_AC                    $01251B
 APRS_SUS_KARAR           $012523
 SSK_1                    $01252C
 APRS_SUS_FX806           $012534
-SSF_1                    $01253D
-SSF_2                    $012545
-APRS_BIP                 $012549
-ABP_SUS                  $012559
-APRS_UYARI               $01255B
-AUY_SUS                  $01256B
-AP_ETKIN                 $01256D
-AE_SON                   $01257B
-AP_HAZIR                 $01257C
-AHZ_SON                  $01258A
-APRS_PTT                 $01258B
-AP_YOK                   $0125C6
-AFSK_GONDER              $0125C9
-AG_BEKLE                 $012650
-AG_BEKLE2                $01265D
-AG_BITTI                 $012660
-AP_METIN_YAZ             $012676
-AMY_1                    $01267A
-AP_METIN                 $01268A
-APRS_GIR                 $0126E2
-AG_1                     $01270D
-APRS_TUS                 $012711
-AP_EKRAN_SON             $012714
-AE_1                     $012721
-AE_3                     $012745
-AP_KUR                   $01274B
-AK_1                     $012753
-AK_2                     $012762
-AK_GECERLI               $012784
-AK_3                     $01278E
-AK_4                     $0127A5
-AK_5                     $0127C4
-AP_HANELER               $0127E1
-AP_HAZIRLA               $0127E8
-AHA_1                    $012809
-AHA_2                    $012821
-AHA_3                    $012825
-AHA_4                    $01284D
-AHA_5                    $01286D
-AHA_HATA                 $01288C
-AP_HEDEF                 $012892
-AP_YOL                   $012899
-AP_VARSAYILAN            $0128AA
-AP_ALAN_AD               $0128FA
-AP_ALAN_OKU              $012905
-AAK_1                    $012918
-AAK_SON                  $01292B
-AAK_EE                   $01292F
-AP_EE_OKU                $01293C
-AP_BLOK_DENETLE          $012965
-ABD_1                    $012981
-ABD_TOPLA                $0129A2
-ABD_2                    $0129A5
-ABD_S                    $0129E4
-ABD_SON                  $0129E5
-AP_SEMBOL_AL             $0129E6
-ASA_V                    $012A03
-AP_YAZILIR               $012A0C
-AYZ_H                    $012A16
-AP_BUYUK                 $012A18
-ABY_X                    $012A22
-AP_CAGRI_YAZ             $012A23
-ACY_1                    $012A2A
-ACY_DOLDUR               $012A56
-ACY_D1                   $012A5B
-ACY_SSID                 $012A6D
-ACY_YAZ                  $012AB7
-ACY_HATA                 $012AC3
-AP_HARF_RAKAM            $012AC5
-AHR_H                    $012AD5
-AHR_E                    $012AD7
-AP_RAKAM                 $012AD9
-AR_H                     $012AE4
-AP_RAKAM_MI              $012AE6
-ARM_H                    $012AF0
-AP_KONUM_YAZ             $012AF2
-AKY_1                    $012AFB
-AKY_2                    $012B34
-AKY_3                    $012B3E
-AKY_HATA                 $012B4D
-AP_YORUM_YAZ             $012B4F
-AYY_1                    $012B67
-AYY_SON                  $012B73
-AP_ARALIK_AL             $012B75
-AAL_X                    $012B9D
-AP_FCS                   $012BAA
-AF_1                     $012BB3
-AF_2                     $012BC4
-AF_3                     $012BCA
-AF_SON                   $012BD3
-APRS_KANCA               $012BE2
-AKN_ZAMAN                $012BFE
-AKN_CIKIS                $012C01
-AKN_C1                   $012C15
-AKN_1                    $012C18
-AKN_2                    $012C29
-AKN_SON                  $012C3C
-AP_OTO_ZAMAN             $012C3E
-AOZ_S1                   $012C6A
-AOZ_SAY                  $012C80
-AOZ_1                    $012C86
-AOZ_2                    $012C98
-AOZ_SON                  $012CB8
-SC_KOD_ADRES             $012CBA
-SC_TA1                   $012CBA
+SSF_1                    $012543
+SSF_2                    $01254B
+APRS_BIP                 $01254F
+ABP_SUS                  $01255F
+APRS_UYARI               $012561
+AUY_SUS                  $012571
+AP_ETKIN                 $012573
+AE_SON                   $012581
+AP_HAZIR                 $012582
+AHZ_SON                  $012590
+APRS_PTT                 $012591
+AP_YOK                   $0125CC
+AFSK_GONDER              $0125CF
+AG_BEKLE                 $012656
+AG_BEKLE2                $012663
+AG_BITTI                 $012666
+AP_METIN_YAZ             $01267C
+AMY_1                    $012680
+AP_METIN                 $012690
+APRS_GIR                 $0126E8
+AG_1                     $012713
+APRS_TUS                 $012717
+AP_EKRAN_SON             $01271A
+AE_1                     $012727
+AE_3                     $01274B
+AP_KUR                   $012751
+AK_1                     $012759
+AK_2                     $012768
+AK_GECERLI               $01278A
+AK_3                     $012794
+AK_4                     $0127AB
+AK_5                     $0127CA
+AP_HANELER               $0127E7
+AP_HAZIRLA               $0127EE
+AHA_1                    $01280F
+AHA_2                    $012827
+AHA_3                    $01282B
+AHA_4                    $012853
+AHA_5                    $012873
+AHA_HATA                 $012892
+AP_HEDEF                 $012898
+AP_YOL                   $01289F
+AP_VARSAYILAN            $0128B0
+AP_ALAN_AD               $012900
+AP_ALAN_OKU              $01290B
+AAK_1                    $01291E
+AAK_SON                  $012931
+AAK_EE                   $012935
+AP_EE_OKU                $012942
+AP_BLOK_DENETLE          $01296B
+ABD_1                    $012987
+ABD_TOPLA                $0129A8
+ABD_2                    $0129AB
+ABD_S                    $0129EA
+ABD_SON                  $0129EB
+AP_SEMBOL_AL             $0129EC
+ASA_V                    $012A09
+AP_YAZILIR               $012A12
+AYZ_H                    $012A1C
+AP_BUYUK                 $012A1E
+ABY_X                    $012A28
+AP_CAGRI_YAZ             $012A29
+ACY_1                    $012A30
+ACY_DOLDUR               $012A5C
+ACY_D1                   $012A61
+ACY_SSID                 $012A73
+ACY_YAZ                  $012ABD
+ACY_HATA                 $012AC9
+AP_HARF_RAKAM            $012ACB
+AHR_H                    $012ADB
+AHR_E                    $012ADD
+AP_RAKAM                 $012ADF
+AR_H                     $012AEA
+AP_RAKAM_MI              $012AEC
+ARM_H                    $012AF6
+AP_KONUM_YAZ             $012AF8
+AKY_1                    $012B01
+AKY_2                    $012B3A
+AKY_3                    $012B44
+AKY_HATA                 $012B53
+AP_YORUM_YAZ             $012B55
+AYY_1                    $012B6D
+AYY_SON                  $012B79
+AP_ARALIK_AL             $012B7B
+AAL_X                    $012BA3
+AP_FCS                   $012BB0
+AF_1                     $012BB9
+AF_2                     $012BCA
+AF_3                     $012BD0
+AF_SON                   $012BD9
+APRS_KANCA               $012BE8
+AKN_ZAMAN                $012C04
+AKN_CIKIS                $012C07
+AKN_C1                   $012C1B
+AKN_1                    $012C1E
+AKN_2                    $012C2F
+AKN_SON                  $012C42
+AP_OTO_ZAMAN             $012C44
+AOZ_S1                   $012C70
+AOZ_SAY                  $012C86
+AOZ_1                    $012C8C
+AOZ_2                    $012C9E
+AOZ_SON                  $012CBE
+SC_KOD_ADRES             $012CC0
+SC_TA1                   $012CC0
 TB1_ORIJINAL             $01C627

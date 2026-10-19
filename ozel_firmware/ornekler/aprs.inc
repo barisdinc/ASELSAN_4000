@@ -50,8 +50,9 @@
 ;            sesleri (P50) etkilenmez. APRS'e girerken hoparlör hemen kapatılır, çıkışta
 ;            RX'e yeniden girilince firmware susturmaya göre yeniden açar
 ;   0x00CC44 / 0x00CC92 F_00CB52 (FX806 ses ayarı): APRS menüsündeyken ses her zaman kapalı
-;            sayılır ($00 = 1 -> RAM 0x0240 bit 0, tip A'da ses yükselteci kapalı) ve FX806'ya
-;            squelch kapalıyken yazılan ayar (L_00CD3F) yazılır. Tip B kartta hoparlörü asıl bu
+;            sayılır ($00 = 1 -> RAM 0x0240 bit 0, tip A'da ses yükselteci kapalı) ve almada
+;            FX806'ya squelch kapalıyken yazılan ayar (L_00CD3F) yazılır (vericide değil: o ayar
+;            modülatör seviyesini sıfırlar). Tip B kartta hoparlörü asıl bu
 ;            keser (P46 değil). APRS'e girişte F_00CB52 bir kez çağrılır.
 ;   0x0080AA F_0080AA (bip) ve 0x008084 F_008084 (uyarı tonu): APRS menüsündeyken hiç ses
 ;            çalınmaz (TA0 / P50 başlatılmaz). Böylece APRS'te hoparlör tamamen sessiz.
@@ -327,9 +328,13 @@ SSK_1:  CLM                             ; orijinal: CLM / LDA A,$00 / SEM
         SEM
         JMPL  $00CC48
 
-; F_00CB52, L_00CC92 (M = 1): APRS'teyse squelch açık olsa da sessiz FX806 ayarı
+; F_00CB52, L_00CC92 (M = 1): APRS'teyse alma sırasında squelch açık olsa da sessiz FX806 ayarı.
+; Yalnız almada ($023E bit 4): L_00CD3F modülatör seviyesini ($02 -> C-BUS $13) sıfırlar; vericide
+; zorlanırsa taşıyıcı boş gider (AFSK sesi modülatöre ulaşmaz)
 APRS_SUS_FX806:
+        SEM                             ; (iki giriş yolunda da M = 1)
         .ASSUME M=1,X=0
+        BBC   #$10,$023E,SSF_1          ; verici: orijinal karar
         JSR   AP_ETKIN
         BNE   SSF_1
         JMPL  $00CD3F
