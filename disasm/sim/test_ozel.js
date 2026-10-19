@@ -3,7 +3,7 @@
  *   jsc test_ozel.js -- ../../ozel_firmware/YA4000S_HESAP.HEX ../../YA4000S.HEX NUMBER,CALC
  * (ikinci dosya orijinal firmware: diğer menülerin değişmediğini karşılaştırmak için)
  * Üçüncü bağımsız değişken menüde LIST'ten sonra eklenen öğeler: "NUMBER" (varsayılan) ya da
- * "NUMBER,CALC,GAME,FREQ"; testler buna göre seçilir.
+ * "NUMBER,CALC,GAME" ya da "FREQ,APRS" (FREKANS firmware'i); testler buna göre seçilir.
  * Tuşlara basıp her tuştan sonra LCD'yi okur ve beklenenle karşılaştırır. */
 'use strict';
 const isNode = typeof process !== 'undefined' && process.versions && process.versions.node;
@@ -58,7 +58,7 @@ function scenario(b, name, seq, expect) {
 }
 
 /* SAYI / TERS (ozel_firmware/ornekler/sayi_ters.asm) */
-{
+if (RING.includes('NUMBER')) {
   const b = radio();
   boot(b, 2.5);
   check('açılış normal', lcd(b) === 'KANAL 01', lcd(b));
@@ -83,7 +83,7 @@ function scenario(b, name, seq, expect) {
 }
 
 /* Turkish menu texts: EE 0x018 bit 7 */
-{
+if (RING.includes('NUMBER')) {
   const b = radio(ee => { ee[0x018] |= 0x80; });
   boot(b, 2.5);
   scenario(b, 'Türkçe menü: SAYI', 'm m s 4 2 s', 'LISTE|SAYI|_|4_|42_|24');
@@ -451,10 +451,10 @@ if (origText) {
   while (!up.done && b.now < FCLK * 600) { b.run(FCLK * 0.01); up.tick(); }
   check('seri yükleyiciyle yazıldı ve doğrulandı', !up.error, up.error || up.log.slice(-1)[0]);
   b.font = V.buildFont(b.rom); boot(b, 3);
-  scenario(b, 'yüklemeden sonra SAYI çalışıyor', 'mms 2 0 2 6 s', 'LIST|NUMBER|_|2_|20_|202_|2026_|6202');
-  if (RING.includes('FREQ')) { keys(b, 'm'); const g = keys(b, 'mmmmms156525##'); check('yüklemeden sonra FREKANS çalışıyor', g[g.length - 1] === '156 5250' && (b.radioState().vco / 1e6).toFixed(4) === '201.5250', g.join('|')); }
-  if (RING.includes('GAME')) { keys(b, 'm'); const g = keys(b, 'mmmms123#'); check('yüklemeden sonra OYUN çalışıyor', g[4] === '___     ' && /^123 [v^]  1$|^WIN    1$/.test(g[8]), g.join('|')); }
-  if (RING.includes('CALC')) { keys(b, 'm'); scenario(b, 'yüklemeden sonra HESAP çalışıyor', 'mmms 7 * * * 6 #', 'LIST|NUMBER|CALC|       0|       7|+      7|-      7|*      7|*      6|      42'); }
+  if (RING.includes('NUMBER')) { scenario(b, 'yüklemeden sonra SAYI çalışıyor', 'mms 2 0 2 6 s', 'LIST|NUMBER|_|2_|20_|202_|2026_|6202'); keys(b, 'm'); }
+  if (RING.includes('FREQ')) { const g = keys(b, 'mm' + 'm'.repeat(RING.indexOf('FREQ')) + 's156525##'); check('yüklemeden sonra FREKANS çalışıyor', g[g.length - 1] === '156 5250' && (b.radioState().vco / 1e6).toFixed(4) === '201.5250', g.join('|')); }
+  if (RING.includes('GAME')) { if (RING.includes('FREQ')) keys(b, 'm'); const g = keys(b, 'mmmms123#'); check('yüklemeden sonra OYUN çalışıyor', g[4] === '___     ' && /^123 [v^]  1$|^WIN    1$/.test(g[8]), g.join('|')); }
+  if (RING.includes('CALC')) { if (RING.includes('GAME') || RING.includes('FREQ')) keys(b, 'm'); scenario(b, 'yüklemeden sonra HESAP çalışıyor', 'mmms 7 * * * 6 #', 'LIST|NUMBER|CALC|       0|       7|+      7|-      7|*      7|*      6|      42'); }
 }
 
 out(fails ? fails + ' test başarısız' : 'tüm özel firmware testleri geçti');

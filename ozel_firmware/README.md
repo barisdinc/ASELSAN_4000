@@ -8,7 +8,7 @@ Orijinal YA4000S yazılımına eklenen özellikler. Her örnek önce simülatör
 | `YA4000S_SAYI.HEX` | Menüde **SAYI** öğesi: girilen sayıyı yazar, `s` ile tersini gösterir | `ornekler/sayi_ters.asm` |
 | `YA4000S_HESAP.HEX` | SAYI + **HESAP**: dört işlemli hesap makinesi | `ornekler/hesap.asm` |
 | `YA4000S_OYUN.HEX` | SAYI + HESAP + **OYUN**: sayı tahmin oyunu (rastgele sayı, sesler) | `ornekler/oyun.asm` |
-| `YA4000S_FREKANS.HEX` | Önceki üçü + **FREKANS**: tuş takımından alma ve gönderme frekansı girip telsizi ayarlama (VFO modu; PTT'de ekranda gönderme frekansı) + **APRS**: PTT'de 144,800 MHz'de sabit konum paketi (1200 baud AFSK, AX.25). **Seçmeli çağrı (Select-5) tamamen kaldırıldı**, ~4,1 KB flash boşaldı | `ornekler/frekans.asm` |
+| `YA4000S_FREKANS.HEX` | **FREKANS**: tuş takımından alma ve gönderme frekansı girip telsizi ayarlama (VFO modu; PTT'de ekranda gönderme frekansı) + **APRS**: PTT'de 144,800 MHz'de sabit konum paketi (1200 baud AFSK, AX.25). **Seçmeli çağrı (Select-5) tamamen kaldırıldı**, ~4,1 KB flash boşaldı. SAYI / HESAP / OYUN bu firmware'de yok (ayrı örnek HEX'ler olarak duruyorlar), ~1,9 KB daha boşaldı | `ornekler/frekans.asm` |
 | `YA4000S_FREKANS_YATOLYE.HEX` | FREKANS ve APRS'in tamamı (seçmeli çağrı kaldırılmış) + açılışta 5 saniye **yATOLYE** (flash'a gömülü, EEPROM / programlayıcı değiştiremez), ardından kendi sürüm yazımız ("AT V0-1" …) | `ornekler/frekans_yatolye.asm` |
 
 ## Sürüm, tarih ve metin
@@ -34,10 +34,10 @@ Kaynak düzeni (`ornekler/`):
 **Menü sırası** (FREKANS ve FREKANS_YATOLYE; Türkçe EE[0x018] bit 7, ALT MENU bit 5, ör. EE[0x018] = 0xA1):
 
 ```
-KANAL 01 -m-> LISTE -m-> SAYI -m-> HESAP -m-> OYUN -m-> FREKANS -m-> ALT MENU -m-> KANAL 01
+KANAL 01 -m-> LISTE -m-> FREKANS -m-> APRS -m-> ALT MENU -m-> KANAL 01
 ```
 
-Bir öğeye `s` ile girilir; içindeyken `m` normal ekrana döner. ALT MENU kapalıysa (bit 5 = 0) FREKANS'tan sonra doğrudan normal ekran gelir. İngilizce menüde başlıklar NUMBER / CALC / GAME / FREQ / SUB MENU.
+Bir öğeye `s` ile girilir; içindeyken `m` normal ekrana döner. ALT MENU kapalıysa (bit 5 = 0) APRS'ten sonra doğrudan normal ekran gelir. İngilizce menüde başlıklar FREQ / APRS / SUB MENU. SAYI / HESAP / OYUN yalnız kendi örnek HEX'lerinde (`YA4000S_SAYI/HESAP/OYUN.HEX`) var; aşağıdaki kullanım bölümleri onlar için.
 
 ```
 cd disasm
@@ -111,7 +111,7 @@ Telsiz 1–999 arasında bir sayı tutar.
 
 | Tuş | İş |
 |---|---|
-| `m` ×5, `s` | Menü: … GAME → **FREQ** (Türkçe **FREKANS**), ekranda `___ ____` (alma frekansı) |
+| `m` `m` `s` | Menü: LIST → **FREQ** (Türkçe **FREKANS**), ekranda `___ ____` (alma frekansı) |
 | `0–9` | Frekans, noktasız. `156525` = 156,525 MHz. 12,5 kHz adımlar için 7 hane: `1565125`. Ekranda `156 5125`; 3. haneden sonraki boşluk ondalık noktadır |
 | `*` | Son haneyi sil |
 | `s` | Girişi temizle |
