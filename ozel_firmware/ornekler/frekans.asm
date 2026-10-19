@@ -54,5 +54,3 @@ TITLES_TR:
         .INCLUDE "aprs.inc"
         .INCLUDE "aprs_rx.inc"          ; APRS alma: duyulan istasyonlar
         .INCLUDE "secmeli_kaldir.inc"   ; seçmeli çağrı kaldırıldı, ~4,1 KB boşaltıldı
-        .INCLUDE "aprs_mesaj.inc"       ; .ORG $01BBE4 (seçmeli çağrıdan boşalan alan)
-        .INCLUDE "glif.inc"             ; LCD'de olmayan karakterler

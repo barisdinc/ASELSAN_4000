@@ -306,7 +306,7 @@ if (RING.includes('APRS')) {
   check('APRS: kanalda sinyal varken hoparlör kapalı (P46 = 0)', !hop(), 'P46=' + (hop() ? 1 : 0));
   b.inputs.P5 &= ~0x80; b.run(FCLK * 0.4);
   const bip = b => b.events.filter(e => /^BİP \d/.test(e[1])).length;
-  let n0 = bip(b); keys(b, '5*#5');
+  let n0 = bip(b); keys(b, '5*#0');
   check('APRS: tuşlara basınca bip yok (TA0 / P50 sessiz)', bip(b) === n0, (bip(b) - n0) + ' bip');
   /* PTT: örnekleri toplayıp çöz */
   const log = [], push = b.pushAudio.bind(b);
@@ -435,8 +435,7 @@ if (RING.includes('APRS')) {
   /* alma (aprs_rx.inc): P66'ya (TB1IN, sıfır-geçiş algılayıcısı) AFSK paket; ekranda gönderen */
   {
     const r = radio(aprs(AYAR)); boot(r, 2.5); keys(r, enter); r.run(FCLK * 0.3);
-    const al = (text, o, bozuk, kesme) => {
-      if (r.ram[0x227] === 0x17 && kesme !== false) keys(r, '5');                     // kayan mesaj sürüyorsa kes (her tuş keser)
+    const al = (text, o, bozuk) => {
       const fr = AFSK.encode(text); if (bozuk) fr[fr.length - 3] ^= 1;
       const e = AFSK.edges(fr, o), t = r.now;
       r.selIn.setEdges(e.map(x => t + Math.round(x * FCLK)));
@@ -453,24 +452,10 @@ if (RING.includes('APRS')) {
     check('APRS: taşıyıcı varken hoparlör çıkışı kapalı (FX806 $10 bit 7 = 0), kanalda açık; ses yolu aynı',
       a10 !== undefined && !(a10 & 0x80) && (fxReg(k, 0x10) & 0x80) && a11 === fxReg(k, 0x11) && a13 === fxReg(k, 0x13) && (a10 | 0x80) === fxReg(k, 0x10),
       'APRS $10=' + a10 + ' $11=' + a11 + ' $13=' + a13 + ' / kanal $10=' + fxReg(k, 0x10) + ' $11=' + fxReg(k, 0x11) + ' $13=' + fxReg(k, 0x13));
-    /* kayan mesaj (aprs_mesaj.inc): ekran karelerini topla, birleştir */
-    const tampon = () => V.textBuffer(r).padEnd(8).slice(0, 8);   // LCD tamponu (0x252): LCD I²C ile karakter karakter yazılırken yarım kare okunmasın
-    const kay = (sn) => { const k = [tampon()]; let once = k[0];   // kare 50 ms değişmeden kaldıysa sayılır
-      for (let i = 0; i < sn / 0.05; i++) { r.run(FCLK * 0.05); const l = tampon(); if (l === once && l !== k[k.length - 1]) k.push(l); once = l; if (/^APRS (PTT|OK)/.test(k[k.length - 1])) break; } return k; };
-    const birlestir = k => { let t = k[0]; for (let i = 1; i < k.length && !/^APRS (PTT|OK)/.test(k[i]); i++) t += k[i].slice(7); return t.trimEnd(); };
-    const M1 = 'TA7W-7>APRS,WIDE1-1*,WIDE2-1:!4050.63N/03109.39E>Merhaba, 73! (#1 @ $5; a=b?)';
-    const ilk0 = al(M1), ilk = tampon(), t1 = r.now, k1 = kay(40);
-    const sure = (r.now - t1) / FCLK, beklenen = M1.toUpperCase();
-    check('APRS alma: paketin tamamı kayarak (TNC2, büyük harf, > . , ! ( # @ $ ; = ? çizilir)', birlestir([ilk].concat(k1.slice(1))) === beklenen, birlestir([ilk].concat(k1.slice(1))));
-    check('APRS alma: 1 s bekler, 320 ms / karakter, sonda 1 s, sonra APRS ekranı', k1[k1.length - 1] === 'APRS PTT' && Math.abs(sure - (1 + (beklenen.length - 8) * 0.32 + 1)) < 1.2, sure.toFixed(1) + ' s, ' + beklenen.length + ' karakter');
-    const uzun = 'TA5UZ-1>APRS:>' + '0123456789'.repeat(10);
-    al(uzun); const ku = birlestir([tampon()].concat(kay(60).slice(1)));
-    check('APRS alma: 96 bayttan uzun paketin başı gösterilir', ku === uzun.slice(0, 'TA5UZ-1>APRS:'.length + 96 - 16), ku.length + ' karakter: ' + ku.slice(-12));
-    al(M1); r.run(FCLK * 2); const tk = keys(r, '5');
-    check('APRS alma: tuş kaymayı keser', tk[0] === 'APRS PTT', tk[0]);
-    al('TA6AA>APRS:>birinci mesaj uzun uzun uzun'); r.run(FCLK * 1.5);
-    const ikinciEkran = al('TA6BB>APRS:>ikinci', {}, false, false);
-    check('APRS alma: kayarken gelen paket gösterilmez (ilki sürer), listeye girer', ikinciEkran !== 'APRS PTT' && !/TA6BB/.test(ikinciEkran) && keys(r, '*')[0] === 'TA6BB   ', ikinciEkran);
+    const ilk = al('TA7W-7>APRS,WIDE1-1:!4050.63N/03109.39E>hello');
+    check('APRS alma: paket -> ekranda gönderen "TA7W-7"', ilk === 'TA7W-7  ', ilk);
+    r.run(FCLK * 4.5);
+    check('APRS alma: ~4 s sonra APRS ekranına dönüş', lcd(r) === 'APRS PTT', lcd(r));
     const zor = [['iki haneli SSID', 'YM7KA-12>APDR15:=4100.00N/02900.00E-x', {}, 'YM7KA-12'],
       ['6 harf + SSID 15 (tire yok)', 'TB1ABC-15>APRS:>status', {}, 'TB1ABC15'],
       ['SSID yok, yol 3 adres', 'TA1XX>APRS,WIDE1-1,WIDE2-2,TA2DEF-3*:>uzun bir durum metni 0123456789 abcdefghij', {}, 'TA1XX'],
@@ -479,10 +464,9 @@ if (RING.includes('APRS')) {
       ['baud +%0,3', 'TA2AC-3>APRS:!4050.63N/03109.39E>', { baud: 1203.6 }, 'TA2AC-3'],
       ['baud -%0,3', 'TA2AD-4>APRS:!4050.63N/03109.39E>', { baud: 1196.4 }, 'TA2AD-4'],
       ['gürültü %10', 'TA2AE-5>APRS:!4050.63N/03109.39E>', { noise: 0.1, seed: 7 }, 'TA2AE-5']];
-    for (const [ad, text, o, bek] of zor) { const g = al(text, o); check('APRS alma: ' + ad, g === text.toUpperCase().slice(0, 8) && r.ram[0x500] << 0 !== undefined, g + ' (' + bek + ')'); }
+    for (const [ad, text, o, bek] of zor) { const g = al(text, o); check('APRS alma: ' + ad, g === bek.padEnd(8), g); }
     const bz = al('TA9ZZ>APRS:>bozuk', {}, true);
-    check('APRS alma: sağlaması bozuk paket gösterilmez', bz === 'APRS PTT' && r.ram[0x623] === 8, bz + ', liste ' + r.ram[0x623]);
-    keys(r, '5');
+    check('APRS alma: sağlaması bozuk paket gösterilmez', bz !== 'TA9ZZ   ' && r.ram[0x623] === 9 - 1, bz + ', liste ' + r.ram[0x623]);
     /* liste: en yeni başta, en çok 8; '*' eskiye, '#' yeniye */
     const liste = keys(r, '*********');
     check('APRS alma: liste * ile (8 istasyon, en eskide kalır)', liste.join('|') === ['TA2AE-5', 'TA2AD-4', 'TA2AC-3', 'TA2AB-2', 'TA2AA-1', 'TA1XX', 'TB1ABC15', 'YM7KA-12', 'YM7KA-12'].map(x => x.padEnd(8)).join('|'), liste.join('|'));
@@ -495,31 +479,12 @@ if (RING.includes('APRS')) {
     const f = paketGonder(r);
     check('APRS alma: PTT ile paket hâlâ gidiyor', f.length === 1 && f[0].fcsOk && f[0].text === PAKET, f.length + ' paket');
     const sonra = al('TA3BB-9>APRS:>after tx');
-    check('APRS alma: gönderdikten sonra yine alıyor', sonra === 'TA3BB-9>', sonra);
-    r.run(FCLK * 1.5); r.inputs.P4 = 0x7F; r.run(FCLK * 0.3); const pttEkran = lcd(r); r.run(FCLK * 1.2); r.inputs.P4 = 0xFF; r.run(FCLK * 0.5);
-    check('APRS alma: PTT kaymayı keser (APRS TX), sonra kayma sürmez', pttEkran === 'APRS TX ' && lcd(r) === 'APRS OK ', pttEkran + ' / ' + lcd(r));
+    check('APRS alma: gönderdikten sonra yine alıyor', sonra === 'TA3BB-9 ', sonra);
     /* sürekli gürültü (susturma açık): bekçi köpeği yok, tuşlar çalışıyor */
     r.selIn.noise = true; r.inputs.P5 |= 0x80; const ev0 = r.events.length; r.run(FCLK * 3);
     const tus = keys(r, '#');
     r.selIn.noise = false; r.inputs.P5 &= ~0x80; r.run(FCLK * 0.5);
     check('APRS alma: 3 s gürültüde yeniden başlama yok, tuş çalışıyor', !r.events.slice(ev0).some(e => /WATCHDOG|RESET/.test(e[1])) && tus[0] === 'APRS OK ', tus.join('|'));
-    /* P66 çok hızlı titrerse (girişsiz karşılaştırıcı) kesme seli ana döngüyü durdurmasın: AR_KENAR_MAX */
-    r.selIn.noiseUs = [5, 10]; r.selIn.noise = true; r.inputs.P5 |= 0x80; const ev1 = r.events.length;
-    const titrek = al('TA8TT>APRS:>titresim oncesi', {}, false), k8 = kay(30); r.selIn.noise = true; r.inputs.P5 |= 0x80; r.run(FCLK * 2);
-    const tus2 = keys(r, '#');
-    r.selIn.noise = false; r.selIn.noiseUs = null; r.inputs.P5 &= ~0x80; r.run(FCLK * 0.5);
-    const sonraki = al('TA8UU>APRS:>sonra');
-    check('APRS alma: P66 5-10 µs titrerken yeniden başlama yok, tuş çalışıyor, sonra yine alıyor', !r.events.slice(ev1).some(e => /WATCHDOG|RESET/.test(e[1])) && tus2[0] === 'APRS OK ' && sonraki === 'TA8UU>AP', tus2[0] + ' / ' + sonraki);
-    check('APRS alma: almada çözücü (TB1) açık, taşıyıcıdan bağımsız (gerçek kartta $023E bit 5 doğrulanmadı)', !!(r.sfr[0x40] & 0x40) && !!(r.ram[0x5FC] & 1), 'TCSTART ' + r.sfr[0x40].toString(16));
-    /* teşhis: '0' ile sayfalar (KNR kenar / 32 ms, TSY taşıyıcı + çözücü, BYR, CRC, OK) */
-    keys(r, '0'); al('TA9DG>APRS:>teshis', {}, false, false); r.run(FCLK * 0.6);
-    const dg = []; for (let i = 0; i < 5; i++) { dg.push(V.textBuffer(r)); if (i < 4) keys(r, '0'); }
-    const sayi = t => parseInt(t.slice(4), 10);
-    check('APRS teşhis: 0 ile KNR / TSY / BYR / CRC / OK sayfaları',
-      /^KNR \d{4}$/.test(dg[0]) && /^TSY [01] [01] $/.test(dg[1]) && /^BYR \d{4}$/.test(dg[2]) && sayi(dg[2]) > 30 && /^CRC \d{4}$/.test(dg[3]) && /^OK  \d{4}$/.test(dg[4]) && sayi(dg[4]) >= 15,
-      dg.join('|'));
-    const dgKay = lcd(r); r.run(FCLK * 1); const dgSonra = keys(r, '#')[0];
-    check('APRS teşhis: teşhisteyken mesaj kaymaz, başka tuş çıkarır', /^OK /.test(dgKay) && dgSonra === 'APRS OK ', dgKay + ' / ' + dgSonra);
     keys(r, 'm');
     const tb1 = r.sfr[0x40] & 0x40;
     const disari = al('TA4CC>APRS:>menü dışı');
