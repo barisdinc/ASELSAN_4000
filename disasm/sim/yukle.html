@@ -93,7 +93,7 @@ main { position: relative; z-index: 1; }
   <nav><a href="./">Simülatör</a><a href="https://github.com/barisdinc/ASELSAN_4000">GitHub</a><button id="themeBtn" title="Açık / koyu tema">◐</button></nav>
 </header>
 <main>
-  <div class="banner">1–4. adımlar telsizden yalnızca <b>okur</b>. Telsize yalnızca 5. adım (firmware yükleme) ve 6. adım (EEPROM geri yükleme) yazar; 5. adım bu oturumda EEPROM ve flash yedeği, 6. adım EEPROM yedeği alınmadan açılmaz.</div>
+  <div class="banner">1–4. adımlar telsizden yalnızca <b>okur</b>. Telsize yalnızca 5. adım (firmware yükleme) ve 6. adım (EEPROM geri yükleme) yazar; 5. ve 6. adım bu oturumda EEPROM yedeği alınmadan açılmaz (flash yedeği isteğe bağlı).</div>
 
   <section class="card">
     <h2>1 · Bağlantı</h2>
@@ -165,7 +165,7 @@ main { position: relative; z-index: 1; }
     <div id="wrBody" class="locked">
       <div class="checks">
         <label><input type="checkbox" id="wrC1"> Telsizin gücü yükleme bitene kadar kesilmeyecek (sabit güç kaynağı ya da dolu akü).</label>
-        <label><input type="checkbox" id="wrC2"> EEPROM ve flash yedeklerini indirdim ve sakladım.</label>
+        <label><input type="checkbox" id="wrC2"> EEPROM yedeğini indirdim ve sakladım<span id="wrC2Flash"> (flash yedeği alınmadı: yükleme yarıda kalırsa telsizdeki eski firmware'e dönmek için elinizde bir HEX olmalı)</span>.</label>
         <label id="wrC3Row" class="warn" hidden><input type="checkbox" id="wrC3"> Bu dosya başka bir ürün ailesine ait; bu telsize uygun olduğundan eminim.</label>
       </div>
       <div class="row"><button class="danger" id="wrBtn" disabled>Yüklemeyi başlat</button><span class="note" id="wrGate"></span></div>
@@ -544,13 +544,14 @@ function loadImage(name, text) {
 
 function updateWrite() {
   if (!$('wrBtn')) return;
-  const gate = !!client && ($('wrRecover').checked || (eeDone && !!flashImg));
+  const gate = !!client && ($('wrRecover').checked || eeDone);   // flash backup (4) is optional
   $('wrBody').classList.toggle('locked', !gate);
   ['wrSel', 'wrFileBtn'].forEach(id => $(id).disabled = busy);
   ['wrC1', 'wrC2', 'wrC3'].forEach(id => $(id).disabled = !gate || busy);
   $('wrRecover').disabled = busy;
-  $('wrGate').textContent = !client ? 'Yüklemek için: önce bağlanın (1), EEPROM (3) ve flash (4) yedeklerini alın.'
-    : !gate && !eeDone ? 'Önce EEPROM yedeğini alın (3. adım).' : !gate && !flashImg ? 'Önce flash yedeğini alın (4. adım).'
+  $('wrC2Flash').hidden = !!flashImg;
+  $('wrGate').textContent = !client ? 'Yüklemek için: önce bağlanın (1) ve EEPROM yedeğini alın (3). Flash yedeği (4) isteğe bağlı.'
+    : !gate ? 'Önce EEPROM yedeğini alın (3. adım).'
     : !wr ? 'Geçerli bir firmware seçin (dosya denetimden geçmedi, sebebi yukarıda kırmızıyla yazıyor).'
     : !($('wrC1').checked && $('wrC2').checked) ? 'Onay kutularını işaretleyin.'
     : wr.famWarn && !$('wrC3').checked ? 'Ürün ailesi uyarısını onaylayın.' : '';
@@ -756,13 +757,14 @@ if (location.hash === '#otomatik-test') (async () => {
   const preOk = !!wr && $('wrBtn').disabled && /bağlanın/.test($('wrGate').textContent);
   $('connectBtn').click(); await until(() => client && !busy);
   $('eeBtn').click(); await until(() => !busy);
-  $('flashBtn').click(); await until(() => !busy);
+  // flash backup (4) is optional: writing opens after the EEPROM backup alone
+  const noFlashOk = !flashImg && !$('wrBody').classList.contains('locked') && !$('wrC2Flash').hidden;
   window.confirm = () => true;
   const fileKept = $('wrSel').value === 'dosya: kendi_firmware.HEX' && wr && wr.name === 'kendi_firmware.HEX';
   $('wrC1').checked = $('wrC2').checked = true; updateWrite();
   $('wrBtn').click(); await until(() => !busy);
-  document.body.dataset.test = preOk && fileKept && /Yükleme tamamlandı/.test($('wrResult').textContent) ? 'bitti'
-    : 'hata pre=' + preOk + ' file=' + fileKept;
+  document.body.dataset.test = preOk && noFlashOk && fileKept && /Yükleme tamamlandı/.test($('wrResult').textContent) ? 'bitti'
+    : 'hata pre=' + preOk + ' noflash=' + noFlashOk + ' file=' + fileKept;
 })();
 </script>
 </body>
