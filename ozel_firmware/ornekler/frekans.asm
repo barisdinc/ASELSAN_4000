@@ -52,4 +52,5 @@ TITLES_TR:
 
         .ORG $012400                    ; bank 1 boş alanı (açılış ekranı $012000'de)
         .INCLUDE "aprs.inc"
+        .INCLUDE "aprs_rx.inc"          ; APRS alma: duyulan istasyonlar
         .INCLUDE "secmeli_kaldir.inc"   ; seçmeli çağrı kaldırıldı, ~4,1 KB boşaltıldı

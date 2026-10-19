@@ -193,7 +193,16 @@ class Signal {
     for (const s of list) { const d = s.ms * FCLK / 1000; if (s.f) this.segs.push({ t0: t, t1: t + d, f: s.f }); t += d; }
     this.seqEnd = t;
   }
+  /* comparator output as a list of edge times (cycles, ascending); level 1 before the first */
+  setEdges(edges) { this.edges = edges; this.ei = 0; this.segs = []; this.seqEnd = edges.length ? edges[edges.length - 1] : 0; }
   level(t) {
+    if (this.edges) {
+      const e = this.edges;
+      if (t >= e[e.length - 1] + 1) { const lv = e.length & 1 ? 0 : 1; this.edges = null; this.endLevel = lv; return lv; }
+      if (this.ei > 0 && e[this.ei - 1] > t) this.ei = 0;
+      while (this.ei < e.length && e[this.ei] <= t) this.ei++;
+      return this.ei & 1 ? 0 : 1;
+    }
     for (const s of this.segs) if (t >= s.t0 && t < s.t1) return Math.floor((t - s.t0) * 2 * s.f / FCLK) & 1;
     if (this.noise) {
       while (t >= this.nextNoise) { this.noiseLvl ^= 1; this.nextNoise += FCLK * (0.00005 + Math.random() * 0.0004); }

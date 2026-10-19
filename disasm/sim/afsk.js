@@ -96,7 +96,53 @@ function decode(log, fclk) {
   return frames(best.bits);
 }
 
-const api = { decode, crc16 };
+/* ---- kodlayıcı (çözücü testleri için): "SRC>DST,YOL:bilgi" -> AX.25 çerçevesi (FCS dahil) */
+function encode(text) {
+  const m = /^([^>]+)>([^,:]+)((?:,[^,:]+)*):(.*)$/s.exec(text);
+  if (!m) throw new Error('paket metni: ' + text);
+  const path = m[3] ? m[3].slice(1).split(',') : [];
+  const calls = [m[2], m[1], ...path], out = [];
+  calls.forEach((c, i) => {
+    const [cs, ss] = c.split('-');
+    for (let k = 0; k < 6; k++) out.push((cs.charCodeAt(k) || 0x20) << 1);
+    out.push(0x60 | (+ss || 0) << 1 | (i === calls.length - 1 ? 1 : 0));
+  });
+  out.push(0x03, 0xF0);
+  for (const ch of m[4]) out.push(ch.charCodeAt(0) & 0xFF);
+  const c = crc16(out);
+  return out.concat([c & 0xFF, c >> 8]);
+}
+/* Telsizin sıfır-geçiş algılayıcısının (P66) çıkışı: sürekli fazlı 1200/2200 Hz, NRZI, bit
+ * doldurma, baş / son bayraklar. Kenar zamanları saniye. o: { flags, am, as (tonların genliği),
+ * off (karşılaştırıcı kayması), noise (bant sınırlı gürültü, genliğe göre), seed, baud } */
+function edges(frame, o) {
+  o = Object.assign({ flags: 30, am: 1, as: 1, off: 0, noise: 0, seed: 1, baud: 1200, lead: 0.02 }, o || {});
+  const bits = [], flag = () => { for (let k = 0; k < 8; k++) bits.push(0x7E >> k & 1); };
+  for (let i = 0; i < o.flags; i++) flag();
+  let ones = 0;
+  for (const b of frame) for (let k = 0; k < 8; k++) {
+    const x = b >> k & 1; bits.push(x);
+    if (x) { if (++ones === 5) { bits.push(0); ones = 0; } } else ones = 0;
+  }
+  flag(); flag();
+  const tones = []; let tone = 1;
+  for (const b of bits) { if (!b) tone ^= 1; tones.push(tone); }
+  let seed = o.seed >>> 0 || 1; const rnd = () => ((seed = (seed * 1103515245 + 12345) >>> 0) / 4294967296) - 0.5;
+  const fs = 1e6, n = Math.round((tones.length / o.baud + 2 * o.lead) * fs), e = [];
+  let ph = 0, prev = null, n1 = 0, n2 = 0;
+  for (let i = 0; i < n; i++) {
+    const t = i / fs, bi = Math.floor((t - o.lead) * o.baud), tn = bi < 0 || bi >= tones.length ? 1 : tones[bi];
+    ph += (tn ? 1200 : 2200) / fs;
+    let v = (tn ? o.am : o.as) * Math.sin(2 * Math.PI * ph) + o.off;
+    if (o.noise) { n1 = n1 * 0.98 + rnd() * 0.693; n2 = n2 * 0.98 + n1 * 0.02; v += o.noise * n2 / 0.72; }
+    const l = v > 0 ? 1 : 0;
+    if (prev !== null && l !== prev) e.push(t);
+    prev = l;
+  }
+  return e;
+}
+
+const api = { decode, crc16, encode, edges, frameText };
 if (typeof module !== 'undefined' && module.exports) module.exports = api;
 root.AFSK = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);

@@ -180,12 +180,6 @@ AP_KOD_ADRES .EQU *
         .ORG $008084                    ; F_008084 (uyarı tonu aç: TA0 -> P50)
         .EXPECT $A3,$04,$48,$F8         ; LDA A,$04,S / PHA / SEM
         JMPL  APRS_UYARI
-        .ORG $00CC44                    ; F_00CB52: ses kapalı mı ($00) kararı -> APRS'te hep kapalı
-        .EXPECT $D8,$A5,$00,$F8         ; CLM / LDA A,$00 / SEM
-        JMPL  APRS_SUS_KARAR
-        .ORG $00CC92                    ; F_00CB52: squelch kapalı FX806 ayarına (L_00CD3F) gidilsin mi
-        .EXPECT $A5,$00,$F0,$0F         ; LDA A,$00 / BEQ L_00CCA5
-        JMPL  APRS_SUS_FX806
         .ORG $00F4E4                    ; durum 5 -> 6: seçmeli çağrı kimliği yerine APRS
         .EXPECT $22,$5B,$E6,$00
         JSRL  APRS_PTT
@@ -199,7 +193,9 @@ AFSK_TB1:
         PSH   #$35
         LDT   #$00
         BBS   #$0001,AP_GONDER,AT_URET
-        PUL   #$35
+        BBC   #$0001,AR_DURUM,AT_ORJ
+        JMP   AR_TB1                    ; APRS alma (aprs_rx.inc)
+AT_ORJ: PUL   #$35
         JMPL  TB1_ORIJINAL              ; seçmeli çağrı / DTMF / alma: orijinal kesme
 AT_URET:
         SEM
@@ -326,33 +322,6 @@ APRS_HOPARLOR:
 AH_AC:  SEB   #$40,R_P4                 ; orijinal
         JMPL  $00EA0E
 
-; F_00CB52, L_00CC44 (M bilinmiyor, D = F_00CB52'nin çerçevesi; $00 = 1 ses kapalı)
-APRS_SUS_KARAR:
-        SEM
-        .ASSUME M=1,X=0
-        JSR   AP_ETKIN
-        BNE   SSK_1
-        LDM   #1,$00                    ; APRS: ses kapalı
-SSK_1:  CLM                             ; orijinal: CLM / LDA A,$00 / SEM
-        LDA   A,$00
-        SEM
-        JMPL  $00CC48
-
-; F_00CB52, L_00CC92 (M = 1): APRS'teyse alma sırasında squelch açık olsa da sessiz FX806 ayarı.
-; Yalnız almada ($023E bit 4): L_00CD3F modülatör seviyesini ($02 -> C-BUS $13) sıfırlar; vericide
-; zorlanırsa taşıyıcı boş gider (AFSK sesi modülatöre ulaşmaz)
-APRS_SUS_FX806:
-        SEM                             ; (iki giriş yolunda da M = 1)
-        .ASSUME M=1,X=0
-        BBC   #$10,$023E,SSF_1          ; verici: orijinal karar
-        JSR   AP_ETKIN
-        BNE   SSF_1
-        JMPL  $00CD3F
-SSF_1:  LDA   A,$00                     ; orijinal: LDA A,$00 / BEQ L_00CCA5
-        BNE   SSF_2
-        JMPL  $00CCA5
-SSF_2:  JMPL  $00CC96
-
 ; Bip (F_0080AA girişi, JMPL ile: yığın girişteki gibi): APRS'te sessiz döner
 APRS_BIP:
         .ASSUME M=0,X=0
@@ -459,6 +428,7 @@ AFSK_GONDER:
         LDX   AP_029A
         STX   $029A
         SEM
+        LDM   #0,AR_DURUM               ; alma çözücüsü kapalı (TB1 gönderimde)
         LDM   #$00,R_TA1IC              ; TA1 tek atım, kesmesiz
         LDM   #$06,R_TA1MOD
         LDM   #$00,R_TB1MOD             ; TB1 zamanlayıcı, f2
@@ -566,7 +536,21 @@ APRS_TUS:
         .ASSUME M=0,X=0
         LDA   A,$04,S
         PHA
+        JSR   AR_TUS                    ; '*' / '#': duyulanlar listesi (aprs_rx.inc)
+        BCS   ATS_SON
 AP_EKRAN_SON:
+        JSR   AP_EKRAN
+ATS_SON:
+        CLM
+        PLA
+        RTL
+
+; APRS ekranı: "APRS PTT" / "APRS OK" / hata (M = 0 giriş ve çıkış)
+AP_EKRAN:
+        .ASSUME M=0,X=0
+        SEM
+        LDM   #0,AR_GOSTER              ; çağrı işareti gösterilmiyor
+        LDM   #0,AR_SEC
         CLM
         LDX   #16                       ; "APRS PTT"
         SEM
@@ -596,8 +580,7 @@ AE_1:   BBC   #F_AP_HATA,AP_DURUM,AE_3
         INX
 AE_3:   CLM
         JSR   AP_METIN_YAZ
-        PLA
-        RTL
+        RTS
 
 ; Sentezör kaydını sakla, 144,800 MHz'i alma ve gönderme olarak kur, TKS'yi kapat (M = 0)
 AP_KUR:
@@ -1208,9 +1191,17 @@ AKN_0:  SEM
         BNE   AKN_ZAMAN
         LDM   #$3F,MENU_SAYAC
 AKN_ZAMAN:
-        JMP   AP_OTO_ZAMAN
+        JSR   AP_OTO_ZAMAN
+        CLM
+        LDA   A,$0E,S                   ; çerçeve göstericisi (VFO_KANCA $0C,S + JSR)
+        JSR   AR_ISLE                   ; alma: duyulan istasyonlar (aprs_rx.inc)
+        RTS
+        .ASSUME M=1,X=0
 AKN_CIKIS:
         LDM   #0,AP_DURUM
+        JSR   AR_KAPAT                  ; alma çözücüsü kapansın (TB1)
+        LDM   #0,AR_GOSTER
+        LDM   #0,AR_SEC
         CLM                             ; menüden çıkıldı: açılışta APRS'e dönülmesin
         LDA   A,$0E,S                   ; çerçeve göstericisi (VFO_KANCA $0C,S + JSR)
         LDX   #0
@@ -1259,6 +1250,7 @@ AP_ACILIS_DENETLE:
         BNE   AAD_SON
         LDM   #0,AP_DURUM               ; RAM açılışta rastgele: APRS değişkenlerini temizle
         LDM   #0,AP_OTO
+        JSR   AR_SIFIRLA
         CLM
         LDA   A,#ACILIS_TAMAM
         STA   A,AP_ACILIS

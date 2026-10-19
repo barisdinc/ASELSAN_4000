@@ -432,6 +432,54 @@ if (RING.includes('APRS')) {
     const a2 = yenidenAc(Uint8Array.from(a1.eeprom.mem), true);
     check('APRS modu (araç / sabit kart): kapat-aç -> APRS PTT', a1.eeprom.mem[0x732] === 0xA5 && lcd(a2) === 'APRS PTT', '0x732 = ' + a1.eeprom.mem[0x732].toString(16) + ', ' + lcd(a2));
   }
+  /* alma (aprs_rx.inc): P66'ya (TB1IN, sıfır-geçiş algılayıcısı) AFSK paket; ekranda gönderen */
+  {
+    const r = radio(aprs(AYAR)); boot(r, 2.5); keys(r, enter); r.run(FCLK * 0.3);
+    const al = (text, o, bozuk) => {
+      const fr = AFSK.encode(text); if (bozuk) fr[fr.length - 3] ^= 1;
+      const e = AFSK.edges(fr, o), t = r.now;
+      r.selIn.setEdges(e.map(x => t + Math.round(x * FCLK)));
+      r.inputs.P5 |= 0x80; r.run(FCLK * (e[e.length - 1] + 0.05)); r.inputs.P5 &= ~0x80; r.run(FCLK * 0.3);
+      return lcd(r);
+    };
+    const ilk = al('TA7W-7>APRS,WIDE1-1:!4050.63N/03109.39E>hello');
+    check('APRS alma: paket -> ekranda gönderen "TA7W-7"', ilk === 'TA7W-7  ', ilk);
+    r.run(FCLK * 4.5);
+    check('APRS alma: ~4 s sonra APRS ekranına dönüş', lcd(r) === 'APRS PTT', lcd(r));
+    const zor = [['iki haneli SSID', 'YM7KA-12>APDR15:=4100.00N/02900.00E-x', {}, 'YM7KA-12'],
+      ['6 harf + SSID 15 (tire yok)', 'TB1ABC-15>APRS:>status', {}, 'TB1ABC15'],
+      ['SSID yok, yol 3 adres', 'TA1XX>APRS,WIDE1-1,WIDE2-2,TA2DEF-3*:>uzun bir durum metni 0123456789 abcdefghij', {}, 'TA1XX'],
+      ['2200 Hz yarı genlik + kayma', 'TA2AA-1>APRS:!4050.63N/03109.39E>', { as: 0.5, off: 0.2 }, 'TA2AA-1'],
+      ['2200 Hz iki kat genlik', 'TA2AB-2>APRS:!4050.63N/03109.39E>', { as: 2 }, 'TA2AB-2'],
+      ['baud +%0,3', 'TA2AC-3>APRS:!4050.63N/03109.39E>', { baud: 1203.6 }, 'TA2AC-3'],
+      ['baud -%0,3', 'TA2AD-4>APRS:!4050.63N/03109.39E>', { baud: 1196.4 }, 'TA2AD-4'],
+      ['gürültü %10', 'TA2AE-5>APRS:!4050.63N/03109.39E>', { noise: 0.1, seed: 7 }, 'TA2AE-5']];
+    for (const [ad, text, o, bek] of zor) { const g = al(text, o); check('APRS alma: ' + ad, g === bek.padEnd(8), g); }
+    const bz = al('TA9ZZ>APRS:>bozuk', {}, true);
+    check('APRS alma: sağlaması bozuk paket gösterilmez', bz !== 'TA9ZZ   ' && r.ram[0x623] === 9 - 1, bz + ', liste ' + r.ram[0x623]);
+    /* liste: en yeni başta, en çok 8; '*' eskiye, '#' yeniye */
+    const liste = keys(r, '*********');
+    check('APRS alma: liste * ile (8 istasyon, en eskide kalır)', liste.join('|') === ['TA2AE-5', 'TA2AD-4', 'TA2AC-3', 'TA2AB-2', 'TA2AA-1', 'TA1XX', 'TB1ABC15', 'YM7KA-12', 'YM7KA-12'].map(x => x.padEnd(8)).join('|'), liste.join('|'));
+    const geri = keys(r, '#'.repeat(8));
+    check('APRS alma: # ile yeniye, en yeniden sonra APRS ekranı', geri[6] === 'TA2AE-5 ' && geri[7] === 'APRS PTT', geri.join('|'));
+    al('TA2AB-2>APRS:>tekrar');
+    const l2 = keys(r, '**');
+    check('APRS alma: tekrar duyulan istasyon başa geçer, çift kayıt yok', l2.join('|') === 'TA2AB-2 |TA2AE-5 ' && r.ram[0x623] === 8, l2.join('|') + ', ' + r.ram[0x623]);
+    /* gönderme sonrası alma sürer */
+    const f = paketGonder(r);
+    check('APRS alma: PTT ile paket hâlâ gidiyor', f.length === 1 && f[0].fcsOk && f[0].text === PAKET, f.length + ' paket');
+    const sonra = al('TA3BB-9>APRS:>after tx');
+    check('APRS alma: gönderdikten sonra yine alıyor', sonra === 'TA3BB-9 ', sonra);
+    /* sürekli gürültü (susturma açık): bekçi köpeği yok, tuşlar çalışıyor */
+    r.selIn.noise = true; r.inputs.P5 |= 0x80; const ev0 = r.events.length; r.run(FCLK * 3);
+    const tus = keys(r, '#');
+    r.selIn.noise = false; r.inputs.P5 &= ~0x80; r.run(FCLK * 0.5);
+    check('APRS alma: 3 s gürültüde yeniden başlama yok, tuş çalışıyor', !r.events.slice(ev0).some(e => /WATCHDOG|RESET/.test(e[1])) && tus[0] === 'APRS OK ', tus.join('|'));
+    keys(r, 'm');
+    const tb1 = r.sfr[0x40] & 0x40;
+    const disari = al('TA4CC>APRS:>menü dışı');
+    check('APRS alma: menüden çıkınca TB1 durur, paket gösterilmez', disari === 'KANAL 01' && !tb1, disari + ', TB1 ' + (tb1 ? 'çalışıyor' : 'durdu'));
+  }
   const kotu = b.events.filter(e => e[0] > t0 && /WATCHDOG|RESET/.test(e[1]));   // (açılıştakiler hariç)
   check('APRS: bekçi köpeği / yeniden başlama yok', kotu.length === 0, kotu.map(e => (e[0] / FCLK).toFixed(2) + ' ' + e[1]).join(', '));
 }

@@ -214,6 +214,13 @@ $('selSend').onclick = () => {
   board.selIn.setSequence(board.now, [{ f: 0, ms: 20 }].concat(seq));
   addTxLog('RX seçmeli çağrı girişi: ' + $('selStd').value + ' ' + $('selDigits').value);
 };
+$('aprsSend').onclick = () => {
+  let fr; try { fr = AFSK.encode($('aprsIn').value); } catch (e) { alert('APRS paketi: KAYNAK>HEDEF[,YOL]:bilgi'); return; }
+  const e = AFSK.edges(fr), t = board.now;
+  board.selIn.setEdges(e.map(x => t + Math.round(x * FCLK)));
+  $('carrier').checked = true; applyRxInputs();                         // susturma açık
+  addTxLog('RX APRS paketi (P66): ' + $('aprsIn').value + ' (' + e[e.length - 1].toFixed(2) + ' s)');
+};
 $('lockFault').onchange = e => { if (board) board.lockFault = e.target.checked; };
 $('autoPwr').onchange = e => { if (board) board.autoPower = e.target.checked; };
 $('int2').onchange = e => { if (board) board.setInt2(e.target.checked ? 0 : 1); };

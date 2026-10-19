@@ -232,6 +232,9 @@ input[type=range] { width: 160px; }
             <select id="selStd"><option>CCIR</option><option>ZVEI1</option><option>EEA</option></select></label>
             <input type="text" id="selDigits" value="12345" size="8" class="mono">
             <button id="selSend">Gönder</button></div>
+          <div class="row" style="margin-top:10px"><label>APRS paketi (P66, 1200 baud AFSK)
+            <input type="text" id="aprsIn" value="TA7W-7>APRS,WIDE1-1:!4050.63N/03109.39E>merhaba" size="34" class="mono"></label>
+            <button id="aprsSend" title="Özel firmware'in APRS menüsü açıkken gönderen ekranda görünür">Gönder</button></div>
           <div class="kv" style="margin-top:8px"><div>Firmware'in çözdüğü</div><div class="mono" id="selRx">—</div></div>
           <p class="note">Rakam tekrarı otomatik olarak tekrar tonuna (E) çevrilir. Çözülen rakamlar RAM 0x0264..026B'den okunur (kimlik eşleşmezse firmware tamponu siler). Alma için kanalda "Seçmeli çağrı" işaretli ve taşıyıcı açık olmalı. DTMF yalnızca gönderiliyor; firmware'de DTMF çözücü yok.</p>
         </div>
@@ -344,6 +347,7 @@ input[type=range] { width: 160px; }
 <script src="radio_view.js"></script>
 <script src="p4000.js"></script>
 <script src="updater.js"></script>
+<script src="afsk.js"></script>
 <script src="firmware.js"></script>
 <script src="app.js"></script>
 </body>
