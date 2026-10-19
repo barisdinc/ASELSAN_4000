@@ -103,9 +103,9 @@ function encode(text) {
   const path = m[3] ? m[3].slice(1).split(',') : [];
   const calls = [m[2], m[1], ...path], out = [];
   calls.forEach((c, i) => {
-    const [cs, ss] = c.split('-');
+    const h = /\*$/.test(c), [cs, ss] = c.replace(/\*$/, '').split('-');   // '*': aktarılmış (H biti)
     for (let k = 0; k < 6; k++) out.push((cs.charCodeAt(k) || 0x20) << 1);
-    out.push(0x60 | (+ss || 0) << 1 | (i === calls.length - 1 ? 1 : 0));
+    out.push((h ? 0xE0 : 0x60) | (+ss || 0) << 1 | (i === calls.length - 1 ? 1 : 0));
   });
   out.push(0x03, 0xF0);
   for (const ch of m[4]) out.push(ch.charCodeAt(0) & 0xFF);

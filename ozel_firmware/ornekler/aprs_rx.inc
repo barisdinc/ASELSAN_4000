@@ -1,8 +1,7 @@
 ; aprs_rx.inc - APRS alma: duyulan istasyonların çağrı işaretleri (aprs.inc ile, frekans.asm)
 ;
 ; APRS menüsündeyken (144,800 MHz alma) gelen AX.25 paketleri çözülür; sağlaması (FCS) tutan
-; her paketin gönderen çağrı işareti ekranda ~4 s görünür (ör. "TA7W-7"), sonra APRS ekranına
-; dönülür. Son duyulan 8 farklı istasyon bir listede tutulur (en yeni başta; aynı istasyon
+; paketin tamamı ekranda kayar (aprs_mesaj.inc). Son duyulan 8 farklı istasyon bir listede tutulur (en yeni başta; aynı istasyon
 ; yeniden duyulursa başa alınır). APRS ekranında:
 ;   *   listede bir eskiye     #   bir yeniye (en yeniden sonra APRS ekranı)
 ; Liste telsiz kapanana kadar durur. Liste boşsa "EMPTY" / "BOS".
@@ -57,6 +56,19 @@ AR_SEC      .EQU $0624          ; gösterilen liste öğesi (1..AR_LN), 0 = yeni
 AR_D        .EQU $0625          ; 2 bayt: geçici
 AR_T        .EQU $0627          ; geçici (bayt)
 AR_IT       .EQU $0628          ; 2 bayt: kesmenin geçicisi
+; kayan mesaj (aprs_mesaj.inc)
+AR_KILIT    .EQU OZEL_RAM+$38   ; 1 = AR_MSJ'de gösterilecek / gösterilen paket var (kesme yazmaz)
+AR_MN       .EQU OZEL_RAM+$39   ; AR_MSJ'deki bayt sayısı (FCS'siz)
+AR_KAY      .EQU OZEL_RAM+$3A   ; ekranın ilk karakterinin metindeki yeri
+AR_KSURE    .EQU OZEL_RAM+$3B   ; sonraki adıma kalan süre (32 ms)
+AR_KDURUM   .EQU OZEL_RAM+$3C   ; 1 = kayıyor
+AR_KTOP     .EQU OZEL_RAM+$3D   ; metnin uzunluğu (son çizimde)
+AR_KI       .EQU OZEL_RAM+$3E   ; çizimde metin sırası
+AR_KX       .EQU OZEL_RAM+$3F   ; çizimde geçici
+; Paketin baytları (FCS'siz, en çok 96) iki yığının arasındaki boşlukta: çerçeve yığını en çok
+; ~0x6A8'e çıkıyor, AP_CER 0x740'ta başlıyor (sim/ram_kullanim.js)
+AR_MSJ      .EQU $06E0
+AR_MSJ_UZ   .EQU 96
 
 R_TB1MOD_OLC .EQU $4A           ; darbe genişliği ölçme, f16 (504 kHz)
 AR_BIT      .EQU 420            ; 504000 / 1200
@@ -187,7 +199,14 @@ RBA_5:  LDM   #0,AR_BITSAY
         SEM
         LDA   A,AR_BAYT
         STA   A,AR_ADR,X
-RBA_6:  CLM
+RBA_6:  SEM                             ; mesaj tamponu (gösterilen mesaj yoksa)
+        LDA   A,AR_KILIT
+        BNE   RBA_6B
+        CPX   #AR_MSJ_UZ
+        BCS   RBA_6B
+        LDA   A,AR_BAYT
+        STA   A,AR_MSJ,X
+RBA_6B: CLM
         INX
         STX   AR_SAY
         CPX   #331
@@ -225,7 +244,7 @@ AR_BAYRAK:
         BNE   RBY_YENI
         SEM
         LDA   A,AR_YENI
-        BNE   RBY_YENI                  ; öncekini ana döngü henüz almadı
+        BNE   RBY_MSJ                   ; öncekini ana döngü henüz almadı
         LDX   #0
 RBY_1:  LDA   A,AR_ADR+7,X              ; gönderen
         STA   A,AR_YENI_ADR,X
@@ -233,6 +252,19 @@ RBY_1:  LDA   A,AR_ADR+7,X              ; gönderen
         CPX   #7
         BNE   RBY_1
         LDM   #1,AR_YENI
+RBY_MSJ:
+        LDA   A,AR_KILIT                ; mesaj tamponu boştaysa bu paket gösterilecek
+        BNE   RBY_YENI
+        CLM
+        LDA   A,AR_SAY
+        SEC
+        SBC   A,#2                      ; FCS'siz
+        CMP   A,#AR_MSJ_UZ
+        BCC   RBY_2
+        LDA   A,#AR_MSJ_UZ              ; uzun paketin başı
+RBY_2:  SEM
+        STA   A,AR_MN
+        LDM   #1,AR_KILIT
 RBY_YENI:
         SEM
         SEB   #$02,AR_DURUM
@@ -292,6 +324,8 @@ AR_SIFIRLA:
         LDM   #0,AR_GOSTER
         LDM   #0,AR_LN
         LDM   #0,AR_SEC
+        LDM   #0,AR_KILIT
+        LDM   #0,AR_KDURUM
         RTS
 
 ; ---------------------------------------------------------------------------------------------
@@ -311,17 +345,11 @@ AR_ISLE:
 RIS_KAPAT:
         JSR   AR_KAPAT
 RIS_1:   LDA   A,AR_YENI
-        BEQ   RIS_SURE
+        BEQ   RIS_K
         JSR   AR_LISTEYE
         LDM   #0,AR_YENI
-        LDM   #0,AR_SEC
-        LDA   A,RADYO_DURUM
-        CMP   A,#4
-        BCS   RIS_SON                    ; gönderiyor: ekrana dokunma
-        LDX   #0                        ; listenin başı = yeni gelen
-        JSR   AR_CAGRI_YAZ
-        LDM   #AR_SURE,AR_GOSTER
-        BRA   RIS_LCD
+RIS_K:  JSR   AR_KAYAN                  ; kayan mesaj (aprs_mesaj.inc); C = 1: ekran yazıldı
+        BCS   RIS_LCD
 RIS_SURE:
         LDA   A,AR_GOSTER
         BEQ   RIS_SON
@@ -355,6 +383,8 @@ RIS_SON: CLM
 AR_TUS:
         .ASSUME M=0,X=0
         SEM
+        LDM   #0,AR_KDURUM              ; her tuş kayan mesajı keser
+        LDM   #0,AR_KILIT
         LDA   A,KEY
         CMP   A,#'*'
         BEQ   RTU_ESKI

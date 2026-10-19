@@ -135,6 +135,8 @@ def stamp_header(mem, path, name, today=None):
     rec = cfg.setdefault('kayitlar', {}).get(name)
     if rec is None or rec['imza'] != digest:
         major, minor = (rec['major'], rec['minor'] + 1) if rec else (cfg['ilk'][0], cfg['ilk'][1])
+        if minor >= 10 and minor % 10 == 0:
+            minor += 1                               # 10, 20, ... ekranda 1, 2, ... gibi görünür (minor_byte)
         if minor > 99:
             major, minor = major + 1, 1
         if major > 9:

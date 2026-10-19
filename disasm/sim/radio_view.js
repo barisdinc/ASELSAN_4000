@@ -17,6 +17,9 @@
  *   B (bit clear): letters 0x2C9C, digits 0x2CD0, channel 0x2D00, words in natural order */
 const PUNCT_A = { '*': 0x2CE4, '<': 0x2D52, '_': 0x2D54, '-': 0x2CEA, ':': 0x2CEC, '/': 0x2CEE, '+': 0x2CF0,
                   '^': 0x2D56, 'v': 0x2D58, 'j': 0x2D5A, 'd': 0x2D5C, 'm': 0x2D5E, 'e': 0x2D60 };
+// characters drawn by ozel_firmware/ornekler/glif.inc (normal font only)
+const GLIF = { '>': 0x00A0, '.': 0x0010, ',': 0x0020, '!': 0x8000, '=': 0x2140, '?': 0x201C, '"': 0x8004, "'": 0x4000,
+               '`': 0x0080, '#': 0xA056, '@': 0x270E, '$': 0xA19A, ';': 0x8020, '\\': 0x1080 };
 const PUNCT_B = { '*': 0x2CE4, '<': 0x2CE6, '_': 0x2CE8, '-': 0x2CEA, ':': 0x2CEC, '/': 0x2CEE, '+': 0x2CF0,
                   '^': 0x2CF4, 'v': 0x2CF6, 'j': 0x2CF8, 'd': 0x2CFA, 'm': 0x2CFC, 'e': 0x2CFE };
 /* 7-segment channel digit bits: A a8 b4 c2 d10 e20 f80 g40, B a10 b20 c80 d8 e4 f2 g40 */
@@ -24,11 +27,12 @@ const CH7_A = { U: 0xB6, r: 0x60, t: 0xF0 };
 const CH7_B = { U: 0xAE, r: 0x44, t: 0x4E };
 function buildFont(rom) {
   const w = a => rom[a] | rom[a + 1] << 8;
-  const mk = (let0, dig0, punct, ch7, reverse, ch7Letters) => {
+  const mk = (let0, dig0, punct, ch7, reverse, ch7Letters, extra) => {
     const map = new Map([[0, ' ']]);
     for (let i = 0; i < 26; i++) { const v = w(let0 + 2 * i); if (!map.has(v)) map.set(v, String.fromCharCode(65 + i)); }
     for (let i = 0; i < 10; i++) { const v = w(dig0 + 2 * i); if (!map.has(v)) map.set(v, String(i)); }
     for (const c in punct) { const v = w(punct[c]); if (!map.has(v)) map.set(v, c); }
+    for (const c in extra || {}) if (!map.has(extra[c])) map.set(extra[c], c);
     // lower-case y (no glyph in the ROM font; drawn by ozel_firmware/ornekler/acilis_yatolye.inc):
     // '4' plus the bottom bar (the bit 'U' has and 'A' lacks)
     const y = w(dig0 + 8) | (w(let0 + 40) & ~w(let0)); if (!map.has(y)) map.set(y, 'y');
@@ -37,7 +41,7 @@ function buildFont(rom) {
     return { map, d7, reverse };
   };
   // channel digits that are letters (ozel_firmware/ornekler/frekans.inc: "VR" / "VT" = U r / U t)
-  return { variants: [mk(0x2D0A, 0x2D3E, PUNCT_A, 0x2D62, true, CH7_A), mk(0x2C9C, 0x2CD0, PUNCT_B, 0x2D00, false, CH7_B)],
+  return { variants: [mk(0x2D0A, 0x2D3E, PUNCT_A, 0x2D62, true, CH7_A), mk(0x2C9C, 0x2CD0, PUNCT_B, 0x2D00, false, CH7_B, GLIF)],
            ok: w(0x2D0A) !== 0xFFFF };
 }
 

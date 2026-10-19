@@ -569,8 +569,10 @@ ATS_SON:
 AP_EKRAN:
         .ASSUME M=0,X=0
         SEM
-        LDM   #0,AR_GOSTER              ; çağrı işareti gösterilmiyor
+        LDM   #0,AR_GOSTER              ; çağrı işareti / mesaj gösterilmiyor
         LDM   #0,AR_SEC
+        LDM   #0,AR_KDURUM
+        LDM   #0,AR_KILIT
         CLM
         LDX   #16                       ; "APRS PTT"
         SEM
@@ -1222,6 +1224,8 @@ AKN_CIKIS:
         JSR   AR_KAPAT                  ; alma çözücüsü kapansın (TB1)
         LDM   #0,AR_GOSTER
         LDM   #0,AR_SEC
+        LDM   #0,AR_KDURUM
+        LDM   #0,AR_KILIT
         CLM                             ; menüden çıkıldı: açılışta APRS'e dönülmesin
         LDA   A,$0E,S                   ; çerçeve göstericisi (VFO_KANCA $0C,S + JSR)
         LDX   #0

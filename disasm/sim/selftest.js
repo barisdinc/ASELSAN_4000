@@ -156,3 +156,4 @@ check('yeni firmware çalışıyor ("KN 01")', lcd(b) === '   KN 01', lcd(b));
 
 out(fails ? fails + ' test başarısız' : 'tüm simülatör testleri geçti');
 if (isNode && fails) process.exit(1);
+if (!isNode && fails) throw new Error(fails + ' test başarısız');   // jsc: yakalanmamış istisna -> çıkış kodu 3 (quit(n) kodu iletmiyor)

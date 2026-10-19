@@ -161,3 +161,4 @@ for (const f of args) {
 }
 out(fails ? fails + ' HATA' : 'hepsi geçti');
 if (isNode && fails) process.exit(1);
+if (!isNode && fails) throw new Error(fails + ' test başarısız');   // jsc: yakalanmamış istisna -> çıkış kodu 3 (quit(n) kodu iletmiyor)
