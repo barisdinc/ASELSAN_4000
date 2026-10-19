@@ -1,26 +1,33 @@
 ; aprs.inc - APRS menü öğesi: PTT'ye basınca 144,800 MHz'de konum paketi (AX.25 / 1200 baud AFSK)
 ;
-;   ... m (APRS) s     -> "APRS PTT"    kanal 50..54'ün adları EEPROM'dan okunup paket kurulur;
+;   ... m (APRS) s     -> "APRS PTT"    EEPROM'daki APRS bölümü okunup paket kurulur;
 ;                                       telsiz alma ve gönderme 144,800 MHz'e geçer (TKS kapalı),
 ;                                       hoparlör tamamen susar (kanal sesi, bip ve uyarı tonları yok)
 ;   PTT                -> "APRS TX"     paket gider (~0,75 s), ardından "APRS OK"; PTT basılı
 ;                                       tutulursa telsiz 144,800'de göndermeye devam eder
 ;   m                  -> çık: telsiz önceki kanalına / frekansına döner
 ;
-; Ayarlar kanal adlarında (8 karakter; telsiz ve programlayıcı A-Z 0-9 boşluk _ - / kabul eder):
-;   kanal 50  çağrı işareti ve SSID      "TA7W-7"    -> kaynak adresi TA7W, SSID 7
-;   kanal 51  enlem  DDMM mm + N/S       "4050 63N"  -> 4050.63N  (boşluk = ondalık nokta)
-;   kanal 52  boylam DDDMM mm + E/W      "3109 39E"  -> 03109.39E (noktadan önce 4 hane: başa 0)
-;   kanal 53  yorum (mesaj)              "ASELSAN"   -> sondaki boşluklar atılır
-;   kanal 54  simge: tablo + kod         "/B"        -> /b (koddaki harf küçük harfe çevrilir;
-;                                                       tek karakterse tablo '/'; boşsa /b)
-;   kanal 55  otomatik gönderim aralığı, saniye   "60"  -> APRS menüsündeyken PTT'ye basılmasa
-;             da her 60 saniyede bir paket gider (boş ya da 0: kapalı; en kısa 10 s)
-; Paket: <50>>APIZCI,WIDE1-1,WIDE2-1:!<51><tablo><52><kod><53>
-;   örnek: TA7W-7>APIZCI,WIDE1-1,WIDE2-1:!4050.63N/03109.39EbASELSAN
-; Ad geçersizse ekranda "CAGRI -" / "ENLEM -" / "BOYLAM -" (İngilizce "CALL -", "LAT -", "LON -")
-; ve paket gönderilmez. Adlar her APRS'e girişte yeniden okunur.
-;
+; Ayarlar EEPROM 0x6E0..0x731'deki APRS bölümünde (P4000'in ve firmware'in kullanmadığı alan;
+; docs/p4000_eeprom.md). Simülatörün / yükleme sayfasının EEPROM görünümündeki "APRS" sayfası yazar.
+;   +0   "AP" imza, +2 sürüm (1), +3 boş
+;   +4   çağrı işareti[-SSID], 10 bayt, 0 ile biter  "TC19MK-10" (küçük harf büyüğe çevrilir;
+;        AX.25: en çok 6 harf / rakam, SSID 0..15)
+;   +14  simge tablosu, simge kodu                    "/b" bisiklet
+;   +16  enlem "DDMM.mmN" (8 bayt)                    "3955.52N"   Ankara, Anıtkabir
+;   +24  boylam "DDDMM.mmE" (9 bayt)                  "03250.22E"
+;   +33  boş
+;   +34  otomatik gönderim aralığı, saniye (2 bayt büyük uçlu): APRS menüsündeyken PTT'ye
+;        basılmasa da bu aralıkla paket gider (0: kapalı; en kısa 10 s)
+;   +36  yorum, 43 bayt, 0 ile biter (baytlar olduğu gibi gider: küçük harf, noktalama, UTF-8)
+;   +79  boş
+;   +80  sağlama: +0..+79 baytlarının 16 bit toplamı, büyük uçlu (0x730..0x731)
+; İmza, sürüm ya da sağlama tutmazsa (bölüm hiç yazılmamışsa) ROM'daki varsayılanlar kullanılır
+; (AP_VARSAYILAN, aynı yerleşim). Bölüm her APRS'e girişte yeniden okunur.
+; Paket: <çağrı>>APIZCI,WIDE1-1,WIDE2-1:!<enlem><tablo><boylam><kod><yorum>
+;   örnek: TC19MK-10>APIZCI,WIDE1-1,WIDE2-1:!3955.52N/03250.22EbASELSAN 4000
+; Alan geçersizse ekranda "CAGRI -" / "ENLEM -" / "BOYLAM -" (İngilizce "CALL -", "LAT -", "LON -")
+; ve paket gönderilmez.
+
 ; Ton üretimi seçmeli çağrının donanım yolunu kullanır (F_00E65B ile aynı ayarlar):
 ;   TB1 zamanlayıcı modunda örnekleme saati: 4,032 MHz / 420 = 9600 Hz, kesme önceliği 6
 ;   TA1 tek atım modunda (TA1MOD = 6): her TB1 kesmesinde tetiklenir, darbe genişliği = örnek
@@ -74,17 +81,23 @@ AP_HATA_KOD .EQU OZEL_RAM+$D0   ; 1 bant, 2 çağrı işareti, 3 enlem, 4 boylam
 AP_F        .EQU OZEL_RAM+$D1   ; 2 bayt: menü işleyicisinin çerçevesi (F_EE_OKU için)
 AP_CRC      .EQU OZEL_RAM+$D3   ; 2 bayt
 AP_SEMBOL   .EQU OZEL_RAM+$D5   ; 2 bayt: simge tablosu, simge kodu
-AP_HSAY     .EQU OZEL_RAM+$D7   ; 2 bayt: konumda okunan rakam sayısı
-AP_YARI     .EQU OZEL_RAM+$D9   ; konumdaki harf (N S E W)
+AP_HSAY     .EQU OZEL_RAM+$D7   ; 2 bayt: konumun uzunluğu
 AP_SAY      .EQU OZEL_RAM+$DA   ; çağrı işaretindeki karakter sayısı
 AP_SSID     .EQU OZEL_RAM+$DB
 AP_T1       .EQU OZEL_RAM+$DC
 AP_T2       .EQU OZEL_RAM+$DD
-AP_AD       .EQU OZEL_RAM+$DE   ; 8 bayt: EEPROM'dan okunan kanal adı
-AP_HANE     .EQU OZEL_RAM+$E6   ; 7 bayt: konumun rakamları
-AP_CER      .EQU OZEL_RAM+$ED   ; 60 bayt: AX.25 çerçevesi (en uzun 60 bayt) .. $0628
+AP_AD       .EQU OZEL_RAM+$DE   ; 16 bayt: EEPROM'dan okunan alan
+AP_EE_OK    .EQU OZEL_RAM+$EE   ; 1 = EEPROM'daki APRS bölümü geçerli, 0 = ROM varsayılanları
+AP_HEDEF_P  .EQU OZEL_RAM+$EF   ; 2 bayt: AP_ALAN_OKU hedefi (bank 0)
+AP_ALAN_N   .EQU OZEL_RAM+$F1   ; 2 bayt: AP_ALAN_OKU bayt sayısı (alt bayt)
+AP_TOPLAM   .EQU OZEL_RAM+$F3   ; 2 bayt: bölüm sağlaması
+AP_YER      .EQU OZEL_RAM+$F5   ; 2 bayt: bölümdeki yer / EEPROM adresi
+; AX.25 çerçevesi (en uzun 95 bayt) iki yığının arasındaki boş alanda: firmware'in çerçeve
+; yığını 0x62A'dan yukarı ~0x6A0'a, donanım yığını 0x879'dan aşağı ~0x821'e kadar iniyor
+; (sim/ram_kullanim.js); 0x740..0x79F iki yanda da 100 bayttan fazla pay bırakıyor
+AP_CER      .EQU $0740          ; 96 bayt
 ; otomatik gönderim (OZEL_RAM'den önceki boş alan, $04ED..$04FF)
-AP_ARALIK   .EQU $04F0          ; 2 bayt: kanal 55'teki saniye (0 = kapalı)
+AP_ARALIK   .EQU $04F0          ; 2 bayt: otomatik gönderim aralığı, saniye (0 = kapalı)
 AP_SANIYE   .EQU $04F2          ; 2 bayt: son gönderimden beri geçen saniye
 AP_MS       .EQU $04F4          ; 2 bayt: saniyenin milisaniyesi (32 ms adım)
 AP_SONTIK   .EQU $04F6          ; son görülen 32 ms sayacı ($0457)
@@ -94,7 +107,6 @@ AP_OTO_SURE .EQU $04F9          ; isteğin kalan süresi (32 ms adım); verici a
 TIK_32MS    .EQU $0457          ; TB2 kesmesi her 32 ms'de bir artırır
 PTT_ISTEK   .EQU $0244          ; F_005E56: bit 0..5 PTT istekleri (0x20 P47, 0x10 panel ...)
 F_PTT_APRS  .EQU $0004          ; firmware'de kullanılmayan istek biti: otomatik APRS gönderimi
-EE_ARALIK   .EQU $2E+13*54+EE_AD    ; kanal 55
 AP_EN_KISA  .EQU 10             ; en kısa otomatik gönderim aralığı (s)
 
 F_AP_KURULU .EQU 1
@@ -109,12 +121,18 @@ SON_BAYRAK  .EQU 3
 TB1_9600    .EQU 419            ; 4032000 / (419 + 1) = 9600 Hz
 SINUS       .EQU $0028FA
 
-EE_AD       .EQU 5              ; kanal kaydında adın yeri; kayıt 0x02E + 13 * (n - 1)
-EE_CAGRI    .EQU $2E+13*49+EE_AD    ; kanal 50
-EE_ENLEM    .EQU $2E+13*50+EE_AD    ; kanal 51
-EE_BOYLAM   .EQU $2E+13*51+EE_AD    ; kanal 52
-EE_MESAJ    .EQU $2E+13*52+EE_AD    ; kanal 53
-EE_SEMBOL   .EQU $2E+13*53+EE_AD    ; kanal 54
+
+; EEPROM'daki APRS bölümü (yerler bölümün başına göre)
+EE_APRS     .EQU $06E0
+AB_SURUM_NO .EQU 1
+AB_CAGRI    .EQU 4              ; 10 bayt
+AB_SEMBOL   .EQU 14             ; 2 bayt
+AB_ENLEM    .EQU 16             ; 8 bayt
+AB_BOYLAM   .EQU 24             ; 9 bayt
+AB_ARALIK   .EQU 34             ; 2 bayt büyük uçlu
+AB_YORUM    .EQU 36             ; 43 bayt
+AB_YORUM_N  .EQU 43
+AB_UZ       .EQU 80             ; sağlama EE_APRS + 80 (büyük uçlu)
 
 R_P4        .EQU $000A          ; P46 SUSTURMA_BILGISI: 1 = hoparlör açık
 R_TCSTART   .EQU $0040          ; sayıcı başlatma (bit 1 TA1, bit 6 TB1)
@@ -503,7 +521,7 @@ AP_METIN:
         .TEXT8 "BOYLAM -"
 
 ; ---------------------------------------------------------------------------------------------
-; Menü: girişte 144,800'ü kur ve paketi kanal adlarından hazırla
+; Menü: girişte 144,800'ü kur ve paketi EEPROM'daki APRS bölümünden hazırla
 APRS_GIR:
         .ASSUME M=0,X=0
         LDA   A,$04,S
@@ -633,16 +651,20 @@ AP_HANELER:
         .BYTE "1448000"
 
 ; ---------------------------------------------------------------------------------------------
-; Paketi kanal adlarından kur: AP_CER / AP_UZ (M = 0 giriş ve çıkış). C = 1: hata (AP_HATA_KOD)
+; Paketi EEPROM'daki APRS bölümünden (geçersizse ROM varsayılanlarından) kur: AP_CER / AP_UZ
+; (M = 0 giriş ve çıkış). C = 1: hata (AP_HATA_KOD)
 AP_HAZIRLA:
         .ASSUME M=0,X=0
-        LDA   A,#EE_SEMBOL
-        JSR   AP_AD_OKU
+        JSR   AP_BLOK_DENETLE
+        LDA   A,#AB_SEMBOL
+        LDY   #2
+        JSR   AP_ALAN_AD
         SEM
         JSR   AP_SEMBOL_AL
         CLM
-        LDA   A,#EE_CAGRI
-        JSR   AP_AD_OKU
+        LDA   A,#AB_CAGRI
+        LDY   #10
+        JSR   AP_ALAN_AD
         LDY   #0                        ; Y = çerçevede yazma yeri (kopyalarken; sonra X)
         LDX   #0
         SEM
@@ -667,8 +689,9 @@ AHA_3:  LDA   A,>AP_YOL,X               ; WIDE1-1, WIDE2-1, kontrol, PID, '!'
         BNE   AHA_3
         TYX
         CLM
-        LDA   A,#EE_ENLEM
-        JSR   AP_AD_OKU
+        LDA   A,#AB_ENLEM
+        LDY   #8
+        JSR   AP_ALAN_AD
         SEM
         LDA   A,#4                      ; DDMM.mm
         LDY   #'N'+'S'*256
@@ -680,8 +703,9 @@ AHA_4:  LDA   A,AP_SEMBOL               ; simge tablosu
         STA   A,AP_CER,X
         INX
         CLM
-        LDA   A,#EE_BOYLAM
-        JSR   AP_AD_OKU
+        LDA   A,#AB_BOYLAM
+        LDY   #9
+        JSR   AP_ALAN_AD
         SEM
         LDA   A,#5                      ; DDDMM.mm
         LDY   #'E'+'W'*256
@@ -693,15 +717,12 @@ AHA_5:  LDA   A,AP_SEMBOL+1             ; simge kodu
         STA   A,AP_CER,X
         INX
         CLM
-        LDA   A,#EE_MESAJ
-        JSR   AP_AD_OKU
-        SEM
-        JSR   AP_MESAJ_YAZ
-        CLM
+        JSR   AP_YORUM_YAZ
         STX   AP_UZ
         JSR   AP_FCS
-        LDA   A,#EE_ARALIK              ; kanal 55: otomatik gönderim aralığı
-        JSR   AP_AD_OKU
+        LDA   A,#AB_ARALIK              ; otomatik gönderim aralığı
+        LDY   #2
+        JSR   AP_ALAN_AD
         JSR   AP_ARALIK_AL
         CLC
         RTS
@@ -719,21 +740,76 @@ AP_YOL:                                 ; WIDE1-1, WIDE2-1 (son adres), UI, PID 
         .BYTE 'W'*2,'I'*2,'D'*2,'E'*2,'2'*2,' '*2,$63
         .BYTE $03,$F0,'!'
 
-; EEPROM'dan 8 baytlık kanal adını AP_AD'ye oku (M = 0, A = EEPROM adresi; X, Y korunur).
-; Bit 7 (TX TKS bitleri) atılır; kontrol karakterleri ve $7F boşluk olur.
-AP_AD_OKU:
+; Bölüm yazılmamışsa kullanılan değerler: EEPROM'daki yerleşimin aynısı (sağlama hariç).
+; Ankara, Anıtkabir 39°55,52' K 32°50,22' D; bisiklet; otomatik gönderim kapalı.
+AP_VARSAYILAN:
+        .BYTE "AP",AB_SURUM_NO,0        ; +0
+        .BYTE "TC19MK-10",0             ; +4  çağrı işareti
+        .BYTE "/b"                      ; +14 simge
+        .BYTE "3955.52N"                ; +16 enlem
+        .BYTE "03250.22E",0             ; +24 boylam
+        .BYTE 0,0                       ; +34 aralık
+        .BYTE "ASELSAN 4000"            ; +36 yorum
+        .FILL AP_VARSAYILAN+AB_UZ-*,0
+
+; AP_AD'ye bölümün A'daki yerinden Y bayt oku (M = 0; X, Y korunur)
+AP_ALAN_AD:
+        .ASSUME M=0,X=0
+        PHA
+        LDA   A,#AP_AD
+        STA   A,AP_HEDEF_P
+        PLA
+        STY   AP_ALAN_N
+; Bölümün A'daki yerinden AP_ALAN_N bayt AP_HEDEF_P'ye: bölüm geçerliyse EEPROM'dan, değilse
+; ROM'daki varsayılandan (M = 0; X, Y korunur)
+AP_ALAN_OKU:
+        .ASSUME M=0,X=0
+        PHX
+        PHY
+        STA   A,AP_YER
+        SEM
+        LDA   A,AP_EE_OK
+        CLM
+        BNE   AAK_EE
+        LDX   AP_YER
+        LDY   AP_HEDEF_P
+        SEM
+AAK_1:  LDA   A,AP_ALAN_N
+        BEQ   AAK_SON
+        LDA   A,>AP_VARSAYILAN,X
+        STA   A,!$0000,Y
+        INX
+        INY
+        DEC   AP_ALAN_N
+        BRA   AAK_1
+AAK_SON:
+        CLM
+        PLY
+        PLX
+        RTS
+AAK_EE: LDA   A,AP_YER
+        CLC
+        ADC   A,#EE_APRS
+        JSR   AP_EE_OKU
+        PLY
+        PLX
+        RTS
+
+; EEPROM'un A adresinden AP_ALAN_N bayt AP_HEDEF_P'ye (M = 0; X, Y korunur). Firmware'in
+; okuma yordamı menü işleyicisinin boş çerçevesini (AP_F) parametre ve yerel olarak kullanır.
+AP_EE_OKU:
         .ASSUME M=0,X=0
         PHX
         PHY
         PHD
         TAY
-        LDA   A,AP_F                    ; menü işleyicisinin boş çerçevesi: parametreler + yereller
+        LDA   A,AP_F
         TAD
         STY   $04                       ; EEPROM adresi
-        LDA   A,#AP_AD                  ; hedef (bank 0)
+        LDA   A,AP_HEDEF_P              ; hedef (bank 0)
         STA   A,$01
         SEM
-        LDA   A,#8
+        LDA   A,AP_ALAN_N
         STA   A,$00
         LDA   A,#0
         STA   A,$03
@@ -745,76 +821,121 @@ AP_AD_OKU:
         CLM
         PLA
         PLD
-        LDX   #0
-        SEM
-AAO_1:  LDA   A,AP_AD,X
-        AND   A,#$7F
-        CMP   A,#$20
-        BCC   AAO_B
-        CMP   A,#$7F
-        BNE   AAO_2
-AAO_B:  LDA   A,#' '
-AAO_2:  STA   A,AP_AD,X
-        INX
-        CPX   #8
-        BNE   AAO_1
-        CLM
         PLY
         PLX
         RTS
 
-; Kanal 54: simge. İlk boşluk olmayan karakter tablo, ikincisi kod (harfse küçük harf).
-; Tek karakterse tablo '/' ve o karakter kod; boşsa /b (bisiklet). (M = 1)
+; Bölüm geçerli mi: imza "AP", sürüm, sağlama (16 baytlık parçalarla toplanır).
+; AP_EE_OK = 1 / 0 (M = 0 giriş ve çıkış)
+AP_BLOK_DENETLE:
+        .ASSUME M=0,X=0
+        SEM
+        LDM   #0,AP_EE_OK
+        CLM
+        LDM   #0,AP_TOPLAM
+        LDM   #16,AP_ALAN_N
+        LDA   A,#AP_AD
+        STA   A,AP_HEDEF_P
+        LDA   A,#EE_APRS
+        STA   A,AP_YER
+ABD_1:  LDA   A,AP_YER
+        JSR   AP_EE_OKU
+        LDA   A,AP_YER
+        CMP   A,#EE_APRS
+        BNE   ABD_TOPLA
+        LDA   A,AP_AD                   ; ilk parça: imza ve sürüm
+        CMP   A,#'A'+'P'*256
+        BNE   ABD_SON
+        LDA   A,AP_AD+2
+        AND   A,#$00FF
+        CMP   A,#AB_SURUM_NO
+        BNE   ABD_SON
+ABD_TOPLA:
+        LDX   #0
+ABD_2:  LDA   A,AP_AD,X
+        AND   A,#$00FF
+        CLC
+        ADC   A,AP_TOPLAM
+        STA   A,AP_TOPLAM
+        INX
+        CPX   #16
+        BNE   ABD_2
+        LDA   A,AP_YER
+        CLC
+        ADC   A,#16
+        STA   A,AP_YER
+        CMP   A,#EE_APRS+AB_UZ
+        BNE   ABD_1
+        LDM   #2,AP_ALAN_N              ; sağlama, büyük uçlu
+        JSR   AP_EE_OKU                 ; A = EE_APRS + AB_UZ
+        SEM
+        LDA   A,AP_AD
+        CMP   A,AP_TOPLAM+1
+        BNE   ABD_S
+        LDA   A,AP_AD+1
+        CMP   A,AP_TOPLAM
+        BNE   ABD_S
+        LDM   #1,AP_EE_OK
+ABD_S:  CLM
+ABD_SON:
+        RTS
+
+; Simge: AP_AD[0] tablo, AP_AD[1] kod; ikisi de yazılabilir karakter değilse /b (M = 1)
 AP_SEMBOL_AL:
         .ASSUME M=1,X=0
-        LDM   #'/',AP_SEMBOL
-        LDM   #'b',AP_SEMBOL+1
-        LDM   #0,AP_SAY
-        LDY   #0
-ASA_1:  CPY   #8
-        BEQ   ASA_SON
-        LDA   A,AP_AD,Y
-        INY
-        CMP   A,#' '
-        BEQ   ASA_1
-        STA   A,AP_T1
-        LDA   A,AP_SAY
-        BNE   ASA_2
-        LDA   A,AP_T1                   ; ilk karakter: şimdilik kod
-        STA   A,AP_SEMBOL+1
-        LDM   #1,AP_SAY
-        BRA   ASA_1
-ASA_2:  CMP   A,#1                      ; ikinci: ilki tablo, bu kod (sonrakiler yok sayılır)
-        BNE   ASA_1
-        LDA   A,AP_SEMBOL+1
+        LDA   A,AP_AD
+        JSR   AP_YAZILIR
+        BCS   ASA_V
+        LDA   A,AP_AD+1
+        JSR   AP_YAZILIR
+        BCS   ASA_V
+        LDA   A,AP_AD
         STA   A,AP_SEMBOL
-        LDA   A,AP_T1
+        LDA   A,AP_AD+1
         STA   A,AP_SEMBOL+1
-        LDM   #2,AP_SAY
-        BRA   ASA_1
-ASA_SON:
-        LDA   A,AP_SEMBOL+1             ; kod harfse küçük harf
-        CMP   A,#'A'
-        BCC   ASA_X
-        CMP   A,#'Z'+1
-        BCS   ASA_X
-        ORA   A,#$20
-        STA   A,AP_SEMBOL+1
-ASA_X:  RTS
+        RTS
+ASA_V:  LDM   #'/',AP_SEMBOL
+        LDM   #'b',AP_SEMBOL+1
+        RTS
 
-; Kanal 50: çağrı işareti (1..6 harf / rakam), isteğe bağlı -SSID (0..15) -> AX.25 adresi
+; A = karakter: '!'..'~' ise C = 0 (M = 1, A korunur)
+AP_YAZILIR:
+        .ASSUME M=1,X=0
+        CMP   A,#'!'
+        BCC   AYZ_H
+        CMP   A,#$7F
+        BCS   AYZ_H
+        CLC
+        RTS
+AYZ_H:  SEC
+        RTS
+
+; A = karakter: küçük harfse büyük harf (M = 1)
+AP_BUYUK:
+        .ASSUME M=1,X=0
+        CMP   A,#'a'
+        BCC   ABY_X
+        CMP   A,#'z'+1
+        BCS   ABY_X
+        AND   A,#$DF
+ABY_X:  RTS
+
+; Çağrı işareti (AP_AD, 10 bayt; 0, boşluk ya da '-' ile biter): 1..6 harf / rakam, küçük harf
+; büyüğe çevrilir; isteğe bağlı -SSID (0..15) -> AX.25 adresi
 ; (M = 1, X = çerçevede yazma yeri, ilerler). C = 1: geçersiz
 AP_CAGRI_YAZ:
         .ASSUME M=1,X=0
         LDM   #0,AP_SAY
         LDY   #0
-ACY_1:  CPY   #8
+ACY_1:  CPY   #10
         BEQ   ACY_DOLDUR
         LDA   A,AP_AD,Y
+        BEQ   ACY_DOLDUR
         CMP   A,#'-'
         BEQ   ACY_DOLDUR
         CMP   A,#' '
         BEQ   ACY_DOLDUR
+        JSR   AP_BUYUK
         JSR   AP_HARF_RAKAM
         BCS   ACY_HATA
         ASL   A
@@ -839,20 +960,20 @@ ACY_D1: LDA   A,AP_SAY                  ; 6 karaktere boşlukla tamamla
         BRA   ACY_D1
 ACY_SSID:
         LDM   #0,AP_SSID
-        CPY   #8
+        CPY   #10
         BEQ   ACY_YAZ
         LDA   A,AP_AD,Y
         CMP   A,#'-'
         BNE   ACY_YAZ
         INY
-        CPY   #8
+        CPY   #10
         BEQ   ACY_HATA
         LDA   A,AP_AD,Y
         JSR   AP_RAKAM
         BCS   ACY_HATA
         STA   A,AP_SSID
         INY
-        CPY   #8
+        CPY   #10
         BEQ   ACY_YAZ
         LDA   A,AP_AD,Y
         JSR   AP_RAKAM
@@ -911,205 +1032,103 @@ AP_RAKAM:
 AR_H:   SEC
         RTS
 
-; Kanal 51 / 52: konum. A = noktadan önceki hane sayısı (4 enlem, 5 boylam),
-; Y = izin verilen iki harf (alt bayt / üst bayt). Çerçeveye "DDMM.mmH" / "DDDMM.mmH" yazar.
-; Rakamlar arasındaki boşluk ondalık noktadır (kanal adında nokta yazılamaz): noktadan sonra
-; 1 ya da 2 hane (1 ise sona 0), boylamda noktadan önce 4 hane yazılmışsa başa 0.
-; Boşluk yoksa noktanın yeri sabittir (son iki hane ondalık; boylamda 6 rakam ise başa 0).
-; Baştaki / harften sonraki boşluklar ve - _ / atlanır.
-; (M = 1, X = yazma yeri, ilerler). C = 1: geçersiz. AP_CRC harfleri, AP_SAY noktanın yerini
-; ($FF = yok) geçici olarak tutar.
+; A = karakter: rakamsa C = 0 (M = 1, A korunur)
+AP_RAKAM_MI:
+        .ASSUME M=1,X=0
+        CMP   A,#'0'
+        BCC   ARM_H
+        CMP   A,#'9'+1
+        BCS   ARM_H
+        CLC
+        RTS
+ARM_H:  SEC
+        RTS
+
+; Konum (AP_AD): A = noktadan önceki rakam sayısı (4 enlem, 5 boylam), Y = izin verilen iki
+; harf (alt / üst bayt). Biçim tam olarak "DDMM.mmH" / "DDDMM.mmH" (harf küçükse büyüğe
+; çevrilir); çerçeveye olduğu gibi yazılır. (M = 1, X = yazma yeri, ilerler). C = 1: geçersiz
 AP_KONUM_YAZ:
         .ASSUME M=1,X=0
-        STA   A,AP_T2                   ; noktadan önceki hane
-        STY   AP_CRC                    ; izin verilen harfler
-        LDM   #0,AP_YARI
-        LDM   #$FF,AP_SAY               ; nokta yok
-        PHX
-        LDX   #0
-        STX   AP_HSAY
+        STA   A,AP_T2
+        STY   AP_CRC                    ; izin verilen harfler (geçici)
         LDY   #0
-AKY_1:  CPY   #8
-        BEQ   AKY_2
-        LDA   A,AP_AD,Y
-        INY
-        CMP   A,#' '
-        BEQ   AKY_BOSLUK
-        CMP   A,#'0'                    ; - / atlanır
-        BCC   AKY_1
-        CMP   A,#'9'+1
-        BCS   AKY_HARF
-        LDX   AP_HSAY
-        CPX   #7
-        BCC   AKY_R
-        JMP   AKY_HATA
-AKY_R:  STA   A,AP_HANE,X
-        INX
-        STX   AP_HSAY
-        BRA   AKY_1
-AKY_HARF:
-        CMP   A,#'_'
-        BEQ   AKY_1
-        CMP   A,AP_CRC
-        BEQ   AKY_H1
-        CMP   A,AP_CRC+1
-        BNE   AKY_HJ
-AKY_H1: STA   A,AP_YARI
-        BRA   AKY_1
-AKY_BOSLUK:                             ; rakamlardan sonra, harften önceki ilk boşluk = nokta
-        LDA   A,AP_YARI
-        BNE   AKY_1
-        LDA   A,AP_HSAY
-        BEQ   AKY_1
-        LDA   A,AP_SAY
-        CMP   A,#$FF
-        BNE   AKY_1
-        LDA   A,AP_HSAY
-        STA   A,AP_SAY
-        BRA   AKY_1
-AKY_HJ: JMP   AKY_HATA                  ; (yakın dallanma için)
-AKY_2:  LDA   A,AP_YARI
-        BEQ   AKY_HJ
-        LDA   A,AP_SAY
-        CMP   A,#$FF
-        BEQ   AKY_SABIT
-        LDA   A,AP_HSAY                 ; noktadan sonra 1 ya da 2 hane
-        SEC
-        SBC   A,AP_SAY
-        BEQ   AKY_HJ
-        CMP   A,#3
-        BCS   AKY_HJ
-        CMP   A,#2
-        BEQ   AKY_N1
-        LDX   AP_HSAY                   ; tek hane: sona 0
-        LDA   A,#'0'
-        STA   A,AP_HANE,X
-        INX
-        STX   AP_HSAY
-AKY_N1: LDA   A,AP_SAY                  ; noktadan önce tam hane ya da (boylam) bir eksik
-        CMP   A,AP_T2
-        BEQ   AKY_YAZ
-        INC   A
-        CMP   A,AP_T2
-        BNE   AKY_HJ
-        LDA   A,AP_T2
-        CMP   A,#5
-        BNE   AKY_HJ
-        BRA   AKY_KAYDIR
-AKY_SABIT:
-        LDA   A,AP_T2                   ; beklenen rakam sayısı = hane + 2
-        CLC
-        ADC   A,#2
-        STA   A,AP_T1
-        LDA   A,AP_HSAY
-        CMP   A,AP_T1
-        BEQ   AKY_YAZ
-        INC   A                         ; bir eksikse ve boylamsa başa 0
-        CMP   A,AP_T1
-        BNE   AKY_HJ
-        LDA   A,AP_T2
-        CMP   A,#5
-        BNE   AKY_HJ
-AKY_KAYDIR:
-        LDX   #5
-AKY_K:  LDA   A,AP_HANE,X
-        STA   A,AP_HANE+1,X
-        DEX
-        BPL   AKY_K
-        LDA   A,#'0'
-        STA   A,AP_HANE
-AKY_YAZ:
-        PLX
-        LDY   #0
-AKY_3:  LDA   A,AP_HANE,Y
-        STA   A,AP_CER,X
-        INX
+AKY_1:  LDA   A,AP_AD,Y
+        JSR   AP_RAKAM_MI
+        BCS   AKY_HATA
         INY
         TYA
         CMP   A,AP_T2
-        BNE   AKY_3
-        LDA   A,#'.'
-        STA   A,AP_CER,X
-        INX
-        LDA   A,AP_HANE,Y
+        BNE   AKY_1
+        LDA   A,AP_AD,Y
+        CMP   A,#'.'
+        BNE   AKY_HATA
+        INY
+        LDA   A,AP_AD,Y
+        JSR   AP_RAKAM_MI
+        BCS   AKY_HATA
+        INY
+        LDA   A,AP_AD,Y
+        JSR   AP_RAKAM_MI
+        BCS   AKY_HATA
+        INY
+        LDA   A,AP_AD,Y
+        JSR   AP_BUYUK
+        CMP   A,AP_CRC
+        BEQ   AKY_2
+        CMP   A,AP_CRC+1
+        BNE   AKY_HATA
+AKY_2:  STA   A,AP_AD,Y
+        INY
+        STY   AP_HSAY                   ; uzunluk
+        LDY   #0
+AKY_3:  LDA   A,AP_AD,Y
         STA   A,AP_CER,X
         INX
         INY
-        LDA   A,AP_HANE,Y
-        STA   A,AP_CER,X
-        INX
-        LDA   A,AP_YARI
-        STA   A,AP_CER,X
-        INX
+        CPY   AP_HSAY
+        BNE   AKY_3
         CLC
         RTS
 AKY_HATA:
-        PLX
         SEC
         RTS
 
-; Kanal 53: yorum, sondaki boşluklar atılır (M = 1, X = yazma yeri, ilerler)
-AP_MESAJ_YAZ:
-        .ASSUME M=1,X=0
-        LDY   #8
-AMS_1:  DEY
-        BMI   AMS_SON                   ; boş
-        LDA   A,AP_AD,Y
-        CMP   A,#' '
-        BEQ   AMS_1
-        STY   AP_HSAY                   ; son karakterin yeri
+; Yorum: bölümden doğrudan çerçeveye okunur, ilk 0 baytında biter (en çok 43 bayt)
+; (M = 0 giriş ve çıkış, X = yazma yeri, ilerler)
+AP_YORUM_YAZ:
+        .ASSUME M=0,X=0
+        TXA
+        CLC
+        ADC   A,#AP_CER
+        STA   A,AP_HEDEF_P
+        LDA   A,#AB_YORUM_N
+        STA   A,AP_ALAN_N
+        LDA   A,#AB_YORUM
+        JSR   AP_ALAN_OKU
         LDY   #0
-AMS_2:  LDA   A,AP_AD,Y
-        STA   A,AP_CER,X
+        SEM
+AYY_1:  LDA   A,AP_CER,X
+        BEQ   AYY_SON
         INX
-        CPY   AP_HSAY
-        BEQ   AMS_SON
         INY
-        BRA   AMS_2
-AMS_SON:
+        CPY   #AB_YORUM_N
+        BNE   AYY_1
+AYY_SON:
+        CLM
         RTS
 
-; Kanal 55: baştaki boşluklardan sonraki rakamlar (en çok 4) = saniye; rakam yoksa 0 (kapalı),
-; 1..9 ise 10. Sayaçları sıfırlar (M = 0 giriş ve çıkış)
+; Otomatik gönderim aralığı (AP_AD, 2 bayt büyük uçlu, saniye): 0 kapalı, 1..9 ise 10.
+; Sayaçları sıfırlar (M = 0 giriş ve çıkış)
 AP_ARALIK_AL:
         .ASSUME M=0,X=0
-        LDM   #0,AP_ARALIK
+        SEM
+        LDA   A,AP_AD
+        STA   A,AP_ARALIK+1
+        LDA   A,AP_AD+1
+        STA   A,AP_ARALIK
+        CLM
         LDM   #0,AP_SANIYE
         LDM   #0,AP_MS
-        LDY   #0
-AAL_1:  CPY   #8                        ; baştaki boşluklar
-        BEQ   AAL_SON
-        LDA   A,AP_AD,Y
-        AND   A,#$00FF
-        CMP   A,#' '
-        BNE   AAL_2
-        INY
-        BRA   AAL_1
-AAL_2:  LDX   #4                        ; en çok 4 rakam
-AAL_3:  CPY   #8
-        BEQ   AAL_SON
-        LDA   A,AP_AD,Y
-        AND   A,#$00FF
-        SEC
-        SBC   A,#'0'
-        BCC   AAL_SON
-        CMP   A,#10
-        BCS   AAL_SON
-        STA   A,AP_T1                   ; ARALIK = 10 * ARALIK + rakam (AP_T1/AP_T2 2 bayt)
-        LDA   A,AP_ARALIK
-        ASL   A
-        STA   A,AP_CRC                  ; (geçici, FCS çoktan yazıldı)
-        ASL   A
-        ASL   A
-        CLC
-        ADC   A,AP_CRC
-        CLC
-        ADC   A,AP_T1
-        STA   A,AP_ARALIK
-        INY
-        DEX
-        BNE   AAL_3
-AAL_SON:
         LDA   A,AP_ARALIK
         BEQ   AAL_X
         CMP   A,#AP_EN_KISA

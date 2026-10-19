@@ -354,6 +354,87 @@ function fromP40(bytes, cur, opt) {
   return { ee: fixSums(ee), warnings: warn, base: fb };
 }
 
+/* ---------------------------------------------------------------- APRS bölümü (özel firmware)
+ * P4000'in de firmware'in de kullanmadığı 0x6E0..0x731; ozel_firmware/ornekler/aprs.inc okur.
+ *   +0 "AP", +2 sürüm 1, +4 çağrı işareti[-SSID] (10, 0 ile biter), +14 simge tablosu + kodu,
+ *   +16 enlem "DDMM.mmN", +24 boylam "DDDMM.mmE", +34 otomatik gönderim aralığı (s, büyük uçlu),
+ *   +36 yorum (43 bayt, 0 ile biter), +80 sağlama (+0..+79 toplamı, büyük uçlu).
+ * Bölüm geçersizse (yazılmamışsa) firmware ROM'daki varsayılanları kullanır: APRS_VARSAYILAN. */
+const APRS0 = 0x6E0, APRS_UZ = 80, APRS_YORUM = 43;
+const APRS_VARSAYILAN = { cagri: 'TC19MK-10', tablo: '/', kod: 'b', enlem: '3955.52N', boylam: '03250.22E', aralik: 0, yorum: 'ASELSAN 4000' };
+const APRS_SIMGE = [['/b', 'Bisiklet'], ['/>', 'Araba'], ['/[', 'Yaya'], ['/<', 'Motosiklet'], ['/-', 'Ev'], ['/k', 'Kamyonet'],
+  ['/u', 'Kamyon'], ['/j', 'Jip'], ['/R', 'Karavan'], ['/Y', 'Yelkenli'], ['/s', 'Tekne'], ['/v', 'Minibüs'], ['/f', 'İtfaiye'],
+  ['/a', 'Ambulans'], ['/O', 'Balon'], ['/\'', 'Uçak'], ['/r', 'Röle'], ['/#', 'Sayısal tekrarlayıcı (digi)'], ['/_', 'Hava istasyonu']];
+function utf8(s) {
+  const o = [];
+  for (const ch of String(s)) {
+    let c = ch.codePointAt(0);
+    if (c < 0x80) o.push(c);
+    else if (c < 0x800) o.push(0xC0 | c >> 6, 0x80 | c & 63);
+    else if (c < 0x10000) o.push(0xE0 | c >> 12, 0x80 | c >> 6 & 63, 0x80 | c & 63);
+    else o.push(0xF0 | c >> 18, 0x80 | c >> 12 & 63, 0x80 | c >> 6 & 63, 0x80 | c & 63);
+  }
+  return o;
+}
+function unutf8(b) { try { return decodeURIComponent(b.map(c => '%' + hex2(c)).join('')); } catch (e) { return b.map(c => String.fromCharCode(c)).join(''); } }
+function aprsTopla(ee) { return sum(ee, APRS0, APRS_UZ); }
+function aprsGecerli(ee) {
+  return ee[APRS0] === 0x41 && ee[APRS0 + 1] === 0x50 && ee[APRS0 + 2] === 1 && (ee[APRS0 + APRS_UZ] << 8 | ee[APRS0 + APRS_UZ + 1]) === aprsTopla(ee);
+}
+function aprsFix(ee) { const s = aprsTopla(ee); ee[APRS0 + APRS_UZ] = s >> 8; ee[APRS0 + APRS_UZ + 1] = s & 0xFF; return ee; }
+/* bölümün içeriği (geçersizse firmware'in kullanacağı varsayılanlar, gecerli: false) */
+function aprsGet(ee) {
+  if (!aprsGecerli(ee)) return Object.assign({ gecerli: false }, APRS_VARSAYILAN);
+  const txt = (a, n) => { const b = []; for (let i = 0; i < n && ee[APRS0 + a + i]; i++) b.push(ee[APRS0 + a + i]); return b; };
+  const asc = b => b.map(c => String.fromCharCode(c)).join('');
+  return { gecerli: true, cagri: asc(txt(4, 10)), tablo: String.fromCharCode(ee[APRS0 + 14]), kod: String.fromCharCode(ee[APRS0 + 15]),
+    enlem: asc(txt(16, 8)), boylam: asc(txt(24, 9)), aralik: ee[APRS0 + 34] << 8 | ee[APRS0 + 35], yorum: unutf8(txt(36, APRS_YORUM)) };
+}
+/* konum: "3955.52N" (APRS), "39 55.52 N" (derece dakika) ya da "39.92533" / "-32.5" (ondalık derece) */
+function aprsKonum(s, enlem) {
+  const t = String(s).trim().toUpperCase().replace(',', '.'), H = enlem ? 'NS' : 'EW', dd = enlem ? 2 : 3, mx = enlem ? 90 : 180;
+  const ad = enlem ? 'Enlem' : 'Boylam';
+  let m = new RegExp('^(\\d{' + (dd - 1) + ',' + dd + '})(\\d\\d\\.\\d\\d)\\s*([' + H + '])$').exec(t), deg, min, h;
+  if (m) { deg = +m[1]; min = +m[2]; h = m[3]; }
+  else if ((m = new RegExp('^(\\d{1,3})[°\\s]+(\\d{1,2}(?:\\.\\d+)?)\'?\\s*([' + H + '])$').exec(t))) { deg = +m[1]; min = +m[2]; h = m[3]; }
+  else if ((m = new RegExp('^([-+]?\\d{1,3}(?:\\.\\d+)?)°?\\s*([' + H + '])?$').exec(t))) {
+    let v = +m[1]; h = m[2] || (v < 0 ? H[1] : H[0]); v = Math.abs(v); deg = Math.floor(v); min = (v - deg) * 60;
+  } else throw new Error(ad + ' anlaşılamadı: "' + s + '" (örnek ' + (enlem ? '3955.52N ya da 39.92533' : '03250.22E ya da 32.837') + ')');
+  min = Math.round(min * 100) / 100;
+  if (min >= 60) { deg++; min -= 60; }
+  if (deg + min / 60 > mx) throw new Error(ad + ' en çok ' + mx + '°');
+  return String(deg).padStart(dd, '0') + min.toFixed(2).padStart(5, '0') + h;
+}
+function aprsDerece(s) { const m = /^(\d{2,3})(\d\d\.\d\d)([NSEW])$/.exec(s); if (!m) return NaN; const v = +m[1] + m[2] / 60; return /[SW]/.test(m[3]) ? -v : v; }
+/* bölümü yazar (eksik alanlar mevcut içerikten / varsayılandan); geçersiz değerde hata */
+function aprsSet(ee, o) {
+  const v = Object.assign(aprsGet(ee), o);
+  const cagri = String(v.cagri).trim().toUpperCase();
+  if (!/^[A-Z0-9]{1,6}(-([0-9]|1[0-5]))?$/.test(cagri)) throw new Error('Çağrı işareti en çok 6 harf / rakam, isteğe bağlı -SSID 0..15 olmalı (AX.25 sınırı), ör. TC19MK-10');
+  const enlem = aprsKonum(v.enlem, true), boylam = aprsKonum(v.boylam, false);
+  const ok = c => typeof c === 'string' && c.length === 1 && c >= '!' && c <= '~';
+  if (!ok(v.tablo) || !ok(v.kod)) throw new Error('Simge tablosu ve kodu birer yazılabilir karakter olmalı (ör. / ve b)');
+  const aralik = Math.round(+v.aralik || 0);
+  if (aralik < 0 || aralik > 65535) throw new Error('Aralık 0..65535 saniye');
+  if (aralik && aralik < 10) throw new Error('Aralık en az 10 saniye (0 = kapalı)');
+  const yorum = utf8(String(v.yorum).replace(/\s+$/, ''));
+  if (yorum.length > APRS_YORUM) throw new Error('Yorum en çok ' + APRS_YORUM + ' bayt (şu an ' + yorum.length + '; Türkçe harfler 2 bayt)');
+  if (yorum.some(c => c < 0x20 || c === 0x7F)) throw new Error('Yorumda kontrol karakteri olamaz');
+  ee.fill(0, APRS0, APRS0 + APRS_UZ);
+  const put = (a, b) => b.forEach((c, i) => { ee[APRS0 + a + i] = c; });
+  const asc = s => Array.from(s, c => c.charCodeAt(0));
+  put(0, asc('AP')); ee[APRS0 + 2] = 1;
+  put(4, asc(cagri)); put(14, asc(v.tablo + v.kod)); put(16, asc(enlem)); put(24, asc(boylam));
+  ee[APRS0 + 34] = aralik >> 8; ee[APRS0 + 35] = aralik & 0xFF;
+  put(36, yorum);
+  return aprsFix(ee);
+}
+/* firmware'in göndereceği paket (metin; yorumun baytları Latin-1 olarak, afsk.js gibi) */
+function aprsPaket(ee) {
+  const a = aprsGet(ee), yb = a.gecerli ? (() => { const b = []; for (let i = 0; i < APRS_YORUM && ee[APRS0 + 36 + i]; i++) b.push(ee[APRS0 + 36 + i]); return b; })() : utf8(a.yorum);
+  return a.cagri.toUpperCase() + '>APIZCI,WIDE1-1,WIDE2-1:!' + a.enlem.toUpperCase() + a.tablo + a.boylam.toUpperCase() + a.kod + yb.map(c => String.fromCharCode(c)).join('');
+}
+
 /* ---------------------------------------------------------------- sayfalar */
 const PAGES = [
   { id: 'sabit', title: 'Sabit Parametreler' },
@@ -363,6 +444,7 @@ const PAGES = [
   { id: 'ksys', title: 'Kablosuz Ses Yayın Sistemi Parametreleri', menu: 'KSYS Parametreleri' },
   { id: 'adata', title: 'Analog Veri Parametreleri' },
   { id: 'test', title: 'Test-Ayar Alanı (T4000)', menu: 'Test-Ayar (T4000)' },
+  { id: 'aprs', title: 'APRS (özel firmware)', menu: 'APRS' },
 ];
 
 /* ---------------------------------------------------------------- tarayıcıda çizim */
@@ -446,6 +528,27 @@ function pageHtml(id, ee, ro, chPage) {
       for (let r = 0x570; r < 0x5C0; r += 16) { hx += hex3(r) + '  '; for (let i = 0; i < 16; i++) hx += (r + i >= 0x578 && r + i <= 0x5BE ? hex2(ee[r + i]) : '  ') + ' '; hx += '\n'; }
       return h + '<pre class="mono p4-hex">' + hx + '</pre>';
     }
+    case 'aprs': {
+      const a = aprsGet(ee), dis = ro ? ' disabled' : '';
+      const inp = (k, v, size, extra) => '<input type="text" class="mono" size="' + size + '" data-aprs="' + k + '" value="' + esc(v) + '"' + (extra || '') + dis + '>';
+      const rw = (l, h, w) => '<div class="p4-row"' + (w ? ' title="' + esc(w) + '"' : '') + '><span class="p4-l">' + esc(l) + '</span>' + h + '</div>';
+      const sim = a.tablo + a.kod, de = x => { const v = aprsDerece(x); return isNaN(v) ? '' : ' <span style="color:var(--muted)">' + v.toFixed(5) + '°</span>'; };
+      const simSel = '<select data-aprs="simge"' + dis + '>' + (APRS_SIMGE.some(s => s[0] === sim) ? '' : '<option value="" selected>' + esc(sim) + '</option>') +
+        APRS_SIMGE.map(([k, l]) => '<option value="' + esc(k) + '"' + (k === sim ? ' selected' : '') + '>' + esc(l + '  ' + k) + '</option>').join('') + '</select>';
+      let h = '<p class="note">' + (a.gecerli ? 'EEPROM\'da APRS bölümü var (0x6E0..0x731, sağlama tutuyor).' :
+        'EEPROM\'da APRS bölümü yok: firmware aşağıdaki varsayılanlarla gönderir.' + (ro ? '' : ' Bir alanı değiştirince bölüm yazılır.')) +
+        ' Bu bölüm yalnız özel firmware\'in (YA4000S_FREKANS) APRS menüsü içindir; P4000 ve orijinal firmware bu alanı kullanmaz.</p>';
+      h += '<div class="p4-cols">' + frame('İstasyon',
+        rw('Çağrı işareti', inp('cagri', a.cagri, 11, ' maxlength="9"'), 'AX.25: en çok 6 harf / rakam, -SSID 0..15. 0x6E4..0x6ED') +
+        rw('Simge', simSel + ' ' + inp('tablo', a.tablo, 2, ' maxlength="1" title="tablo"') + inp('kod', a.kod, 2, ' maxlength="1" title="kod"'), '0x6EE tablo, 0x6EF kod') +
+        rw('Yorum', inp('yorum', a.yorum, 44, ' maxlength="43"'), 'en çok 43 bayt; her karakter gider (Türkçe harfler UTF-8, 2 bayt). 0x704..0x72E')) +
+        frame('Konum', rw('Enlem', inp('enlem', a.enlem, 10) + de(a.enlem), '3955.52N, 39 55.52 N ya da 39.92533. 0x6F0') +
+          rw('Boylam', inp('boylam', a.boylam, 10) + de(a.boylam), '03250.22E, 32 50.22 E ya da 32.837. 0x6F8')) +
+        frame('Otomatik gönderim', rw('Aralık (s)', inp('aralik', a.aralik || '', 6), '0 ya da boş: kapalı; en az 10 s. APRS menüsündeyken PTT\'siz gönderir. 0x702') ) + '</div>';
+      h += '<div class="p4-row"><span class="p4-l">Gidecek paket</span><span class="mono">' + esc(aprsPaket(ee)) + '</span></div>';
+      if (!ro) h += '<div class="p4-row"><button data-aprs-cmd="varsayilan">Varsayılanları yaz</button>' + (a.gecerli ? '<button data-aprs-cmd="sil">Bölümü sil (firmware varsayılanı kullanır)</button>' : '') + '</div>';
+      return h;
+    }
   }
   return '';
 }
@@ -458,7 +561,8 @@ function render(el, ee, opt) {
   let h = '<div class="p4-nav">' + PAGES.map(p => '<button data-pg="' + p.id + '"' + (p.id === st.page ? ' class="active"' : '') + '>' + esc(p.menu || p.title) + '</button>').join('') + '</div>';
   const pg = PAGES.find(p => p.id === st.page);
   h += '<div class="p4-page"><div class="p4-title">' + esc(pg.title) + '</div>' + pageHtml(st.page, ee, ro, st.chPage) + '</div>';
-  h += '<div class="p4-sums">Sağlama: ' + sums.map(s => '<span class="pill ' + (s.ok ? 'ok' : 'bad') + '" title="0x' + hex3(s.a) + '..0x' + hex3(s.a + s.n - 1) + ' → 0x' + hex3(s.a + s.n) + '">' + esc(s.name) + '</span>').join(' ') + '</div>';
+  h += '<div class="p4-sums">Sağlama: ' + sums.map(s => '<span class="pill ' + (s.ok ? 'ok' : 'bad') + '" title="0x' + hex3(s.a) + '..0x' + hex3(s.a + s.n - 1) + ' → 0x' + hex3(s.a + s.n) + '">' + esc(s.name) + '</span>').join(' ') +
+    ' <span class="pill' + (aprsGecerli(ee) ? ' ok' : '') + '" title="0x6E0..0x72F → 0x730 (özel firmware)">APRS' + (aprsGecerli(ee) ? '' : ' (yok)') + '</span></div>';
   el.innerHTML = h;
   el.querySelectorAll('[data-pg]').forEach(b => b.onclick = () => { st.page = b.dataset.pg; render(el, ee, opt); });
   el.querySelectorAll('[data-chp]').forEach(b => b.onclick = () => { st.chPage = +b.dataset.chp; render(el, ee, opt); });
@@ -479,6 +583,20 @@ function render(el, ee, opt) {
       set(ee, x, v);
       done();
     } catch (e) { alert(x.l + ': ' + e.message); render(el, ee, opt); }
+  });
+  el.querySelectorAll('[data-aprs]').forEach(inp => inp.onchange = () => {
+    const k = inp.dataset.aprs, o = {};
+    try {
+      if (k === 'simge') { if (!inp.value) return; o.tablo = inp.value[0]; o.kod = inp.value[1]; }
+      else o[k] = inp.value;
+      aprsSet(ee, o);
+      done('APRS');
+    } catch (e) { alert('APRS: ' + e.message); render(el, ee, opt); }
+  });
+  el.querySelectorAll('[data-aprs-cmd]').forEach(b => b.onclick = () => {
+    if (b.dataset.aprsCmd === 'varsayilan') aprsSet(ee, APRS_VARSAYILAN);
+    else ee.fill(0xFF, APRS0, APRS0 + APRS_UZ + 2);
+    done('APRS');
   });
   el.querySelectorAll('[data-ch]').forEach(inp => inp.onchange = () => {
     const n = +inp.dataset.ch, k = inp.dataset.f, c = channel(ee, n);
@@ -511,7 +629,8 @@ function injectCss(doc) {
 }
 
 const api = { FIELDS, PAGES, SUMS, TCS_HZ, get, set, getBits, setBits, channel, setChannel, xshift, base, checkSums, fixSums,
-  toP40, fromP40, p40Base, parseIni, dec1254, render, injectCss, telsizTipi, donanimTipi, bandText, where };
+  toP40, fromP40, p40Base, parseIni, dec1254, render, injectCss, telsizTipi, donanimTipi, bandText, where,
+  APRS0, APRS_UZ, APRS_VARSAYILAN, aprsGet, aprsSet, aprsGecerli, aprsFix, aprsKonum, aprsPaket, utf8 };
 if (typeof module !== 'undefined' && module.exports) module.exports = api;
 root.P4000 = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);

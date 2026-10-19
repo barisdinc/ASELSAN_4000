@@ -107,7 +107,33 @@ check('firmware sağlamaları = P4000 ilk dört blok', P.checkSums(def).slice(0,
   check('fixSums -> yedi blok tutar', P.checkSums(t).every(s => s.ok));
 }
 
-/* 4. dışarıdan verilen dosyalar */
+/* 4. APRS bölümü (özel firmware, 0x6E0..0x731) */
+{
+  const t = B.defaultEeprom(), once = t.slice();
+  const v = P.aprsGet(t);
+  check('APRS: bölüm yokken varsayılanlar (TC19MK-10, /b, Anıtkabir)', !v.gecerli && v.cagri === 'TC19MK-10' && v.tablo + v.kod === '/b' && v.enlem === '3955.52N' && v.boylam === '03250.22E');
+  P.aprsSet(t, P.APRS_VARSAYILAN);
+  const d = diff(t, once).map(s => parseInt(s.split(':')[0], 16));
+  check('APRS: yalnız 0x6E0..0x731 değişir, sağlama tutar', P.aprsGecerli(t) && d.every(a => a >= 0x6E0 && a <= 0x731) && P.checkSums(t).every((s, i) => s.ok === P.checkSums(once)[i].ok), d.length + ' bayt');
+  check('APRS: imza, çağrı işareti ve konum yerleri', t[0x6E0] === 0x41 && t[0x6E1] === 0x50 && t[0x6E2] === 1 &&
+    String.fromCharCode(...t.slice(0x6E4, 0x6ED)) === 'TC19MK-10' && t[0x6ED] === 0 && String.fromCharCode(...t.slice(0x6F0, 0x6F8)) === '3955.52N' &&
+    String.fromCharCode(...t.slice(0x6F8, 0x701)) === '03250.22E' && t[0x6EE] === 0x2F && t[0x6EF] === 0x62);
+  P.aprsSet(t, { cagri: 'ta7w-7', enlem: '40.84383', boylam: '31 9.39 E', yorum: 'Düzce küçük Harf, nokta.', aralik: 600 });
+  const g = P.aprsGet(t);
+  check('APRS: küçük harf çağrı büyüğe, ondalık derece / derece-dakika konum, UTF-8 yorum, aralık',
+    g.cagri === 'TA7W-7' && g.enlem === '4050.63N' && g.boylam === '03109.39E' && g.yorum === 'Düzce küçük Harf, nokta.' && g.aralik === 600 && t[0x702] === 2 && t[0x703] === 0x58,
+    JSON.stringify(g));
+  check('APRS: konum dönüşümleri', P.aprsKonum('-33.86833', true) === '3352.10S' && P.aprsKonum('151 12.34 w', false) === '15112.34W' && P.aprsKonum('3955.52n', true) === '3955.52N' && P.aprsKonum('59.99999', true) === '6000.00N');
+  const red = o => { try { P.aprsSet(Uint8Array.from(t), o); return ''; } catch (e) { return e.message; } };
+  check('APRS: geçersiz değerler reddedilir',
+    /6 harf/.test(red({ cagri: 'TC1881ATA-10' })) && /6 harf/.test(red({ cagri: 'TA7W-16' })) && /43 bayt/.test(red({ yorum: 'ş'.repeat(22) })) &&
+    /en az 10/.test(red({ aralik: 5 })) && /Enlem/.test(red({ enlem: '95.0' })) && /Boylam/.test(red({ boylam: 'abc' })) && /Simge/.test(red({ kod: '' })));
+  check('APRS: paket metni', P.aprsPaket(t) === 'TA7W-7>APIZCI,WIDE1-1,WIDE2-1:!4050.63N/03109.39Eb' + String.fromCharCode(...P.utf8('Düzce küçük Harf, nokta.')), P.aprsPaket(t));
+  const p40 = P.fromP40(P.toP40(t), t).ee;
+  check('APRS: .p40 okuma bölümü korur', P.aprsGecerli(p40) && P.aprsGet(p40).cagri === 'TA7W-7');
+}
+
+/* 5. dışarıdan verilen dosyalar */
 for (const f of args) {
   const raw = readBin(f);
   if (raw.length === 2048) {

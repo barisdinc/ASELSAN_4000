@@ -142,6 +142,36 @@ Kanal n'in kaydı 0x02E + 13·(n−1) adresinde başlar; kanal 1..99.
   - 0x591–0x59A ilk güç PWM değerleri.
   - 0x59B–0x5A4 ve 0x5A5–0x5AE güç hedefleri.
 
+## Boş alanlar ve APRS bölümü
+
+P4000'in alan tanımları, YA4000S / YA4000E'de sabit yazılmış EEPROM adresleri ve simülatörde ölçülen okuma / yazmalar karşılaştırıldı:
+
+| Alan | Kullanan |
+|---|---|
+| 0x554–0x577 | Firmware'in kendi alanı (0x55A–0x55E ve 0x571 okunup yazılıyor). Dokunulmamalı |
+| 0x5BF–0x5E5 | Firmware: ikinci kalibrasyon tablosu (0x5BF'den okunuyor, 0x5D6'da 16 baytlık tablo) |
+| **0x5E6–0x5FF** | Kimse (26 bayt) |
+| 0x6D4–0x6DB | Yalnız YA4000E |
+| **0x6DC–0x7DF** | Kimse (~260 bayt). Fabrikadan gelen telsizde içinde veri olabilir (örnekte 0x736–0x7D7 `8B 00` tekrarı); firmware okumuyor, `.p40` taşımıyor |
+| 0x7E0–0x7FF | KSYS: firmware 0x7E0'dan 32, 0x7F8'den 6 bayt okuyor |
+
+Bu alanları hiçbir sağlama kapsamıyor. Not: yalnız sabit adresler tarandı; hesaplanan adresle erişen nadir bir yol kaçmış olabilir.
+
+**APRS bölümü (0x6E0–0x731)** özel firmware'in (`ozel_firmware/ornekler/aprs.inc`) APRS menüsü içindir:
+
+| Yer | Uzunluk | İçerik |
+|---|---|---|
+| 0x6E0 | 3 | `A` `P`, sürüm 1 |
+| 0x6E4 | 10 | çağrı işareti[-SSID], 0 ile biter (AX.25: 1–6 harf/rakam, SSID 0–15) |
+| 0x6EE | 2 | simge tablosu, simge kodu |
+| 0x6F0 | 8 | enlem `DDMM.mmN` |
+| 0x6F8 | 9 | boylam `DDDMM.mmE` |
+| 0x702 | 2 | otomatik gönderim aralığı, saniye, büyük uçlu (0 = kapalı, en az 10) |
+| 0x704 | 43 | yorum, 0 ile biter (baytlar olduğu gibi gönderilir; UTF-8) |
+| 0x730 | 2 | 0x6E0–0x72F'nin 16 bit toplamı, büyük uçlu |
+
+Bölüm geçersizse firmware ROM'daki varsayılanları kullanır: `TC19MK-10`, `/b` (bisiklet), 3955.52N 03250.22E (Ankara, Anıtkabir), yorum `ASELSAN 4000`, otomatik gönderim kapalı. `p4000.js`: `aprsGet`, `aprsSet`, `aprsPaket`; sayfa **APRS**.
+
 ## .p40 kütüğü
 
 INI biçiminde bir metin dosyası; kodlaması Windows-1254, satır sonu CRLF.

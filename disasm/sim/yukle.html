@@ -309,10 +309,23 @@ function showEeprom(ee, target) {
       chans.map(([n, c]) => '<tr><td class="num">' + String(n).padStart(2, '0') + '</td><td class="num">' + mhz(c.rx) + '</td><td class="num">' + mhz(c.tx) +
         '</td><td class="mono">' + esc(c.name) + '</td><td class="num">' + (c.rxTone || '–') + ' / ' + (c.txTone || '–') + '</td></tr>').join('') + '</tbody></table></div>';
   }
-  h += '<details class="p4det"><summary>P4000 sayfaları (salt okunur)</summary><div class="p4host"></div></details>';
+  const edit = !target;                                  // 3. adım: telsizden okunan, düzenlenebilir
+  h += edit ? '<details class="p4det" id="p4Det"><summary>P4000 sayfaları ve APRS (düzenle)</summary><div class="p4host"></div>' +
+      '<div class="row" style="margin-top:8px"><button id="p4Apply" disabled>Değişiklikleri telsize yazmaya hazırla (6. adım)</button><span class="note" id="p4Note">Okunan EEPROM\'un bir kopyası düzenlenir; telsize 6. adımdan, onay ve doğrulamayla yazılır.</span></div></details>'
+    : '<details class="p4det"><summary>P4000 sayfaları (salt okunur)</summary><div class="p4host"></div></details>';
   $(target || 'eeSum').innerHTML = h;
   P4000.injectCss(document);
-  P4000.render($(target || 'eeSum').querySelector('.p4host'), ee, { editable: false });
+  const host = $(target || 'eeSum').querySelector('.p4host');
+  if (!edit) { P4000.render(host, ee, { editable: false }); return; }
+  const work = ee.slice();
+  P4000.render(host, work, { editable: true, onChange: () => { $('p4Apply').disabled = false; $('p4Note').textContent = 'yazılmamış değişiklik var'; } });
+  $('p4Apply').onclick = () => {
+    P4000.fixSums(work);
+    let d = 0; for (let a = 0; a < 2048; a++) if (work[a] !== ee[a]) d++;
+    log('EEPROM düzenlendi: ' + d + ' bayt değişti; 6. adıma aktarıldı');
+    loadEeFile('düzenlenmiş EEPROM', work.slice());
+    $('erCard').scrollIntoView({ behavior: 'smooth' });
+  };
 }
 
 /* ---------------------------------------------------------------- flash */
@@ -565,6 +578,26 @@ if (location.hash === '#otomatik-test-eeprom') (async () => {
   const mem = port.b.eeprom.mem, same = f.every((v, i) => v === mem[i]);
   document.body.dataset.test = pre && refused && enabled && same && /geri yüklendi/.test($('erResult').textContent) ? 'bitti'
     : 'hata pre=' + pre + ' ret=' + refused + ' en=' + enabled + ' same=' + same + ' ' + $('erResult').textContent;
+})();
+/* yukle.html#otomatik-test-aprs: 3. adımda okunan EEPROM'un APRS sayfasını düzenle, 6. adımla yaz */
+if (location.hash === '#otomatik-test-aprs') (async () => {
+  document.querySelector('input[value=sim]').checked = true; onMode();
+  const until = c => new Promise(r => { const t = setInterval(() => { if (c()) { clearInterval(t); r(); } }, 50); });
+  $('connectBtn').click(); await until(() => client && !busy);
+  $('eeBtn').click(); await until(() => !busy);
+  $('p4Det').open = true;
+  $('p4Det').querySelector('[data-pg=aprs]').click();
+  const setv = (k, v) => { const i = $('p4Det').querySelector('[data-aprs=' + k + ']'); i.value = v; i.onchange(); };
+  setv('cagri', 'ta7w-7'); setv('yorum', 'Düzce 73!'); setv('aralik', '120');
+  const sel = $('p4Det').querySelector('[data-aprs=simge]'); sel.value = '/>'; sel.onchange();
+  const paket = $('p4Det').textContent.includes('TA7W-7>APIZCI,WIDE1-1,WIDE2-1:!3955.52N/03250.22E>');
+  $('p4Apply').click();
+  window.confirm = () => true;
+  $('erC1').checked = true; updateEeWrite();
+  $('erBtn').click(); await until(() => !busy);
+  const a = P4000.aprsGet(port.b.eeprom.mem);
+  const ok = paket && a.gecerli && a.cagri === 'TA7W-7' && a.yorum === 'Düzce 73!' && a.aralik === 120 && a.kod === '>' && /geri yüklendi/.test($('erResult').textContent);
+  document.body.dataset.test = ok ? 'bitti' : 'hata paket=' + paket + ' ' + JSON.stringify(a) + ' ' + $('erResult').textContent;
 })();
 if (location.hash === '#otomatik-test') (async () => {
   document.querySelector('input[value=sim]').checked = true; onMode();

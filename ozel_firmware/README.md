@@ -150,33 +150,37 @@ Menüde FREKANS'tan sonra gelir (`m` ile **APRS** başlığına gelip `s`).
 | Ekran / tuş | Ne olur |
 |---|---|
 | `s` (APRS başlığında) | Telsiz alma ve gönderme **144,800 MHz**'e geçer, TKS kapanır, hoparlör tamamen susar (kanal sesi, tuş bipleri ve uyarı tonları yok). Ekranda `APRS PTT` |
-| (bekle) | Kanal 55'te saniye yazılıysa PTT'ye basılmadan o aralıkla paket gider; telsiz kendisi gönderip almaya döner |
+| (bekle) | APRS bölümünde otomatik gönderim aralığı varsa PTT'ye basılmadan o aralıkla paket gider; telsiz kendisi gönderip almaya döner |
 | PTT | ~130 ms sonra paket gider (0,75 s): ekranda `APRS TX`, bitince `APRS OK`. PTT basılı tutulursa telsiz 144,800'de göndermeye (konuşmaya) devam eder |
 | `m` | Çık: telsiz önceki kanalına / frekansına döner. Menüdeyken kanal anahtarı çevrildiyse yeni kanal kalır |
 
 FREKANS'taki gibi APRS açıkken firmware'in ~4 s'lik menü zaman aşımı kapalıdır. Bant dışıysa (bant tabanı 144 MHz'in üstünde) ekranda `HATA` / `ERROR` yazar ve frekans değişmez.
 
-**Ayarlar kanal adlarında.** APRS'e her girişte kanal 50–54'ün adları EEPROM'dan okunur ve paket bunlardan kurulur. Kanalın frekansı olması gerekmez: boş kanalların adları da EEPROM'da durur. Adlar PC programlayıcısıyla yazılır; telsiz 8 karakteri ve yalnızca `A-Z 0-9 boşluk _ - /` karakterlerini kabul ettiği için nokta ve küçük harf kullanılmaz.
+**Ayarlar EEPROM'daki APRS bölümünde.** APRS'e her girişte EEPROM 0x6E0–0x731 okunur ve paket buradan kurulur. Bu alanı ne P4000 ne de orijinal firmware kullanıyor (bkz. `docs/p4000_eeprom.md`, "Boş alanlar"). Bölüm, simülatörün **EEPROM / kanallar** sekmesindeki ya da yükleme sayfasının 3. adımındaki **APRS** sayfasından yazılır. Gerçek telsizde sıra şöyle: 3. adımda EEPROM'u oku, APRS sayfasında düzenle, **Değişiklikleri telsize yazmaya hazırla**'ya bas; 6. adım yalnız değişen sayfaları yazar, geri okuyup doğrular ve telsizi yeniden başlatır.
 
-| Kanal | Ne | Ad örneği | Pakette |
+| Yer | Ne | Varsayılan | Not |
 |---|---|---|---|
-| 50 | Çağrı işareti ve SSID (1–6 harf/rakam, isteğe bağlı `-0`..`-15`) | `TA7W-7` | `TA7W-7` |
-| 51 | Enlem: DDMM, **boşluk = ondalık nokta**, mm, `N`/`S` | `4050 63N` | `4050.63N` |
-| 52 | Boylam: DDDMM (4 hane yazılırsa başa 0), boşluk, mm, `E`/`W` | `3109 39E` | `03109.39E` |
-| 53 | Yorum (sondaki boşluklar atılır; boş olabilir) | `ASELSAN` | `ASELSAN` |
-| 54 | Simge: tablo + kod. Koddaki harf küçük harfe çevrilir; tek karakterse tablo `/`; boşsa `/b` | `/B` | `/b` (bisiklet) |
-| 55 | Otomatik gönderim aralığı, saniye (en çok 4 rakam). Boş ya da 0: kapalı; 1–9 yazılırsa 10 | `60` | her 60 s'de bir paket |
+| 0x6E0 | `AP`, sürüm 1 | | imza |
+| 0x6E4 (10) | Çağrı işareti ve SSID | `TC19MK-10` | 1–6 harf/rakam, isteğe bağlı `-0`..`-15` (AX.25 sınırı); küçük harf büyüğe çevrilir |
+| 0x6EE / 0x6EF | Simge tablosu / kodu | `/` `b` (bisiklet) | herhangi bir yazılabilir karakter; sayfada sık kullanılanların listesi var |
+| 0x6F0 (8) | Enlem `DDMM.mmN` | `3955.52N` | Ankara, Anıtkabir. Sayfa `39.92533` ya da `39 55.52 N` biçimini de çevirir |
+| 0x6F8 (9) | Boylam `DDDMM.mmE` | `03250.22E` | `32.837` ya da `32 50.22 E` de olur |
+| 0x702 (2) | Otomatik gönderim aralığı (s, büyük uçlu) | 0 (kapalı) | en az 10 s |
+| 0x704 (43) | Yorum | `ASELSAN 4000` | 0 ile biter; küçük harf, noktalama, Türkçe harf (UTF-8, 2 bayt) serbest |
+| 0x730 (2) | Sağlama | | 0x6E0..0x72F toplamı, büyük uçlu |
 
-Koordinatlarda rakamlar arasındaki ilk boşluk ondalık noktadır (kanal adında nokta yazılamaz). Noktadan sonra 1 ya da 2 hane yazılabilir (tek haneyse sona 0 eklenir: `4050 6N` → `4050.60N`); noktadan önce enlemde 4, boylamda 5 hane (4 yazılırsa başa 0) olmalı. Boşluk hiç yoksa son iki rakam ondalık sayılır (`405063N`, `0310939E`). Baştaki ve harften sonraki boşluklar ile `-` `_` `/` atlanır.
+İmza, sürüm ya da sağlama tutmazsa (bölüm hiç yazılmamışsa) firmware ROM'daki varsayılanlarla (`AP_VARSAYILAN`, aynı yerleşim) gönderir: yeni yüklenen firmware ilk anda `TC19MK-10`, Anıtkabir, bisiklet ile çalışır.
 
 Paket:
 
 ```
-<50>>APIZCI,WIDE1-1,WIDE2-1:!<51><tablo><52><kod><53>
-TA7W-7>APIZCI,WIDE1-1,WIDE2-1:!4050.63N/03109.39EbASELSAN
+<çağrı>>APIZCI,WIDE1-1,WIDE2-1:!<enlem><tablo><boylam><kod><yorum>
+TC19MK-10>APIZCI,WIDE1-1,WIDE2-1:!3955.52N/03250.22EbASELSAN 4000
 ```
 
-Ad geçersizse ekranda `CAGRI -`, `ENLEM -` ya da `BOYLAM -` (İngilizce `CALL -`, `LAT -`, `LON -`) yazar ve paket gönderilmez; PTT normal gönderme yapar.
+Bölümdeki bir alan geçersizse (sayfa geçersiz değeri zaten yazmaz) ekranda `CAGRI -`, `ENLEM -` ya da `BOYLAM -` (İngilizce `CALL -`, `LAT -`, `LON -`) yazar ve paket gönderilmez; PTT normal gönderme yapar.
+
+Çerçeve (en çok 95 bayt) RAM 0x740–0x79F'de kurulur. Bu alan firmware'in iki yığınının arasında kalıyor: APRS dahil ölçülen en derin kullanım çerçeve yığınında 0x6A8, donanım yığınında 0x82B; iki yanda da ~140 bayt pay var.
 
 - `APIZCI` hedef alanı (tocall): APRS haritalarında cihaz / yazılım adı olarak görünür. APRS tocall listesine kayıtlı değil; bilinmeyen kimliği çoğu hizmet "bilinmeyen cihaz" olarak gösterir. Yol `WIDE1-1,WIDE2-1`.
 
@@ -185,7 +189,7 @@ Ad geçersizse ekranda `CAGRI -`, `ENLEM -` ya da `BOYLAM -` (İngilizce `CALL -
 - TB1 zamanlayıcı modunda örnekleme saati: 4,032 MHz / 420 = **9600 Hz**, kesme önceliği 6.
 - Her TB1 kesmesinde TA1 tek atım darbesi tetiklenir; darbe genişliği o anki örnek. Çıkış P52 SÇ_TON → TD14 süzgeci → FX806 modülatör girişi.
 - Örnek: 16 bit faz sayacı + ROM'daki seçmeli çağrı sinüs tablosu (0x28FA). Artım 1200 Hz için 8192, 2200 Hz için 15019. Ton değişirken faz kesintisiz. Bit başına 8 örnek = 1200 baud.
-- Çerçeve APRS'e girişte RAM'de kurulur (`AP_HAZIRLA`): AX.25 adresleri, kontrol 0x03, PID 0xF0, bilgi alanı, CRC-16-CCITT FCS. Kesme her 8 örnekte sıradaki biti üretir: başta 45 bayrak (300 ms), çerçeve baytları LSB önce, beş 1'den sonra doldurma biti, 3 bayrak, NRZI. Kanal adları firmware'in kendi EEPROM okuma yordamıyla (`F_0072EE`) okunur.
+- Çerçeve APRS'e girişte RAM'de kurulur (`AP_HAZIRLA`): AX.25 adresleri, kontrol 0x03, PID 0xF0, bilgi alanı, CRC-16-CCITT FCS. Kesme her 8 örnekte sıradaki biti üretir: başta 45 bayrak (300 ms), çerçeve baytları LSB önce, beş 1'den sonra doldurma biti, 3 bayrak, NRZI. APRS bölümü firmware'in kendi EEPROM okuma yordamıyla (`F_0072EE`) okunur.
 - FX806 ayarı `F_00E65B`'nin (seçmeli çağrı gönderme) başındakiyle aynı: `$029A` / `$029B` ve `F_00CB52`. Ton yolunu açar, mikrofonu kapatır.
 
 **Bağlantılar (yamalar).**
@@ -203,7 +207,7 @@ Ad geçersizse ekranda `CAGRI -`, `ENLEM -` ya da `BOYLAM -` (İngilizce `CALL -
 
 **Otomatik gönderim.** Zaman tabanı TB2 kesmesinin her 32 ms'de bir artırdığı 0x0457 sayacı. Süre dolunca `APRS_KANCA` RAM 0x0244'ün bit 2'sini kurar. Firmware'in PTT işleyicisi (`F_005E56`) bu baytın alt 6 bitini PTT isteği sayar (0x20 P47, 0x10 panel...); bit 2 hiçbir yerde kullanılmıyordu. Verici firmware'in kendi yoluyla açılır (güç rampası, sentezör), durum 4 → 5 → `APRS_PTT` paketi gönderir ve biti siler; verici kapanır. Gönderme yasağı / kanal meşgulü yüzünden ~3 s içinde paket gitmezse istek bırakılır. Elle PTT ile gönderimden sonra da aralık baştan başlar.
 
-**Simülatörde doğrulama** (`test_ozel.js`, `disasm/sim/afsk.js`): TA1'e yazılan örnekler firmware'den bağımsız bir çözücüden geçirilir (1200/2200 Hz enerjisi, bit saati, NRZI, bit doldurma, CRC). Üç farklı ayarla paket bayt bayt çözülür (SSID'siz, iki haneli SSID, güney / batı, 6 haneli boylam, boş yorum, tek karakterli simge); dört hatalı ayarda hata ekranı çıkar ve paket gitmez. Örnekleme 9600 Hz.
+**Simülatörde doğrulama** (`test_ozel.js`, `disasm/sim/afsk.js`): TA1'e yazılan örnekler firmware'den bağımsız bir çözücüden geçirilir (1200/2200 Hz enerjisi, bit saati, NRZI, bit doldurma, CRC). Bölüm yokken ve sağlaması bozukken ROM varsayılanlarıyla, ayrıca farklı ayarlarla (küçük harfli çağrı, UTF-8 yorum, iki haneli SSID, güney / batı, `\` tablosu, 43 baytlık yorum, boş yorum) paket bayt bayt çözülür ve sayfanın gösterdiği paketle karşılaştırılır; altı hatalı içerikte (7 karakterli çağrı, SSID 16, bozuk konum) hata ekranı çıkar ve paket gitmez. Örnekleme 9600 Hz.
 
 **Gerçek cihazda dikkat.**
 

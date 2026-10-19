@@ -9,12 +9,12 @@
 const isNode = typeof process !== 'undefined' && process.versions && process.versions.node;
 let B, V, hexText, origText, ringArg, out;
 if (isNode) {
-  B = require('./board.js'); V = require('./radio_view.js'); globalThis.UPD = require('./updater.js'); globalThis.AFSK = require('./afsk.js');
+  B = require('./board.js'); V = require('./radio_view.js'); globalThis.UPD = require('./updater.js'); globalThis.AFSK = require('./afsk.js'); globalThis.P4000 = require('./p4000.js');
   hexText = require('fs').readFileSync(process.argv[2], 'utf8'); out = s => console.log(s);
   origText = process.argv[3] && require('fs').readFileSync(process.argv[3], 'utf8');
   ringArg = process.argv[4];
 } else {
-  load('m7700.js'); load('board.js'); load('radio_view.js'); load('updater.js'); load('afsk.js');
+  load('m7700.js'); load('board.js'); load('radio_view.js'); load('updater.js'); load('afsk.js'); load('p4000.js');
   B = globalThis.Board; V = globalThis.RadioView; globalThis.UPD = globalThis.Updater;
   const args = typeof scriptArgs !== 'undefined' ? scriptArgs : arguments;
   hexText = readFile(args[0]); out = s => print(s);
@@ -281,10 +281,11 @@ if (RING.includes('FREQ')) {
 
 /* APRS (ozel_firmware/ornekler/aprs.inc): PTT'de 144,800 MHz'de AFSK konum paketi */
 if (RING.includes('APRS')) {
-  /* ayarlar kanal 50..54'ün adlarında (programlayıcı nokta ve küçük harf kabul etmez) */
-  const adlar = a => ee => a.forEach((ad, i) => B.eeSetChannel(ee, 50 + i, 144.8e6, 144.8e6, { name: ad }));
-  const AYAR = ['TA7W-7', '4050 63N', '3109 39E', 'ASELSAN', '/B'];   // boşluk = ondalık nokta
-  const PAKET = 'TA7W-7>APIZCI,WIDE1-1,WIDE2-1:!4050.63N/03109.39EbASELSAN';
+  /* ayarlar EEPROM'daki APRS bölümünde (0x6E0, p4000.js aprsSet); bölüm yoksa ROM varsayılanları */
+  const P = globalThis.P4000;
+  const aprs = o => ee => { if (o) P.aprsSet(ee, o); };
+  const AYAR = { cagri: 'ta7w-7', enlem: '4050.63N', boylam: '03109.39E', yorum: 'Düzce, 73 de TA7W!', tablo: '/', kod: '>' };
+  const PAKET = 'TA7W-7>APIZCI,WIDE1-1,WIDE2-1:!4050.63N/03109.39E>' + String.fromCharCode(...P.utf8('Düzce, 73 de TA7W!'));
   const vco = b => (b.radioState().vco / 1e6).toFixed(4);
   const enter = 'mm' + 'm'.repeat(RING.indexOf('APRS')) + 's';
   const paketGonder = (b, sure) => {
@@ -294,7 +295,7 @@ if (RING.includes('APRS')) {
     b.pushAudio = push;
     return AFSK.decode(log, FCLK);
   };
-  const b = radio(adlar(AYAR));
+  const b = radio(aprs(AYAR));
   boot(b, 2.5);
   const vco0 = vco(b), t0 = b.now;
   scenario(b, 'APRS: gir', enter, ['LIST', ...RING.slice(0, RING.indexOf('APRS') + 1), 'APRS PTT'].join('|'));
@@ -344,39 +345,43 @@ if (RING.includes('APRS')) {
   b.panel.setExt(((16 - 3) & 15) << 4 | 0x0F, b); b.run(FCLK * 0.6);
   keys(b, 'm'); b.run(FCLK * 0.3);
   check('APRS\'te kanal değişti: çıkınca yeni kanal kalır', vco(b) === '201.0500', vco(b));
-  /* başka ayarlar: paket gerçekten kanal adlarından kuruluyor */
-  for (const [ad, ayar, bek] of [
-    ['başka çağrı, SSID 12, 6 haneli boylam, yorum yok, tek karakter simge',
-      ['TA1AB-12', '3958-20N', '325120E', '', 'K'], 'TA1AB-12>APIZCI,WIDE1-1,WIDE2-1:!3958.20N/03251.20Ek'],
-    ['SSID yok, güney / batı, simge tablosu ve kod', ['N0CALL', '3352 10S', '1512345W', 'TEST 123', '/-'],
-      'N0CALL>APIZCI,WIDE1-1,WIDE2-1:!3352.10S/15123.45W-TEST 123'],
-    ['boşluk = nokta: noktadan sonra tek hane, boylamda 5 tam hane', ['TA7W-7', '4050 6N', '03109 3E', '', '/B'],
-      'TA7W-7>APIZCI,WIDE1-1,WIDE2-1:!4050.60N/03109.30Eb'],
-    ['boşluksuz yazım (nokta sabit yerde)', ['TA7W-7', '405063N', '0310939E', '', '/B'],
-      'TA7W-7>APIZCI,WIDE1-1,WIDE2-1:!4050.63N/03109.39Eb']]) {
-    const r = radio(adlar(ayar)); boot(r, 2.5); keys(r, enter); r.run(FCLK * 0.3);
-    const f = paketGonder(r);
-    check('APRS ayar: ' + ad, f.length === 1 && f[0].fcsOk && f[0].text === bek, f.map(x => x.text + (x.fcsOk ? '' : ' (FCS yanlış)')).join(' / ') || lcd(r));
+  /* başka ayarlar: paket gerçekten EEPROM'daki bölümden kuruluyor */
+  const VARS = 'TC19MK-10>APIZCI,WIDE1-1,WIDE2-1:!3955.52N/03250.22EbASELSAN 4000';
+  const ham = (o, f) => ee => { P.aprsSet(ee, o); f(ee); P.aprsFix(ee); };      // aprsSet'in reddedeceği içerik
+  const yaz = (a, t) => ee => t.split('').forEach((c, i) => { ee[0x6E0 + a + i] = c.charCodeAt(0); });
+  const uzun = 'Merhaba dunya: bu yorum tam kirk uc bayt...';
+  for (const [ad, mod, bek] of [
+    ['bölüm yok: ROM varsayılanları (Anıtkabir, bisiklet, TC19MK-10)', null, VARS],
+    ['varsayılanlar EEPROM\'a yazılı', aprs(P.APRS_VARSAYILAN), VARS],
+    ['bölümün sağlaması bozuk: ROM varsayılanları', ee => { P.aprsSet(ee, AYAR); ee[0x6E0 + 40] ^= 1; }, VARS],
+    ['SSID 12, güney / batı, simge tablosu \\, yorum yok', aprs({ cagri: 'N0CALL-12', enlem: '-33.86833', boylam: '151 12.34 W', tablo: '\\', kod: 'k', yorum: '' }),
+      'N0CALL-12>APIZCI,WIDE1-1,WIDE2-1:!3352.10S\\15112.34Wk'],
+    ['SSID yok, 43 baytlık yorum', aprs({ cagri: 'TA1AB', yorum: uzun }), 'TA1AB>APIZCI,WIDE1-1,WIDE2-1:!3955.52N/03250.22Eb' + uzun],
+    ['küçük harfli konum harfi büyüğe çevrilir', ham({ cagri: 'TA1AB' }, yaz(23, 'n')), 'TA1AB>APIZCI,WIDE1-1,WIDE2-1:!3955.52N/03250.22EbASELSAN 4000']]) {
+    const r = radio(mod); boot(r, 2.5); keys(r, enter); r.run(FCLK * 0.3);
+    const f = paketGonder(r), sim = r.eeprom.mem.slice();
+    check('APRS ayar: ' + ad, uzun.length === 43 && f.length === 1 && f[0].fcsOk && f[0].text === bek && P.aprsPaket(sim) === bek,
+      (f.map(x => x.text + (x.fcsOk ? '' : ' (FCS yanlış)')).join(' / ') || lcd(r)) + ' | sayfa: ' + P.aprsPaket(sim));
   }
-  for (const [ad, ayar, ekran] of [['çağrı işareti boş', ['', '4050 63N', '0310939E', '', ''], 'CALL -'],
-                                   ['çağrı işaretinde geçersiz SSID', ['TA7W-16', '4050 63N', '0310939E', '', ''], 'CALL -'],
-                                   ['enlemde harf yok', ['TA7W-7', '405063', '0310939E', '', ''], 'LAT -'],
-                                   ['boylamda eksik rakam', ['TA7W-7', '4050 63N', '31093E', '', ''], 'LON -'],
-                                   ['enlemde nokta yanlış yerde', ['TA7W-7', '40 5063N', '3109 39E', '', ''], 'LAT -'],
-                                   ['boylamda noktadan sonra 3 hane', ['TA7W-7', '4050 63N', '310 939E', '', ''], 'LON -']]) {
-    const r = radio(adlar(ayar)); boot(r, 2.5); const g = keys(r, enter); r.run(FCLK * 0.3);
+  for (const [ad, mod, ekran] of [['çağrı işareti 7 karakter', ham(AYAR, yaz(4, 'TC19ATA-1')), 'CALL -'],
+                                   ['çağrı işareti boş', ham(AYAR, ee => { ee[0x6E4] = 0; }), 'CALL -'],
+                                   ['geçersiz SSID 16', ham(AYAR, yaz(4, 'TA7W-16')), 'CALL -'],
+                                   ['enlemde harf yanlış', ham(AYAR, yaz(23, 'E')), 'LAT -'],
+                                   ['enlemde nokta yok', ham(AYAR, yaz(20, '0')), 'LAT -'],
+                                   ['boylamda rakam yerine harf', ham(AYAR, yaz(25, 'A')), 'LON -']]) {
+    const r = radio(mod); boot(r, 2.5); const g = keys(r, enter); r.run(FCLK * 0.3);
     const f = paketGonder(r);
     check('APRS hatalı ayar: ' + ad + ' -> ' + ekran + ', paket yok', g[g.length - 1] === ekran.padEnd(8) && f.length === 0, g[g.length - 1] + ' / ' + f.length + ' paket');
   }
-  /* kanal 55: otomatik gönderim (PTT'ye basılmadan) */
+  /* otomatik gönderim (PTT'ye basılmadan): bölümdeki aralık */
   {
-    const r = radio(adlar([...AYAR, '12'])); boot(r, 2.5); keys(r, enter); r.run(FCLK * 0.3);
+    const r = radio(aprs(Object.assign({}, AYAR, { aralik: 12 }))); boot(r, 2.5); keys(r, enter); r.run(FCLK * 0.3);
     const log = [], push = r.pushAudio, tx = [];
     r.pushAudio = (buf, v) => { if (buf === r.audio.ta1) log.push(r.now, v); push.call(r, buf, v); };
     for (let t = 0; t < 27; t += 0.25) { r.run(FCLK * 0.25); tx.push(r.radioState().vco / 1e6 < 150 ? 1 : 0); }
     r.pushAudio = push;
     const f = AFSK.decode(log, FCLK), txs = tx.join('').split(/0+/).filter(Boolean).length;
-    check('APRS otomatik: kanal 55 = 12 s, PTT yok, 27 s\'de 2 paket', f.length === 2 && f.every(x => x.fcsOk && x.text === PAKET), f.map(x => x.text).join(' / ') || 'paket yok');
+    check('APRS otomatik: aralık 12 s, PTT yok, 27 s\'de 2 paket', f.length === 2 && f.every(x => x.fcsOk && x.text === PAKET), f.map(x => x.text).join(' / ') || 'paket yok');
     const t1 = log.length ? log[0] / FCLK : 0;
     check('APRS otomatik: ilk paket ~12 s sonra, her gönderimden sonra verici kapanıyor', txs === 2 && tx[tx.length - 1] === 0, 'gönderim ' + txs + ', son durum ' + (tx[tx.length - 1] ? 'TX' : 'RX') + ', ekran ' + lcd(r));
     keys(r, 'm'); log.length = 0;
@@ -385,11 +390,11 @@ if (RING.includes('APRS')) {
     check('APRS otomatik: menüden çıkınca durur', log.length === 0 && lcd(r) === 'KANAL 01', log.length / 2 + ' örnek, ' + lcd(r));
   }
   {
-    const r = radio(adlar([...AYAR, ''])); boot(r, 2.5); keys(r, enter); r.run(FCLK * 0.3);
+    const r = radio(aprs(AYAR)); boot(r, 2.5); keys(r, enter); r.run(FCLK * 0.3);
     let n = 0; const push = r.pushAudio;
     r.pushAudio = (buf, v) => { if (buf === r.audio.ta1) n++; push.call(r, buf, v); };
     r.run(FCLK * 14); r.pushAudio = push;
-    check('APRS otomatik: kanal 55 boşsa gönderim yok', n === 0 && lcd(r) === 'APRS PTT', n + ' örnek');
+    check('APRS otomatik: aralık 0 ise gönderim yok', n === 0 && lcd(r) === 'APRS PTT', n + ' örnek');
   }
   const kotu = b.events.filter(e => e[0] > t0 && /WATCHDOG|RESET/.test(e[1]));   // (açılıştakiler hariç)
   check('APRS: bekçi köpeği / yeniden başlama yok', kotu.length === 0, kotu.map(e => (e[0] / FCLK).toFixed(2) + ' ' + e[1]).join(', '));
