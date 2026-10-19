@@ -141,7 +141,7 @@ document.querySelectorAll('[data-pb]').forEach(b => {
 const KP = '*0#q789p456s123m';
 const KP_LAYOUT = ['1', '2', '3', 'm', '4', '5', '6', 's', '7', '8', '9', 'p', '*', '0', '#', 'q'];
 for (const k of KP_LAYOUT) {
-  const b = document.createElement('button'); b.className = 'rbtn'; b.textContent = k;
+  const b = document.createElement('button'); b.className = 'rbtn' + (/[a-z]/.test(k) ? ' fn' : ''); b.textContent = k;
   b.title = 'kod ' + KP.indexOf(k) + ' → 0x' + k.charCodeAt(0).toString(16);
   holdBtn(b, () => board && board.keypad.press(KP.indexOf(k), true, board), () => board && board.keypad.press(KP.indexOf(k), false, board));
   b.dataset.key = k;

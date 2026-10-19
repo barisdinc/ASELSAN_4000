@@ -40,39 +40,83 @@ main { display: grid; grid-template-columns: minmax(330px, 410px) 1fr; gap: 16px
 .mono { font-family: var(--mono); font-size: 12px; }
 .note { color: var(--muted); font-size: 12px; }
 
-/* radio */
-.radio { background: linear-gradient(180deg, var(--radio-2), var(--radio)); color: var(--radio-ink); border-radius: 18px; padding: 16px; box-shadow: 0 8px 24px rgba(0,0,0,.18); user-select: none; }
-.radio .brand { display: flex; justify-content: space-between; font-size: 12px; letter-spacing: .12em; opacity: .8; margin-bottom: 10px; }
-.lcd { background: var(--lcd); border-radius: 8px; padding: 10px 10px 8px; box-shadow: inset 0 2px 6px rgba(0,0,0,.35); }
-.lcd.off { filter: brightness(.6); }
+/* radio: kabartmalı plastik gövde, çukurdaki LCD, kauçuk tuşlar (basınca içeri gömülür) */
+@property --rot { syntax: '<angle>'; inherits: true; initial-value: 0deg; }
+.radio { position: relative; color: var(--radio-ink); border-radius: 20px; padding: 18px 18px 20px; user-select: none;
+  background:
+    radial-gradient(120% 60% at 30% 0%, rgba(255,255,255,.10), transparent 60%),
+    repeating-linear-gradient(0deg, rgba(255,255,255,.012) 0 2px, rgba(0,0,0,.02) 2px 4px),
+    linear-gradient(180deg, #44474e, #2a2c31 45%, #1e1f23);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.22), inset 0 -2px 0 rgba(0,0,0,.55), inset 2px 0 0 rgba(255,255,255,.05), inset -2px 0 0 rgba(0,0,0,.3),
+    0 1px 0 #111, 0 14px 30px rgba(0,0,0,.35), 0 3px 6px rgba(0,0,0,.25); }
+.radio::before, .radio::after { content: ""; position: absolute; top: 9px; width: 9px; height: 9px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #8a8e96, #2b2d31 70%); box-shadow: inset 0 0 0 1px rgba(0,0,0,.5), 0 1px 0 rgba(255,255,255,.08); }
+.radio::before { left: 9px; } .radio::after { right: 9px; }
+.radio .brand { display: flex; justify-content: space-between; align-items: baseline; font-size: 12px; letter-spacing: .14em; margin: 0 10px 10px; color: #c9ccd2;
+  text-shadow: 0 -1px 0 rgba(0,0,0,.7), 0 1px 0 rgba(255,255,255,.08); }
+.radio .brand span:first-child { font-weight: 800; font-size: 14px; letter-spacing: .2em; color: #d8dadf; }
+.lcd { position: relative; background: linear-gradient(180deg, #c7d4ae, var(--lcd) 55%, #a9b892); border-radius: 6px; padding: 10px 10px 8px;
+  border: 6px solid #121315; box-shadow: 0 0 0 1px rgba(255,255,255,.08), inset 0 3px 8px rgba(0,0,0,.45), inset 0 -1px 0 rgba(255,255,255,.25); }
+.lcd::after { content: ""; position: absolute; inset: 0; border-radius: 2px; pointer-events: none;
+  background: linear-gradient(160deg, rgba(255,255,255,.28), rgba(255,255,255,0) 38%, rgba(255,255,255,0) 70%, rgba(255,255,255,.06)); }
+.lcd.off { filter: brightness(.55) saturate(.7); }
 .lcd-row { display: flex; align-items: flex-end; gap: 6px; }
 .lcd svg { display: block; }
 .lcd .seg { stroke: var(--lcd-off); stroke-width: 4.2; stroke-linecap: round; }
-.lcd .seg.on { stroke: var(--lcd-on); }
+.lcd .seg.on { stroke: var(--lcd-on); filter: drop-shadow(1px 1px 0 rgba(30,42,23,.18)); }
 .symbols { display: flex; gap: 3px; margin-top: 6px; flex-wrap: wrap; }
 .symbols span { font: 8px var(--mono); color: var(--lcd-off); border: 1px solid var(--lcd-off); border-radius: 3px; padding: 0 3px; }
 .symbols span.on { color: var(--lcd-on); border-color: var(--lcd-on); }
-.leds { display: flex; gap: 14px; margin: 12px 2px 4px; font-size: 11px; }
-.led { display: flex; align-items: center; gap: 5px; opacity: .85; }
-.led i { width: 10px; height: 10px; border-radius: 50%; background: #555; display: inline-block; box-shadow: inset 0 1px 2px rgba(0,0,0,.5); }
-.led.tx.on i { background: #ff4b3a; box-shadow: 0 0 8px #ff4b3a; }
-.led.rx.on i { background: #3ee06a; box-shadow: 0 0 8px #3ee06a; }
-.led.lock.on i { background: #ffc93a; box-shadow: 0 0 6px #ffc93a; }
-.led.pwr.on i { background: #4aa3ff; box-shadow: 0 0 6px #4aa3ff; }
+.leds { display: flex; gap: 14px; margin: 12px 4px 4px; font-size: 11px; color: #b9bcc3; }
+.led { display: flex; align-items: center; gap: 6px; }
+.led i { width: 11px; height: 11px; border-radius: 50%; display: inline-block; transition: background .08s, box-shadow .08s;
+  background: radial-gradient(circle at 35% 30%, #77797e, #303236 70%); box-shadow: 0 0 0 2px #17181b, 0 1px 0 2px rgba(255,255,255,.07), inset 0 -1px 2px rgba(0,0,0,.6); }
+.led.tx.on i { background: radial-gradient(circle at 35% 30%, #ffd0c8, #ff4b3a 45%, #a3180e); box-shadow: 0 0 0 2px #17181b, 0 0 10px 2px rgba(255,75,58,.75); }
+.led.rx.on i { background: radial-gradient(circle at 35% 30%, #d6ffdf, #3ee06a 45%, #138a35); box-shadow: 0 0 0 2px #17181b, 0 0 10px 2px rgba(62,224,106,.7); }
+.led.lock.on i { background: radial-gradient(circle at 35% 30%, #fff3cc, #ffc93a 45%, #a87a08); box-shadow: 0 0 0 2px #17181b, 0 0 8px 2px rgba(255,201,58,.6); }
+.led.pwr.on i { background: radial-gradient(circle at 35% 30%, #d9ecff, #4aa3ff 45%, #145fae); box-shadow: 0 0 0 2px #17181b, 0 0 8px 2px rgba(74,163,255,.6); }
 .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
-.knob { display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,.04); border-radius: 10px; padding: 8px; }
-.knob .dial { width: 54px; height: 54px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #6a6e76, #2a2c30); position: relative; cursor: grab; flex: none; }
-.knob .dial::after { content: ""; position: absolute; width: 4px; height: 18px; background: #e9e9e6; left: 25px; top: 4px; border-radius: 2px; transform-origin: 2px 23px; transform: rotate(var(--rot, 0deg)); }
+.knob { display: flex; align-items: center; gap: 10px; border-radius: 12px; padding: 9px;
+  background: linear-gradient(180deg, rgba(0,0,0,.22), rgba(0,0,0,.1)); box-shadow: inset 0 2px 4px rgba(0,0,0,.45), 0 1px 0 rgba(255,255,255,.07); }
+.knob .dial { width: 60px; height: 60px; border-radius: 50%; position: relative; cursor: grab; flex: none; touch-action: none;
+  transform: rotate(var(--rot, 0deg)); transition: --rot .18s cubic-bezier(.3,1.4,.6,1);
+  background:
+    radial-gradient(circle at 50% 50%, #3b3e44 0 52%, transparent 53%),
+    repeating-conic-gradient(#55585f 0 6deg, #1f2024 6deg 12deg);
+  box-shadow: 0 0 0 3px #141518, 0 0 0 4px rgba(255,255,255,.06), 0 5px 9px rgba(0,0,0,.55), inset 0 1px 1px rgba(255,255,255,.25); }
+.knob .dial::before { content: ""; position: absolute; inset: 9px; border-radius: 50%; transform: rotate(calc(-1 * var(--rot, 0deg)));
+  background: radial-gradient(circle at 38% 30%, rgba(255,255,255,.28), rgba(255,255,255,0) 55%), linear-gradient(180deg, #4b4e55, #26282c);
+  box-shadow: inset 0 1px 1px rgba(255,255,255,.2), inset 0 -2px 3px rgba(0,0,0,.5); }
+.knob .dial::after { content: ""; position: absolute; width: 4px; height: 15px; background: #f2f2ee; left: 28px; top: 11px; border-radius: 2px; box-shadow: 0 0 3px rgba(255,255,255,.35); }
+.knob .dial:active { cursor: grabbing; }
 .knob .lbl { font-size: 11px; opacity: .75; }
-.knob .val { font: 20px var(--mono); }
-.rbtn { background: var(--key); color: var(--radio-ink); border: none; border-radius: 8px; padding: 8px 6px; font-size: 12px; cursor: pointer; box-shadow: 0 2px 0 rgba(0,0,0,.45); }
-.rbtn:active, .rbtn.down { background: var(--key-hi); transform: translateY(1px); box-shadow: none; }
-.rbtn.latched { outline: 2px solid #ffc93a; }
-.ptt { grid-column: 1 / -1; padding: 14px; font-size: 15px; font-weight: 650; letter-spacing: .06em; background: #5a2b2b; }
-.ptt.down { background: #a8372d; }
-.keypad { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 10px; }
-.keypad .rbtn { font: 15px var(--mono); padding: 9px 0; }
-.small-btns { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 10px; }
+.knob .val { font: 20px var(--mono); text-shadow: 0 1px 0 rgba(0,0,0,.6); }
+.rbtn { position: relative; color: #eceded; border: 1px solid #16171a; border-radius: 9px; padding: 8px 6px; font-size: 12px; cursor: pointer;
+  background: linear-gradient(180deg, #62666e, var(--key) 55%, #3a3d43);
+  text-shadow: 0 -1px 0 rgba(0,0,0,.6);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.22), inset 0 -2px 2px rgba(0,0,0,.25), 0 3px 0 #17181b, 0 4px 6px rgba(0,0,0,.4);
+  transform: translateY(0); transition: transform .05s, box-shadow .05s, background .05s; }
+.rbtn:hover { filter: brightness(1.06); }
+.rbtn:active, .rbtn.down { transform: translateY(3px); background: linear-gradient(180deg, #4a4e55, #42454b);
+  box-shadow: inset 0 2px 4px rgba(0,0,0,.5), 0 0 0 #17181b, 0 1px 2px rgba(0,0,0,.4); }
+.rbtn.latched { transform: translateY(2px); background: linear-gradient(180deg, #4a4e55, #42454b);
+  box-shadow: inset 0 2px 4px rgba(0,0,0,.45), 0 1px 0 #17181b, 0 2px 3px rgba(0,0,0,.35); }
+.rbtn.latched::after { content: ""; position: absolute; right: 7px; top: 50%; width: 7px; height: 7px; margin-top: -3.5px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fff3cc, #ffc93a 50%, #a87a08); box-shadow: 0 0 7px 1px rgba(255,201,58,.7); }
+.rbtn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.ptt { grid-column: 1 / -1; padding: 15px; font-size: 15px; font-weight: 700; letter-spacing: .08em; border-radius: 12px; color: #fff2ef;
+  background: repeating-linear-gradient(90deg, rgba(0,0,0,0) 0 7px, rgba(0,0,0,.12) 7px 9px), linear-gradient(180deg, #8e3a33, #6a2722 55%, #4d1a17);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.25), inset 0 -2px 3px rgba(0,0,0,.35), 0 4px 0 #2a0e0c, 0 6px 10px rgba(0,0,0,.45); }
+.ptt:active, .ptt.down { transform: translateY(4px); color: #fff;
+  background: repeating-linear-gradient(90deg, rgba(0,0,0,0) 0 7px, rgba(0,0,0,.12) 7px 9px), linear-gradient(180deg, #c2473b, #a8372d 60%, #84271f);
+  box-shadow: inset 0 3px 6px rgba(0,0,0,.45), 0 0 0 #2a0e0c, 0 0 18px rgba(255,75,58,.45); }
+.keypad { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 12px; padding: 10px; border-radius: 12px;
+  background: linear-gradient(180deg, rgba(0,0,0,.25), rgba(0,0,0,.12)); box-shadow: inset 0 2px 5px rgba(0,0,0,.5), 0 1px 0 rgba(255,255,255,.06); }
+.keypad .rbtn { font: 600 16px var(--mono); padding: 9px 0 10px; border-radius: 12px 12px 14px 14px;
+  background: radial-gradient(120% 90% at 50% 15%, #74787f, #4c5057 60%, #3b3e44); }
+.keypad .rbtn.fn { color: #ffd98a; background: radial-gradient(120% 90% at 50% 15%, #6f6658, #4d463c 60%, #3b352c); }
+.keypad .rbtn:active, .keypad .rbtn.down { background: radial-gradient(120% 90% at 50% 25%, #555960, #44474d 70%); }
+.small-btns { display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px; margin-top: 12px; }
 
 /* tabs */
 .tabs { display: flex; gap: 4px; flex-wrap: wrap; border-bottom: 1px solid var(--line); margin-bottom: 12px; }
