@@ -37,6 +37,12 @@ main { max-width: 920px; margin: 0 auto; padding: 16px; display: grid; gap: 14px
 .kv { display: grid; grid-template-columns: max-content 1fr; gap: 4px 14px; font-size: 13px; }
 .kv > div:nth-child(odd) { color: var(--muted); }
 .note { color: var(--muted); font-size: 12.5px; }
+.sayac { color: var(--muted); font-size: 12px; margin-left: 8px; white-space: nowrap; }
+.sayac:empty { display: none; }
+#kayitTbl { overflow-x: auto; margin-top: 8px; }
+#kayitTbl table { border-collapse: collapse; font-size: 12.5px; width: 100%; }
+#kayitTbl th, #kayitTbl td { text-align: left; padding: 4px 10px 4px 0; border-bottom: 1px solid var(--line); white-space: nowrap; }
+#kayitTbl th { color: var(--muted); font-weight: 600; }
 .mono { font-family: var(--mono); font-size: 12px; }
 .ok { color: var(--good); } .bad { color: var(--bad); } .warn { color: var(--warn); }
 .p4det { margin-top: 12px; } .p4det summary { cursor: pointer; font-weight: 600; margin-bottom: 8px; }
@@ -119,7 +125,7 @@ main { position: relative; z-index: 1; }
   <section class="card" id="eeCard">
     <h2>3 · EEPROM yedeği ve programlama (P4000)</h2>
     <p class="note">2 KB: kanallar, seçenekler, bant, güç kalibrasyonu, parola. Okuma yaklaşık 10 saniye.</p>
-    <button id="eeBtn" disabled>EEPROM'u oku</button>
+    <button id="eeBtn" disabled>EEPROM'u oku</button><span class="sayac" data-sayac="ee_yedek"></span>
     <div class="prog" id="eeProg"><progress id="eeBar" max="1" value="0"></progress><span class="note" id="eeTxt"></span></div>
     <div class="dl" id="eeDl"></div>
     <div id="eeSum"></div>
@@ -146,7 +152,7 @@ main { position: relative; z-index: 1; }
   <section class="card">
     <h2>4 · Flash yedeği</h2>
     <p class="note">Telsizdeki firmware'in tamamı (0x2000–0x1FFFF, 120 KB), telsizin kendisinden okunur. 9600 baud'da yaklaşık 3 dakika. Bitince bilinen firmware'lerle karşılaştırılır.</p>
-    <button id="flashBtn" disabled>Flash'ı oku</button>
+    <button id="flashBtn" disabled>Flash'ı oku</button><span class="sayac" data-sayac="flash_yedek"></span>
     <div class="prog" id="flProg"><progress id="flBar" max="1" value="0"></progress><span class="note" id="flTxt"></span></div>
     <div class="dl" id="flDl"></div>
     <div id="flSum"></div>
@@ -168,7 +174,7 @@ main { position: relative; z-index: 1; }
         <label><input type="checkbox" id="wrC2"> EEPROM yedeğini indirdim ve sakladım<span id="wrC2Flash"> (flash yedeği alınmadı: yükleme yarıda kalırsa telsizdeki eski firmware'e dönmek için elinizde bir HEX olmalı)</span>.</label>
         <label id="wrC3Row" class="warn" hidden><input type="checkbox" id="wrC3"> Bu dosya başka bir ürün ailesine ait; bu telsize uygun olduğundan eminim.</label>
       </div>
-      <div class="row"><button class="danger" id="wrBtn" disabled>Yüklemeyi başlat</button><span class="note" id="wrGate"></span></div>
+      <div class="row"><button class="danger" id="wrBtn" disabled>Yüklemeyi başlat</button><span class="sayac" data-sayac="flash_yaz"></span><span class="note" id="wrGate"></span></div>
     </div>
     <div class="prog" id="wrProg"><span id="wrPhase"></span><progress id="wrBar" max="1" value="0"></progress><span class="note" id="wrTxt"></span></div>
     <div id="wrResult"></div>
@@ -184,7 +190,7 @@ main { position: relative; z-index: 1; }
         <label><input type="checkbox" id="erC1"> Telsizdeki şu anki EEPROM'un yedeğini (3. adım) indirdim ve sakladım.</label>
         <label id="erC2Row" class="warn" hidden><input type="checkbox" id="erC2"> Yukarıdaki uyarıları okudum; bu yedeği bu telsize yüklemek istiyorum.</label>
       </div>
-      <div class="row"><button class="danger" id="erBtn" disabled>EEPROM'u geri yükle</button><span class="note" id="erGate"></span></div>
+      <div class="row"><button class="danger" id="erBtn" disabled>EEPROM'u geri yükle</button><span class="sayac" data-sayac="ee_yaz"></span><span class="note" id="erGate"></span></div>
     </div>
     <div class="prog" id="erProg"><progress id="erBar" max="1" value="0"></progress><span class="note" id="erTxt"></span></div>
     <div id="erResult"></div>
@@ -193,6 +199,13 @@ main { position: relative; z-index: 1; }
   <section class="card">
     <h2>Günlük</h2>
     <pre id="log" class="mono"></pre>
+  </section>
+
+  <section class="card" id="kayitCard" hidden>
+    <details id="kayitDet"><summary>Bağlantı kaydı</summary>
+      <p class="note">Bu sayfayla gerçek telsize bağlanma ve yedek / yazma işlemleri (simülatör sayılmaz). IP adreslerinin son kısmı gizlidir; tam adres sunucuda da saklanmaz. Düğmelerin yanındaki sayılar tüm kullanıcıların toplamıdır.</p>
+      <div id="kayitTbl"></div>
+    </details>
   </section>
 
   <p class="note">Protokol: <a href="https://github.com/barisdinc/ASELSAN_4000/blob/master/disasm/seri_protokol.md">seri_protokol.md</a> · Kaynak: <span class="mono">disasm/sim/yukle.html</span>, <span class="mono">seri_istemci.js</span></p>
@@ -238,6 +251,45 @@ function refresh() {
   updateWrite(); updateEeWrite(); if (typeof wsState === 'function') wsState();
 }
 function mode() { return document.querySelector('input[name=mode]:checked').value; }
+
+/* ---------------------------------------------------------------- sayaçlar ve bağlantı kaydı
+ * Sunucu: sunucu/sayac (Cloudflare Worker). Yalnız gerçek telsizle yapılan, başarıyla biten işlemler
+ * sayılır. ?sayac=URL sunucuyu değiştirir ve simülatörde de sayar (deneme için). */
+const SAYAC_VARSAYILAN = '';   // Worker kurulunca: 'https://aselsan-sayac.<hesap>.workers.dev' (sunucu/sayac/README.md)
+const SAYAC_PARAM = new URLSearchParams(location.search).get('sayac');
+const SAYAC_URL = (SAYAC_PARAM || SAYAC_VARSAYILAN).replace(/\/$/, '');
+const TUR_AD = { ee_yedek: 'EEPROM yedeği', flash_yedek: 'flash yedeği', ee_yaz: 'EEPROM yazma', flash_yaz: 'firmware yükleme', baglanti: 'telsize bağlanma' };
+function sayacGoster(sy) {
+  document.querySelectorAll('[data-sayac]').forEach(e => {
+    const n = sy && sy[e.dataset.sayac];
+    e.textContent = n == null ? '' : '· ' + n.toLocaleString('tr-TR') + ' kez';
+    e.title = 'Bu sayfayla toplam ' + TUR_AD[e.dataset.sayac] + ' sayısı (tüm kullanıcılar)';
+  });
+}
+function kayitGoster(k) {
+  $('kayitTbl').innerHTML = !k.length ? '<p class="note">Henüz kayıt yok.</p>' :
+    '<table><thead><tr><th>Zaman</th><th>Adres</th><th>İşlem</th><th>Ek</th></tr></thead><tbody>' +
+    k.map(r => '<tr><td>' + esc(new Date(r.t).toLocaleString('tr-TR')) + '</td><td class="mono">' + esc(r.ip) + '</td><td>' + esc(TUR_AD[r.tur] || r.tur) + '</td><td class="mono">' + esc(r.ek || '') + '</td></tr>').join('') +
+    '</tbody></table>';
+}
+async function sayacYukle(n) {
+  if (!SAYAC_URL) return;
+  try {
+    const r = await fetch(SAYAC_URL + '/durum?n=' + n, { cache: 'no-store' });
+    const d = await r.json();
+    $('kayitCard').hidden = false;
+    sayacGoster(d.sayac);
+    if (n) kayitGoster(d.kayit || []);
+  } catch (e) { log('sayaç sunucusuna ulaşılamadı: ' + e.message); }
+}
+function sayacOlay(tur, ek) {
+  if (!SAYAC_URL || (mode() !== 'serial' && !SAYAC_PARAM)) return;
+  fetch(SAYAC_URL + '/olay', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ tur, ek: ek || '' }) })
+    .then(r => r.json()).then(d => { sayacGoster(d.sayac); if ($('kayitDet').open) sayacYukle(100); })
+    .catch(e => log('sayaç sunucusuna yazılamadı: ' + e.message));
+}
+$('kayitDet').ontoggle = () => { if ($('kayitDet').open) sayacYukle(100); };
+sayacYukle(0);
 function progress(barId, txtId, frac, t0) {
   $(barId).value = frac;
   const el = (performance.now() - t0) / 1000, left = frac > 0.02 ? el / frac - el : 0;
@@ -293,6 +345,7 @@ $('connectBtn').onclick = () => run(async () => {
   setStatus('Bağlı', 'ok');
   header = await client.readHeader();
   showHeader(header);
+  sayacOlay('baglanti', header.version);
   if (lastSel) loadImage(lastSel[0], lastSel[1]);
 });
 
@@ -322,6 +375,7 @@ $('eeBtn').onclick = () => run(async () => {
   download($('eeDl'), 'aselsan_eeprom_' + stamp() + '.bin', ee, 'application/octet-stream', 'EEPROM yedeğini indir');
   download($('eeDl'), 'aselsan_' + stamp() + '.p40', P4000.toP40(ee), 'application/octet-stream', 'P4000 kütüğü olarak indir');
   eeDone = true; eeData = ee;
+  sayacOlay('ee_yedek', header && header.version);
   showEeprom(ee);
   if (er) loadEeFile(er.name, er.raw);
 });
@@ -468,6 +522,7 @@ $('flashBtn').onclick = () => run(async () => {
   download($('flDl'), name + '.HEX', S.toSrec(img), 'text/plain', 'HEX indir');
   download($('flDl'), name + '.bin', img, 'application/octet-stream', '128 KB BIN indir');
   flashImg = img;
+  sayacOlay('flash_yedek', header && header.version);
   if (lastSel) loadImage(lastSel[0], lastSel[1]);
   const sum = S.romSum(img), stored = img[0x10003] << 8 | img[0x10004];
   const id = S.identify(img, FW, B.parseHex), best = id[0];
@@ -579,6 +634,7 @@ $('wrBtn').onclick = () => {
       throw e;
     } finally { removeEventListener('beforeunload', guard); }
     log('yükleme bitti (' + Math.round((performance.now() - t0) / 1000) + ' s); telsiz yeniden açılıyor');
+    sayacOlay('flash_yaz', wr.header.version);
     $('wrPhase').textContent = 'Telsiz yeniden açılıyor';
     await port.sleep(12000);                               // boot (≈ 8 s with the yATOLYE screen)
     await client.connect();
@@ -655,6 +711,7 @@ $('erBtn').onclick = () => {
       throw e;
     } finally { removeEventListener('beforeunload', guard); }
     log('EEPROM yazıldı: ' + res.pages + ' sayfa (' + Math.round((performance.now() - t0) / 1000) + ' s); telsiz yeniden açılıyor');
+    sayacOlay('ee_yaz', header && header.version);
     $('erTxt').textContent = 'Telsiz yeniden açılıyor…';
     await port.sleep(9000);                                // boot (≈ 8 s with the yATOLYE screen)
     await client.connect();

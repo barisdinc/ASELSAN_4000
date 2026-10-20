@@ -79,6 +79,10 @@ test-yukle:
 
 # P4000 EEPROM yerleşimi ve .p40 kütükleri (p4000.js); gerçek döküm / kütük de verilebilir:
 #   make test-p4000 P4000_DOSYA="~/eeprom.bin ~/P4000/aprs.p40"
+# programlama sayfasının sayaç sunucusu (sunucu/sayac, Cloudflare Worker)
+test-sayac:
+	cd ../sunucu/sayac && $(if $(findstring node,$(JSRUN)),node test.mjs,$(JSC) -m test.mjs)
+
 test-p4000:
 	cd sim && $(JSRUN) test_p4000.js $(JSSEP) $(P4000_DOSYA)
 

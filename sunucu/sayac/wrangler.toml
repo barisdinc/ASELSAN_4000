@@ -1,0 +1,8 @@
+name = "aselsan-sayac"
+main = "worker.js"
+compatibility_date = "2026-10-01"
+
+# npx wrangler kv namespace create SAYAC  ->  çıkan id'yi buraya yazın
+[[kv_namespaces]]
+binding = "SAYAC"
+id = "BURAYA_KV_ID"
