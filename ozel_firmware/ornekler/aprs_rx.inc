@@ -68,7 +68,7 @@ AR_D        .EQU $0625          ; 2 bayt: geçici
 AR_T        .EQU $0627          ; geçici (bayt)
 AR_IT       .EQU $0628          ; 2 bayt: kesmenin geçicisi
 AR_CER      .EQU AP_CER         ; $0740: çözülen çerçeve (FCS hariç), gönderme tamponuyla ortak
-AR_CER_N    .EQU 160            ; $0740..$07DF (donanım yığını ~$0821'e iniyor)
+AR_CER_N    .EQU 140            ; $0740..$07CB; arkası $07CC..$07DF GPS (gps.inc). Donanım yığını ~$0821
 AR_Y_DURUM  .EQU $04FA          ; seri yazma: 0 boş, 1 gönderen, 2 hedef, 3 yol, 4 ':', 6 bilgi, 5 CR LF
 AR_Y_I      .EQU $04FB          ; AR_CER'de sıradaki bayt
 AR_Y_N      .EQU $04FC          ; yazılacak bayt sayısı (FCS hariç, en çok AR_CER_N)

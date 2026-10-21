@@ -20,6 +20,11 @@
         "aciklama": "Menüde APRS TR (tracker), APRS DG (digipeater: WIDE1-1, WIDE2-n, doğrudan; 30 s tekrar engeli), APRS IG (seri port / igate); 's' ile * / -. EEPROM 0x733'te kalıcı; programlama sayfasından da."
       },
       {
+        "baslik": "GPS konumu",
+        "surum": "0-26",
+        "aciklama": "Seri porttan $GPRMC (GPS ya da sayfadaki benzetim); APRS ekranında dakikada bir konum güncellenir, paketlerde kullanılır; ekranda GPS."
+      },
+      {
         "baslik": "APRS alma: duyulan istasyonlar",
         "surum": "0-6",
         "aciklama": "APRS menüsündeyken çözülen paketin gönderen çağrı işareti ~4 s ekranda. Son 8 istasyon listesi: * bir eskiye, # bir yeniye."
@@ -61,6 +66,21 @@
       }
     ],
     "surumler": [
+      {
+        "surum": "0-26",
+        "tarih": "2026-10-21",
+        "durum": "sim",
+        "yeni": [
+          "GPS: seri porta (programlama kablosu, 9600) bağlı bir GPS ya da programlama sayfasındaki GPS benzetimi $GPRMC gönderirse, APRS ekranındayken dakikada bir yeni konum alınır ve paketlerde EEPROM konumu yerine kullanılır; ekranda \"GPS\". GPS konumu yokken her saniye denenir; geçerli cümle gelmezse en geç iki dakikada EEPROM konumuna dönülür.",
+          "Programlama sayfası: seri izlemede harita ve GPS benzetimi (haritadan nokta, GÖNDER: saniyede bir $GPRMC + $GPGGA)."
+        ],
+        "duzeltme": [
+          "Tracker açık ve aralık ayarlıyken duyulan istasyonun ekranda kalma süresi ve digipeater'ın 30 s tekrar engeli / PTT zaman aşımı işlemiyordu (geçen süre sayacı sıfırlanıyordu)."
+        ],
+        "degisiklik": [
+          "APRS paket tamponu 160'tan 140 bayta indi (GPS'e yer): seri porta yazılan / detayı çıkarılan paketlerde bilgi alanının ilk ~124 baytı; tekrarlanan paket en çok 131 bayt."
+        ]
+      },
       {
         "surum": "0-25",
         "tarih": "2026-10-21",

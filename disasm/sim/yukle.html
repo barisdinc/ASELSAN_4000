@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>ASELSAN 4000 Seri Yükleyici</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <style>
 :root {
   --bg: #f3f2ee; --panel: #ffffff; --ink: #1d1f22; --muted: #6b6f76; --line: #dcdad3;
@@ -84,6 +85,10 @@ td.num { font-family: var(--mono); }
 .izle .zaman { color: var(--muted); }
 .izle .yok { color: var(--muted); }
 @media (max-width: 700px) { .izle { grid-template-columns: 1fr; } }
+.gps { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--line); }
+.gps h3 { margin: 0 0 4px; font-size: 13px; }
+#gpsHarita { height: 280px; border: 1px solid var(--line); border-radius: 6px; margin-top: 6px; z-index: 0; }
+.gps input[type=text] { font: inherit; font-family: var(--mono); font-size: 12.5px; width: 9.5em; padding: 4px 6px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); color: var(--ink); }
 #log { height: 160px; overflow: auto; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; white-space: pre-wrap; margin: 0; }
 label.mode { display: flex; gap: 6px; align-items: center; }
 /* arka plan: ASELSAN 4000/4100 çizimleri (kılavuz 7610-4000-0003'teki ön panel, yan görünüş ve kapak fotoğrafından) */
@@ -143,6 +148,17 @@ main { position: relative; z-index: 1; }
     <div class="izle">
       <div><h3>Giden (PC → telsiz) <span class="note" id="izTxSay">0 bayt</span></h3><pre id="izTx" class="mono"><span class="yok">—</span></pre></div>
       <div><h3>Gelen (telsiz → PC) <span class="note" id="izRxSay">0 bayt</span></h3><pre id="izRx" class="mono"><span class="yok">—</span></pre></div>
+    </div>
+    <div class="gps">
+      <h3>GPS benzetimi</h3>
+      <p class="note" style="margin:0">Haritada bir noktaya tıklayın, <b>GÖNDER</b>'e basın: saniyede bir o konumu GPS alıcısı gibi NMEA (<span class="mono">$GPRMC</span>, <span class="mono">$GPGGA</span>) olarak telsize gönderir. Telsiz (AT V0-26 ve sonrası) APRS ekranındayken dakikada bir bu konumu alır ve paketlerinde kullanır (ekranda "GPS"). Yalnız <b>Yalnız dinle</b> ile açılmış portta çalışır.</p>
+      <div class="row" style="margin-top:8px">
+        <label class="note">Enlem <input type="text" id="gpsEnlem" value="39.925330"></label>
+        <label class="note">Boylam <input type="text" id="gpsBoylam" value="32.836950"></label>
+        <button id="gpsBtn" disabled>GÖNDER</button>
+        <span class="note" id="gpsDurum"></span>
+      </div>
+      <div id="gpsHarita"></div>
     </div>
   </section>
 
@@ -245,6 +261,7 @@ main { position: relative; z-index: 1; }
 <script src="p4000.js"></script>
 <script src="updater.js"></script>
 <script src="seri_istemci.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="firmware.js"></script>
 <script src="surum_notlari.js"></script>
 <script>
@@ -275,6 +292,7 @@ function refresh() {
   const on = !!client;
   $('connectBtn').disabled = !!port || busy; $('dinleBtn').disabled = !!port || busy || (mode() === 'serial' && !S.WebSerialPort.supported());
   $('disconnectBtn').disabled = !port || busy;
+  if (typeof gpsDurum === 'function') gpsDurum();
   $('eeBtn').disabled = !on || busy; $('flashBtn').disabled = !on || busy;
   $('erFileBtn').disabled = busy;
   document.querySelectorAll('input[name=mode]').forEach(r => r.disabled = !!port || busy);
@@ -410,6 +428,58 @@ $('izKaydet').onclick = () => {
   const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([t + '\n'], { type: 'text/plain' }));
   a.download = 'seri_gelen_' + stamp() + (hex ? '_hex' : '') + '.txt'; a.click();
 };
+
+/* GPS benzetimi: haritadan konum, saniyede bir NMEA (RMC + GGA) */
+var GPS = { harita: null, isaret: null, zaman: 0, sayac: 0 };   // var: refresh() bundan önce de çağrılabilir
+function nmeaKoord(v, enlem) {
+  const h = enlem ? (v < 0 ? 'S' : 'N') : (v < 0 ? 'W' : 'E'), a = Math.abs(v), d = Math.floor(a), m = (a - d) * 60;
+  return String(d).padStart(enlem ? 2 : 3, '0') + m.toFixed(4).padStart(7, '0') + ',' + h;
+}
+function nmea(govde) { let c = 0; for (const ch of govde) c ^= ch.charCodeAt(0); return '$' + govde + '*' + c.toString(16).toUpperCase().padStart(2, '0') + '\r\n'; }
+function gpsCumleler(lat, lon, t) {
+  const d = new Date(t), p = n => String(n).padStart(2, '0');
+  const saat = p(d.getUTCHours()) + p(d.getUTCMinutes()) + p(d.getUTCSeconds()) + '.00', gun = p(d.getUTCDate()) + p(d.getUTCMonth() + 1) + p(d.getUTCFullYear() % 100);
+  const k = nmeaKoord(lat, true) + ',' + nmeaKoord(lon, false);
+  return nmea('GPRMC,' + saat + ',A,' + k + ',0.0,0.0,' + gun + ',,,A') + nmea('GPGGA,' + saat + ',' + k + ',1,08,1.0,100.0,M,0.0,M,,');
+}
+function gpsKonum() {
+  const lat = parseFloat($('gpsEnlem').value.replace(',', '.')), lon = parseFloat($('gpsBoylam').value.replace(',', '.'));
+  if (!(Math.abs(lat) <= 90) || !(Math.abs(lon) <= 180)) throw new Error('konum geçersiz');
+  return [lat, lon];
+}
+function gpsDurum() {
+  const ok = !!port && !client && !busy;
+  $('gpsBtn').disabled = !ok && !GPS.zaman;
+  if (!ok && GPS.zaman) gpsDur();
+}
+function gpsDur() { clearInterval(GPS.zaman); GPS.zaman = 0; $('gpsBtn').textContent = 'GÖNDER'; $('gpsDurum').textContent = GPS.sayac ? GPS.sayac + ' konum gönderildi, durdu' : ''; }
+async function gpsAdim() {
+  if (!port || client) return gpsDur();
+  try {
+    const [lat, lon] = gpsKonum();
+    await port.write(Array.from(new TextEncoder().encode(gpsCumleler(lat, lon, Date.now()))));
+    GPS.sayac++; $('gpsDurum').textContent = GPS.sayac + ' konum gönderildi (' + lat.toFixed(5) + ', ' + lon.toFixed(5) + ')';
+  } catch (e) { $('gpsDurum').textContent = 'HATA: ' + e.message; gpsDur(); }
+}
+$('gpsBtn').onclick = () => {
+  if (GPS.zaman) return gpsDur();
+  try { gpsKonum(); } catch (e) { $('gpsDurum').textContent = e.message; return; }
+  GPS.sayac = 0; $('gpsBtn').textContent = 'DURDUR';
+  gpsAdim(); GPS.zaman = setInterval(gpsAdim, 1000);
+  log('GPS benzetimi: saniyede bir NMEA gönderiliyor');
+};
+function gpsIsaret(lat, lon, ortala) {
+  if (!GPS.harita) return;
+  if (GPS.isaret) GPS.isaret.setLatLng([lat, lon]); else GPS.isaret = L.marker([lat, lon]).addTo(GPS.harita);
+  if (ortala) GPS.harita.setView([lat, lon], GPS.harita.getZoom());
+}
+['gpsEnlem', 'gpsBoylam'].forEach(id => $(id).onchange = () => { try { const [a, b] = gpsKonum(); gpsIsaret(a, b, true); } catch (e) { $('gpsDurum').textContent = e.message; } });
+if (window.L) {
+  GPS.harita = L.map('gpsHarita').setView([39.92533, 32.83695], 6);
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18, attribution: '© OpenStreetMap' }).addTo(GPS.harita);
+  gpsIsaret(39.92533, 32.83695);
+  GPS.harita.on('click', e => { $('gpsEnlem').value = e.latlng.lat.toFixed(6); $('gpsBoylam').value = e.latlng.lng.toFixed(6); gpsIsaret(e.latlng.lat, e.latlng.lng); });
+} else $('gpsHarita').innerHTML = '<p class="note" style="padding:8px">Harita yüklenemedi (internet yok?); konumu kutulara yazın.</p>';
 
 /* portu aç (gerçek ya da simülatör), izlemeye bağla */
 async function portAc() {
@@ -871,6 +941,30 @@ updateEeWrite();
 
 refresh();
 
+/* yukle.html#otomatik-test-gps: Yalnız dinle + GÖNDER: saniyede bir RMC + GGA, sağlama doğru; Bağlan'da düğme kapalı */
+if (location.hash === '#otomatik-test-gps') (async () => {
+  document.querySelector('input[value=sim]').checked = true; onMode();
+  const until = c => new Promise(r => { const t = setInterval(() => { if (c()) { clearInterval(t); r(); } }, 50); });
+  const hata = [];
+  const t = gpsCumleler(40.843833, 31.156500, Date.UTC(2026, 9, 21, 12, 34, 56)).split('\r\n');
+  if (t[0] !== '$GPRMC,123456.00,A,4050.6300,N,03109.3900,E,0.0,0.0,211026,,,A*' + t[0].slice(-2)) hata.push('RMC: ' + t[0]);
+  for (const c of t.filter(Boolean)) { const m = /^\$(.*)\*([0-9A-F]{2})$/.exec(c); let x = 0; for (const ch of m[1]) x ^= ch.charCodeAt(0); if (x !== parseInt(m[2], 16)) hata.push('sağlama: ' + c); }
+  if (!$('gpsBtn').disabled) hata.push('port yokken GÖNDER açık');
+  $('dinleBtn').click(); await until(() => port && !busy);
+  if ($('gpsBtn').disabled) hata.push('dinlerken GÖNDER kapalı');
+  $('gpsEnlem').value = '40.843833'; $('gpsBoylam').value = '31.1565';
+  IZ.tx.length = 0; $('gpsBtn').click();
+  await new Promise(r => setTimeout(r, 2600));
+  const giden = String.fromCharCode(...IZ.tx.map(x => x[1]));
+  const rmc = (giden.match(/\$GPRMC,[^*]*,A,4050\.6300,N,03109\.3900,E,/g) || []).length, gga = (giden.match(/\$GPGGA,/g) || []).length;
+  if (rmc < 2 || rmc > 4 || gga !== rmc) hata.push('2,6 s: ' + rmc + ' RMC, ' + gga + ' GGA');
+  $('gpsBtn').click(); const n = IZ.tx.length; await new Promise(r => setTimeout(r, 1300));
+  if (IZ.tx.length !== n) hata.push('DURDUR sonrası gönderdi');
+  $('disconnectBtn').click(); await until(() => !port && !busy);
+  $('connectBtn').click(); await until(() => client && !busy);
+  if (!$('gpsBtn').disabled) hata.push('Bağlan iken GÖNDER açık');
+  document.body.dataset.test = hata.length ? 'hata ' + hata.join(' / ') : 'bitti';
+})();
 /* yukle.html#otomatik-test-izle: Yalnız dinle -> açılış çerçevesi gelir, telsize bayt gitmez; ASCII'de
  * UTF-8 APRS satırı; Bağlan -> protokol çerçeveleri iki yönde */
 if (location.hash === '#otomatik-test-izle') (async () => {

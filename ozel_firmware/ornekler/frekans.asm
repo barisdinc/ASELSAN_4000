@@ -80,3 +80,5 @@ DIL_KOD     .EQU $012090        ; bank 1 boş alanı (tarama_tks $012080..$01208
         .INCLUDE "dil_kaldir.inc"       ; yalnız Türkçe
         .ORG $012100                    ; bank 1 boş alanı ($012090.. dil_kaldir)
         .INCLUDE "aprs_ayar.inc"        ; APRS TR / DG / IG ayarları
+GPS_KOD     .EQU *
+        .INCLUDE "gps.inc"              ; seri porttan GPS konumu

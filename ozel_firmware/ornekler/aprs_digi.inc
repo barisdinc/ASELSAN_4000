@@ -24,8 +24,8 @@ DG_SURE     .EQU $0130          ; PTT isteğinin kalan süresi (32 ms)
 DG_MS       .EQU $039C          ; saniye için 32 ms sayacı
 DG_YAS      .EQU $0399          ; 3 bayt: tekrar kaydının kalan süresi (s), 0 = boş
 DG_CRCK     .EQU $03AB          ; 3 x 2 bayt
-DG_MY       .EQU AR_CER_N-8     ; tamponda çağrımızın geçici yeri (152..158)
-DG_N_EN_COK .EQU AR_CER_N-9     ; tekrarlanacak paket en çok 151 bayt (+7 + FCS 2 = 160)
+DG_MY       .EQU AR_CER_N-8     ; tamponda çağrımızın geçici yeri (son 8 bayt)
+DG_N_EN_COK .EQU AR_CER_N-9     ; tekrarlanacak paket en çok AR_CER_N - 9 bayt (+7 + FCS 2)
 DG_ESIK     .EQU 30             ; s
 DG_CAGRI    .EQU FR_HANE        ; 7 bayt: çağrımız (kaydırma sırasında)
 DG_CRC      .EQU FR_D           ; 2 bayt
@@ -89,6 +89,7 @@ DGZ_1:  LDA   A,DG_MS
         BCC   DGZ_3
         SBC   A,#31
         STA   A,DG_MS
+        JSR   GPS_SANIYE                ; gps.inc
         LDX   #0
 DGZ_2:  LDA   A,DG_YAS,X
         BEQ   DGZ_2B

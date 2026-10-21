@@ -5,7 +5,7 @@ Aynı notlar sitede: [surumler.html](https://barisdinc.github.io/ASELSAN_4000/su
 
 ## yATOLYE özel firmware'i (`YA4000S_FREKANS_YATOLYE.HEX`)
 
-Güncel sürüm: **AT V0-25** (21.10.2026)
+Güncel sürüm: **AT V0-26** (21.10.2026)
 
 Orijinal YA4000S (AS V2-30) üzerine FREKANS (VFO) menüsü, APRS gönderme / alma, seçmeli çağrı kaldırıldı, açılışta 5 s yATOLYE.
 
@@ -14,6 +14,7 @@ Orijinal YA4000S (AS V2-30) üzerine FREKANS (VFO) menüsü, APRS gönderme / al
 - **FREKANS (VFO) menüsü** (AT V0-1 ile geldi): Kanal tablosundan bağımsız alma ve gönderme frekansı, alma ve gönderme TKS (CTCSS) tonu tuşlarla girilir (tonlar V0-17 ile). Ekranda kanal numarası yerine VR (alma) / VT (gönderme); PTT'de gönderme frekansı görünür.
 - **APRS gönderme** (AT V0-1 ile geldi): APRS menüsünde PTT ile ya da ayarlanan aralıkta (PTT'siz) 144,800 MHz'de 1200 baud konum paketi. Çağrı işareti, konum, simge, yorum ve aralık EEPROM'da (0x6E0); programlama sayfasının APRS sekmesinden düzenlenir.
 - **APRS TR / DG / IG ayarları** (AT V0-24 ile geldi): Menüde APRS TR (tracker), APRS DG (digipeater: WIDE1-1, WIDE2-n, doğrudan; 30 s tekrar engeli), APRS IG (seri port / igate); 's' ile * / -. EEPROM 0x733'te kalıcı; programlama sayfasından da.
+- **GPS konumu** (AT V0-26 ile geldi): Seri porttan $GPRMC (GPS ya da sayfadaki benzetim); APRS ekranında dakikada bir konum güncellenir, paketlerde kullanılır; ekranda GPS.
 - **APRS alma: duyulan istasyonlar** (AT V0-6 ile geldi): APRS menüsündeyken çözülen paketin gönderen çağrı işareti ~4 s ekranda. Son 8 istasyon listesi: * bir eskiye, # bir yeniye.
 - **APRS alma: istasyon konumu ve mesajı** (AT V0-22 ile geldi): Listede bir istasyon görünürken 's': enlem, boylam, mesaj (ilk 8 karakter), çağrı işareti sayfaları (8 s). Düz konum biçimleri; sıkıştırılmış ve Mic-E konumu çözülmez (Mic-E yorumu gösterilir).
 - **APRS alma: seri port çıkışı** (AT V0-18 ile geldi): Çözülen her paket UART0'a (programlama kablosu, 9600 8N1) TNC2 satırı olarak yazılır. 160 baytı aşan paketlerin bilgi alanı kesilir.
@@ -24,6 +25,13 @@ Orijinal YA4000S (AS V2-30) üzerine FREKANS (VFO) menüsü, APRS gönderme / al
 - **Açılış ekranı ve sürüm** (AT V0-1 ile geldi): Açılışta 5 s yATOLYE, ardından AT V0-x sürüm numarası. Sürüm, tarih ve metin ROM başlığında; T4000 ve yükleme sayfası da gösterir.
 
 ### Sürüm geçmişi
+
+#### AT V0-26 · 21.10.2026 · yalnız simülatörde denendi
+
+- Yeni: GPS: seri porta (programlama kablosu, 9600) bağlı bir GPS ya da programlama sayfasındaki GPS benzetimi $GPRMC gönderirse, APRS ekranındayken dakikada bir yeni konum alınır ve paketlerde EEPROM konumu yerine kullanılır; ekranda "GPS". GPS konumu yokken her saniye denenir; geçerli cümle gelmezse en geç iki dakikada EEPROM konumuna dönülür.
+- Yeni: Programlama sayfası: seri izlemede harita ve GPS benzetimi (haritadan nokta, GÖNDER: saniyede bir $GPRMC + $GPGGA).
+- Düzeltme: Tracker açık ve aralık ayarlıyken duyulan istasyonun ekranda kalma süresi ve digipeater'ın 30 s tekrar engeli / PTT zaman aşımı işlemiyordu (geçen süre sayacı sıfırlanıyordu).
+- Değişiklik: APRS paket tamponu 160'tan 140 bayta indi (GPS'e yer): seri porta yazılan / detayı çıkarılan paketlerde bilgi alanının ilk ~124 baytı; tekrarlanan paket en çok 131 bayt.
 
 #### AT V0-25 · 21.10.2026 · yalnız simülatörde denendi
 

@@ -542,8 +542,7 @@ AMY_1:  LDA   A,>AP_METIN,X
         INY
         CPY   #8
         BNE   AMY_1
-        CLM
-        RTS
+        JMP   GPS_EKRAN                 ; gps.inc: GPS konumu varken GPS yazar
 
 AP_METIN:
         .TEXT8 "APRS TX"                ; 0
@@ -744,7 +743,7 @@ AHA_3:  LDA   A,>AP_YOL,X               ; WIDE1-1, WIDE2-1, kontrol, PID, '!'
         CLM
         LDA   A,#AB_ENLEM
         LDY   #8
-        JSR   AP_ALAN_AD
+        JSR   GPS_ALAN_AD               ; gps.inc: GPS konumu varsa o
         SEM
         LDA   A,#4                      ; DDMM.mm
         LDY   #'N'+'S'*256
@@ -758,7 +757,7 @@ AHA_4:  LDA   A,AP_SEMBOL               ; simge tablosu
         CLM
         LDA   A,#AB_BOYLAM
         LDY   #9
-        JSR   AP_ALAN_AD
+        JSR   GPS_ALAN_AD
         SEM
         LDA   A,#5                      ; DDDMM.mm
         LDY   #'E'+'W'*256
@@ -1416,8 +1415,9 @@ AOZ_S1: STA   A,AP_OTO_SURE
         BRA   AOZ_SON
 AOZ_SAY:
         .ASSUME M=1,X=0
-        LDA   A,AP_FARK
+        LDA   A,AP_FARK                 ; (AP_FARK bozulmasın: AR_ISLE ve DG_ZAMAN da kullanıyor)
         BEQ   AOZ_SON
+        STA   A,AP_T2
         CLM
 AOZ_1:  LDA   A,AP_MS                   ; her adım 32 ms
         CLC
@@ -1428,7 +1428,7 @@ AOZ_1:  LDA   A,AP_MS                   ; her adım 32 ms
         INC   AP_SANIYE
 AOZ_2:  STA   A,AP_MS
         SEM
-        DEC   AP_FARK
+        DEC   AP_T2
         CLM
         BNE   AOZ_1
         LDA   A,AP_SANIYE

@@ -566,8 +566,8 @@ if (RING.includes('APRS')) {
     { const t = seriAl(); check('APRS alma: yıldız yalnız son tekrarlayıcıda', t === 'YM7KA-12>APDR15,TA2DEF-3,WIDE2*:=4100.00N/02900.00E-x\r\n', JSON.stringify(t)); }
     const uzun = 'TA4CC>APRS:>' + 'abcdefghij'.repeat(18);
     al(uzun);
-    { const t = seriAl(), bek = uzun.slice(0, 'TA4CC>APRS:'.length + 160 - 16) + '\r\n';
-      check('APRS alma: uzun paket (196 bayt) tamponla sınırlı: bilgi alanının ilk 144 baytı', t === bek, t.length + ' ' + JSON.stringify(t.slice(-20))); }
+    { const t = seriAl(), bek = uzun.slice(0, 'TA4CC>APRS:'.length + 140 - 16) + '\r\n';
+      check('APRS alma: uzun paket (196 bayt) tamponla sınırlı (140): bilgi alanının ilk 124 baytı', t === bek, t.length + ' ' + JSON.stringify(t.slice(-20))); }
     /* sürekli gürültü (susturma açık): bekçi köpeği yok, tuşlar çalışıyor */
     r.selIn.noise = true; r.inputs.P5 |= 0x80; const ev0 = r.events.length; r.run(FCLK * 3);
     const tus = keys(r, '#');
@@ -690,6 +690,28 @@ if (RING.includes('APRS TR*')) {
   c.selIn.setEdges(e.map(x => t + Math.round(x * FCLK))); c.inputs.P5 |= 0x80; c.run(FCLK * (e[e.length - 1] + 0.05)); c.inputs.P5 &= ~0x80; c.run(FCLK * 3.5);
   check('APRS DG kapalı (varsayılan): tekrarlanmaz', AFSK.decode(log, FCLK).length === 0 && lcd(c) === 'TA1ZZ   ', lcd(c));
   keys(b, 'm'); keys(c, 'm');
+}
+
+/* GPS (gps.inc): seri porttan $GPRMC; APRS ekranında hemen, sonra dakikada bir yeni konum; GPS geçersizleşince
+ * en geç iki dakikada EEPROM konumuna dönüş; ekranda "GPS" */
+if (RING.includes('APRS TR*')) {
+  const P = globalThis.P4000;
+  const b = radio(ee => P.aprsSet(ee, { cagri: 'ta7w-7', enlem: '4050.63N', boylam: '03109.39E', yorum: 'gps', tablo: '/', kod: '>', aralik: 0 })); boot(b, 2.5);
+  for (let k = 0; k < 12 && lcd(b) !== 'APRS    '; k++) keys(b, 'm'); keys(b, 's');
+  const rmc = (lat, lon, d) => { const g = 'GPRMC,123519,' + (d || 'A') + ',' + lat + ',' + lon + ',022.4,084.4,230394,003.1,W'; let c = 0; for (const ch of g) c ^= ch.charCodeAt(0); return '$' + g + '*' + c.toString(16).toUpperCase().padStart(2, '0') + '\r\n'; };
+  const gonder = (t, n) => { for (let i = 0; i < n; i++) { b.serialIn(Array.from(t, c => c.charCodeAt(0))); b.run(FCLK); } };
+  const ptt = () => { const log = [], push = b.pushAudio; b.pushAudio = (buf, v) => { if (buf === b.audio.ta1) log.push(b.now, v); push.call(b, buf, v); };
+    b.inputs.P4 = 0x7F; b.run(FCLK * 1.4); b.inputs.P4 = 0xFF; b.run(FCLK * 0.5); b.pushAudio = push; return AFSK.decode(log, FCLK).map(f => f.text).join(' ; '); };
+  const konum = t => (/:!([^/\\]+)[/\\]([0-9.]+[EW])/.exec(t) || []).slice(1).join(' ');
+  const k0 = konum(ptt());
+  gonder(rmc('3955.5210,N', '03250.2234,E'), 3); const k1 = konum(ptt()), e1 = lcd(b);
+  gonder(rmc('4100.1234,N', '02900.5678,E'), 20); const k2 = konum(ptt());
+  gonder(rmc('4100.1234,N', '02900.5678,E'), 45); const k3 = konum(ptt());
+  gonder(rmc('', '', 'V').replace('GPRMC,123519,V,,', 'GPRMC,123519,V,'), 125); const k4 = konum(ptt());
+  check('GPS: yokken EEPROM konumu, gelince GPS konumu ve ekranda GPS', k0 === '4050.63N 03109.39E' && k1 === '3955.52N 03250.22E' && e1 === 'GPS  OK ', k0 + ' / ' + k1 + ' / ' + e1);
+  check('GPS: yeni konum dakikada bir alınır', k2 === '3955.52N 03250.22E' && k3 === '4100.12N 02900.56E', k2 + ' / ' + k3);
+  check('GPS: geçersiz cümlelerde EEPROM konumuna dönülür', k4 === '4050.63N 03109.39E', k4);
+  keys(b, 'm');
 }
 
 /* yalnız Türkçe (dil_kaldir.inc): EEPROM'da İngilizce (0x018 bit 7 = 0) seçili olsa da menüler Türkçe */
