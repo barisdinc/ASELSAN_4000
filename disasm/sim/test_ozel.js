@@ -213,7 +213,7 @@ if (RING.includes('FREQ')) {
   scenario(b, 'boşken * alma frekansına döner', '* * * * * *', '160 6---|160 ----|16- ----|1-- ----|TX FREQ|156 5250');
   scenario(b, 'alma frekansı düzeltilir', '* * 7 5 #', '156 525_|156 52__|156 527_|156 5275|TX FREQ');
   keys(b, 'm'); keys(b, enter);
-  scenario(b, 'yeniden: alma 156,525, gönderme 160,650', '1 5 6 5 2 5 # 1 6 0 6 5 0 #', '1__ ____|15_ ____|156 ____|156 5___|156 52__|156 525_|TX FREQ|1-- ----|16- ----|160 ----|160 6---|160 65--|160 650-|156 5250');
+  scenario(b, 'yeniden: alma 156,525, gönderme 160,650', '1 5 6 5 2 5 # 1 6 0 6 5 0 # # #', '1__ ____|15_ ____|156 ____|156 5___|156 52__|156 525_|TX FREQ|1-- ----|16- ----|160 ----|160 6---|160 65--|160 650-|RX TONE|TX TONE|156 5250');
   check('RX VCO = 156,525 + 45', vco(b) === '201.5250', vco(b));
   check('sentezör baytları firmware ile aynı (RX 156,525 / TX 160,650)', synthBytes(rec(b)) === reference(156.525e6, false, 160.65e6), synthBytes(rec(b)) + ' / ' + reference(156.525e6, false, 160.65e6));
   b.inputs.P4 = 0x7F; b.run(FCLK * 0.6);
@@ -234,12 +234,12 @@ if (RING.includes('FREQ')) {
   b.inputs.P4 = 0x7F; b.run(FCLK * 0.6);
   check('gönderirken tuşlar yok sayılır (firmware)', keys(b, '#')[0] === '160 650-' && vco(b) === '160.6500', lcd(b) + ' ' + vco(b));
   b.inputs.P4 = 0xFF; b.run(FCLK * 0.4);
-  scenario(b, 'bırakınca # ayarlar', '#', '156 5250');
+  scenario(b, 'bırakınca # ve ton adımları ayarlar', '# # #', 'RX TONE|TX TONE|156 5250');
   { const g = keys(b, 's156525#177000#*');
     check('gönderme adımında bant dışı: hata, sonra girişe dönüş', g[g.length - 2] === 'ERROR   ' && g[g.length - 1] === '177 000-', g.join('|')); }
   keys(b, 'm');
   for (const [ks, f, name] of [['1565125', 156.5125e6, '12,5 kHz adım'], ['156010', 156.010e6, '10 kHz adım'], ['1560050', 156.005e6, '5 kHz adım'], ['176900', 176.9e6, 'bant üst ucu']]) {
-    keys(b, enter + 's' + ks + '##');
+    keys(b, enter + 's' + ks + '####');
     const want = ((f + 45e6) / 1e6).toFixed(4);
     check(name + ': ' + (f / 1e6) + ' MHz', vco(b) === want && synthBytes(rec(b)) === reference(f), vco(b) + ' ' + synthBytes(rec(b)) + ' / ' + reference(f));
     keys(b, 'm');
@@ -263,12 +263,12 @@ if (RING.includes('FREQ')) {
   /* UHF configuration (base 400 MHz, -45 MHz injection, prescaler 128) */
   const u = radio(UHF);
   boot(u, 2.5);
-  keys(u, enter + '433125##');
+  keys(u, enter + '433125####');
   check('UHF: 433,125 MHz, RX VCO 388,125', vco(u) === '388.1250' && synthBytes(rec(u)) === reference(433.125e6, true), vco(u) + ' ' + synthBytes(rec(u)) + ' / ' + reference(433.125e6, true));
   keys(u, 'm'); u.inputs.P4 = 0x7F; u.run(FCLK * 0.6);
   check('UHF PTT: TX 433,125', vco(u) === '433.1250', vco(u));
   u.inputs.P4 = 0xFF; u.run(FCLK * 0.4);
-  keys(u, enter + '433125#438125#m');
+  keys(u, enter + '433125#438125###m');
   check('UHF çift frekans: RX VCO 388,125, baytlar firmware ile aynı', vco(u) === '388.1250' && synthBytes(rec(u)) === reference(433.125e6, true, 438.125e6), vco(u) + ' ' + synthBytes(rec(u)) + ' / ' + reference(433.125e6, true, 438.125e6));
   u.inputs.P4 = 0x7F; u.run(FCLK * 0.6);
   check('UHF PTT: TX 438,125, ekranda 438 1250', vco(u) === '438.1250' && lcd(u) === '438 1250', vco(u) + ' ' + lcd(u));
@@ -277,6 +277,38 @@ if (RING.includes('FREQ')) {
   const g = keys(t, enter + '1#');
   check('Türkçe: 2. adımda GONDERME', keys(t, '*s156525#')[8] === 'GONDERME', lcd(t));
   check('Türkçe: FREKANS / HATA', g[RING.indexOf('FREQ') + 1] === 'FREKANS ' && g[g.length - 1] === 'HATA    ', g.join('|'));
+  check('Türkçe: ton adımları ALMA TON / GON TON', keys(t, '160650##').slice(-2).join('|') === 'ALMA TON|GON TON ', lcd(t));
+
+  /* TKS (CTCSS) tonları: 3. adım alma, 4. adım gönderme ($0375 / $037C alt 6 bit) */
+  const c = radio(ee => B.eeSetChannel(ee, 1, 156e6, 156e6, { name: 'TKS', rxTone: 5, txTone: 9 }));
+  boot(c, 2.5);
+  const ton = () => [c.ram[0x375] & 0x3F, c.ram[0x37C] & 0x3F].join('/');
+  check('kanal 1 tonları: alma 5, gönderme 9', ton() === '5/9', ton());
+  keys(c, enter);
+  scenario(c, 'ton haneleri, en çok 4', '1 5 6 5 2 5 # 1 6 0 6 5 0 # 8 8 5 # 1 0 0 0 0 #',
+    '1__ ____|15_ ____|156 ____|156 5___|156 52__|156 525_|TX FREQ|1-- ----|16- ----|160 ----|160 6---|160 65--|160 650-|RX TONE|RT 8___|RT 88__|RT 885_|TX TONE|TT 1___|TT 10__|TT 100_|TT 1000|TT 1000|156 5250');
+  check('alma 88,5 (8), gönderme 100,0 (12); kopya $0363 aynı', ton() === '8/12' && (c.ram[0x368] & 0x3F) === 8 && (c.ram[0x36F] & 0x3F) === 12, ton());
+  check('frekans yine ayarlandı', vco(c) === '201.5250', vco(c));
+  keys(c, 'm');
+  c.inputs.P4 = 0x7F; c.run(FCLK * 0.6);
+  { const a = V.analyseTx(c, FCLK, FCLK * 0.05);
+    check('PTT: TX 160,650, TKS 100,0 Hz', vco(c) === '160.6500' && a.ctcssHz && Math.abs(a.ctcssHz - 100) < 1, vco(c) + ' ' + (a.ctcssHz && a.ctcssHz.toFixed(2))); }
+  c.inputs.P4 = 0xFF; c.run(FCLK * 0.4);
+  /* alma tonu: firmware'in ton çözücüsü ($023A bit 12) yalnız 88,5 Hz'te. (Hoparlörü tonla açma
+   * panelden açılan TKS susturmasına bağlı, 0x023E bit 0; orijinal firmware'de de öyle.) */
+  c.inputs.P5 |= 0x80; c.run(FCLK * 0.4);
+  const cozuldu = f => { c.ctcssIn.setTone(f); c.run(FCLK * 0.5); let n = 0; for (let i = 0; i < 20; i++) { c.run(FCLK * 0.025); if (c.ram[0x23B] & 0x10) n++; } return n; };
+  const c885 = cozuldu(88.5), c100 = cozuldu(100), c0 = cozuldu(0);
+  c.inputs.P5 &= ~0x80; c.run(FCLK * 0.4);
+  check('alma TKS 88,5: firmware 88,5 Hz\'i çözüyor, 100 Hz\'i ve tonsuzu çözmüyor', c885 >= 18 && c100 <= 2 && c0 === 0, '88,5: ' + c885 + '/20, 100: ' + c100 + '/20, yok: ' + c0 + '/20');
+  const tonla = (ks, name, want) => { keys(c, enter + 's156525#160650#' + ks); check(name, ton() === want, ton() + ' ' + lcd(c)); keys(c, 'm'); };
+  tonla('##', 'boş #: alma tonu kalır, gönderme = alma', '8/8');
+  tonla('0#0#', '0 #: ton yok', '0/0');
+  tonla('67#2503#', 'tam Hz (67) ve ondalıklı (250,3)', '1/38');
+  tonla('700#1234#', 'en yakın ton: 70,0 -> 69,3 (39), 123,4 -> 123,0 (18)', '39/18');
+  { const g = keys(c, enter + 's156525#160650#50#');
+    check('tablodan uzak ton (50 Hz): hata, tonlar değişmedi', g[g.length - 1] === 'ERROR   ' && ton() === '39/18', g.slice(-1) + ' ' + ton());
+    keys(c, '*'); scenario(c, 'hatadan sonra girişe dönüş, boşken * bir adım geri', '* * * *', 'RT 5___|RX TONE|TX FREQ|156 5250'); keys(c, 'm'); }
 }
 
 /* APRS (ozel_firmware/ornekler/aprs.inc): PTT'de 144,800 MHz'de AFSK konum paketi */
@@ -565,7 +597,7 @@ if (origText) {
   check('seri yükleyiciyle yazıldı ve doğrulandı', !up.error, up.error || up.log.slice(-1)[0]);
   b.font = V.buildFont(b.rom); boot(b, 3);
   if (RING.includes('NUMBER')) { scenario(b, 'yüklemeden sonra SAYI çalışıyor', 'mms 2 0 2 6 s', 'LIST|NUMBER|_|2_|20_|202_|2026_|6202'); keys(b, 'm'); }
-  if (RING.includes('FREQ')) { const g = keys(b, 'mm' + 'm'.repeat(RING.indexOf('FREQ')) + 's156525##'); check('yüklemeden sonra FREKANS çalışıyor', g[g.length - 1] === '156 5250' && (b.radioState().vco / 1e6).toFixed(4) === '201.5250', g.join('|')); }
+  if (RING.includes('FREQ')) { const g = keys(b, 'mm' + 'm'.repeat(RING.indexOf('FREQ')) + 's156525####'); check('yüklemeden sonra FREKANS çalışıyor', g[g.length - 1] === '156 5250' && (b.radioState().vco / 1e6).toFixed(4) === '201.5250', g.join('|')); }
   if (RING.includes('GAME')) { if (RING.includes('FREQ')) keys(b, 'm'); const g = keys(b, 'mmmms123#'); check('yüklemeden sonra OYUN çalışıyor', g[4] === '___     ' && /^123 [v^]  1$|^WIN    1$/.test(g[8]), g.join('|')); }
   if (RING.includes('CALC')) { if (RING.includes('GAME') || RING.includes('FREQ')) keys(b, 'm'); scenario(b, 'yüklemeden sonra HESAP çalışıyor', 'mmms 7 * * * 6 #', 'LIST|NUMBER|CALC|       0|       7|+      7|-      7|*      7|*      6|      42'); }
 }

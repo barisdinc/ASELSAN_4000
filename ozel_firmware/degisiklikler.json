@@ -4,59 +4,150 @@
     "ad": "yATOLYE özel firmware'i",
     "ozet": "Orijinal YA4000S (AS V2-30) üzerine FREKANS (VFO) menüsü, APRS gönderme / alma, seçmeli çağrı kaldırıldı, açılışta 5 s yATOLYE.",
     "ozellikler": [
-      { "baslik": "FREKANS (VFO) menüsü", "surum": "0-1", "aciklama": "Kanal tablosundan bağımsız alma ve gönderme frekansı tuşlarla girilir. Ekranda kanal numarası yerine VR (alma) / VT (gönderme); PTT'de gönderme frekansı görünür." },
-      { "baslik": "APRS gönderme", "surum": "0-1", "aciklama": "APRS menüsünde PTT ile ya da ayarlanan aralıkta (PTT'siz) 144,800 MHz'de 1200 baud konum paketi. Çağrı işareti, konum, simge, yorum ve aralık EEPROM'da (0x6E0); programlama sayfasının APRS sekmesinden düzenlenir." },
-      { "baslik": "APRS alma: duyulan istasyonlar", "surum": "0-6", "aciklama": "APRS menüsündeyken çözülen paketin gönderen çağrı işareti ~4 s ekranda. Son 8 istasyon listesi: * bir eskiye, # bir yeniye." },
-      { "baslik": "APRS'te sessiz hoparlör", "surum": "0-7", "aciklama": "APRS menüsündeyken bip, uyarı ve hoparlör kapalı; alma çözücüsü çalışmaya devam eder." },
-      { "baslik": "APRS modunu hatırlama", "surum": "0-4", "aciklama": "Telsiz APRS menüsündeyken kapatılırsa açılışta yine APRS'te başlar (EEPROM 0x732)." },
-      { "baslik": "Tarama", "surum": "0-16", "aciklama": "Orijinal tarama (LIST menüsü + p tuşu) çalışır; TKS'li kanallarda ton için daha uzun bekleme (ASELSAN V2-51 / V2-54'ten)." },
-      { "baslik": "Seçmeli çağrı yok", "surum": "0-1", "aciklama": "Select-5 (CCIR / ZVEI / EEA) kodu kaldırıldı; yer yeni özelliklere açıldı. # ile çağrı ve PTT kimliği gönderilmez." },
-      { "baslik": "Açılış ekranı ve sürüm", "surum": "0-1", "aciklama": "Açılışta 5 s yATOLYE, ardından AT V0-x sürüm numarası. Sürüm, tarih ve metin ROM başlığında; T4000 ve yükleme sayfası da gösterir." }
+      {
+        "baslik": "FREKANS (VFO) menüsü",
+        "surum": "0-1",
+        "aciklama": "Kanal tablosundan bağımsız alma ve gönderme frekansı, alma ve gönderme TKS (CTCSS) tonu tuşlarla girilir (tonlar V0-17 ile). Ekranda kanal numarası yerine VR (alma) / VT (gönderme); PTT'de gönderme frekansı görünür."
+      },
+      {
+        "baslik": "APRS gönderme",
+        "surum": "0-1",
+        "aciklama": "APRS menüsünde PTT ile ya da ayarlanan aralıkta (PTT'siz) 144,800 MHz'de 1200 baud konum paketi. Çağrı işareti, konum, simge, yorum ve aralık EEPROM'da (0x6E0); programlama sayfasının APRS sekmesinden düzenlenir."
+      },
+      {
+        "baslik": "APRS alma: duyulan istasyonlar",
+        "surum": "0-6",
+        "aciklama": "APRS menüsündeyken çözülen paketin gönderen çağrı işareti ~4 s ekranda. Son 8 istasyon listesi: * bir eskiye, # bir yeniye."
+      },
+      {
+        "baslik": "APRS'te sessiz hoparlör",
+        "surum": "0-7",
+        "aciklama": "APRS menüsündeyken bip, uyarı ve hoparlör kapalı; alma çözücüsü çalışmaya devam eder."
+      },
+      {
+        "baslik": "APRS modunu hatırlama",
+        "surum": "0-4",
+        "aciklama": "Telsiz APRS menüsündeyken kapatılırsa açılışta yine APRS'te başlar (EEPROM 0x732)."
+      },
+      {
+        "baslik": "Tarama",
+        "surum": "0-16",
+        "aciklama": "Orijinal tarama (LIST menüsü + p tuşu) çalışır; TKS'li kanallarda ton için daha uzun bekleme (ASELSAN V2-51 / V2-54'ten)."
+      },
+      {
+        "baslik": "Seçmeli çağrı yok",
+        "surum": "0-1",
+        "aciklama": "Select-5 (CCIR / ZVEI / EEA) kodu kaldırıldı; yer yeni özelliklere açıldı. # ile çağrı ve PTT kimliği gönderilmez."
+      },
+      {
+        "baslik": "Açılış ekranı ve sürüm",
+        "surum": "0-1",
+        "aciklama": "Açılışta 5 s yATOLYE, ardından AT V0-x sürüm numarası. Sürüm, tarih ve metin ROM başlığında; T4000 ve yükleme sayfası da gösterir."
+      }
     ],
     "surumler": [
       {
-        "surum": "0-16", "tarih": "2026-10-21", "durum": "sim",
-        "duzeltme": ["Tarama: önceki bütün FREKANS sürümlerinde p ile tarama başlatılınca telsiz kendini yeniden başlatıyordu (FREKANS kancası taramanın atladığı adresi bozuyordu)."],
-        "degisiklik": ["Taramada TKS (CTCSS) tonlu kanalda tonun çözülmesi için bekleme uzadı (67 Hz: 480 → 800 ms, 250 Hz: 128 → 448 ms); ton geç çözüldüğünde kanal atlanmaz. ASELSAN'ın sonraki sürümlerinden (V2-51 / V2-54) alındı."]
+        "surum": "0-17",
+        "tarih": "2026-10-21",
+        "durum": "sim",
+        "yeni": [
+          "FREKANS (VFO) modunda TKS (CTCSS) tonu: gönderme frekansından sonra 3. adımda alma tonu, 4. adımda gönderme tonu girilir (885 = 88,5 Hz, 100 = 100,0 Hz; en yakın standart ton). Boş # tonu değiştirmez (gönderme tonunda: alma ile aynı), 0 # ton yok."
+        ],
+        "degisiklik": [
+          "FREKANS ayarı artık 4 adım: alma frekansı, gönderme frekansı, alma tonu, gönderme tonu. Tonsuz hızlı ayar: frekanslardan sonra iki kez # (156525 # 160650 # # #)."
+        ]
       },
       {
-        "surum": "0-15", "tarih": "2026-10-20", "durum": "gercek",
-        "degisiklik": ["APRS alma, gerçek telsizde en iyi çalışan hâline (AT V0-7) döndürüldü: duyulan istasyonun çağrı işareti ekranda görünür. V0-11 … V0-14'teki denemeler geri alındı."]
+        "surum": "0-16",
+        "tarih": "2026-10-21",
+        "durum": "sim",
+        "duzeltme": [
+          "Tarama: önceki bütün FREKANS sürümlerinde p ile tarama başlatılınca telsiz kendini yeniden başlatıyordu (FREKANS kancası taramanın atladığı adresi bozuyordu)."
+        ],
+        "degisiklik": [
+          "Taramada TKS (CTCSS) tonlu kanalda tonun çözülmesi için bekleme uzadı (67 Hz: 480 → 800 ms, 250 Hz: 128 → 448 ms); ton geç çözüldüğünde kanal atlanmaz. ASELSAN'ın sonraki sürümlerinden (V2-51 / V2-54) alındı."
+        ]
       },
       {
-        "surum": "0-14", "tarih": "2026-10-20", "durum": "sim", "geri_alindi": true,
-        "degisiklik": ["APRS alma: taşıyıcı koşulu kaldırıldı, teşhis ekranı eklendi. Gerçek telsizde çalışmadı."]
+        "surum": "0-15",
+        "tarih": "2026-10-20",
+        "durum": "gercek",
+        "degisiklik": [
+          "APRS alma, gerçek telsizde en iyi çalışan hâline (AT V0-7) döndürüldü: duyulan istasyonun çağrı işareti ekranda görünür. V0-11 … V0-14'teki denemeler geri alındı."
+        ]
       },
       {
-        "surum": "0-12", "tarih": "2026-10-19", "durum": "sim", "geri_alindi": true,
-        "degisiklik": ["APRS alma: kesme seli koruması, çözücü yalnız taşıyıcı varken. Gerçek telsizde hiçbir paket duyulmadı."]
+        "surum": "0-14",
+        "tarih": "2026-10-20",
+        "durum": "sim",
+        "geri_alindi": true,
+        "degisiklik": [
+          "APRS alma: taşıyıcı koşulu kaldırıldı, teşhis ekranı eklendi. Gerçek telsizde çalışmadı."
+        ]
       },
       {
-        "surum": "0-11", "tarih": "2026-10-19", "durum": "sim", "geri_alindi": true,
-        "yeni": ["APRS alma: paketin tamamı ekranda kayan yazı. Gerçek telsizde ilk paketten sonra takıldı."]
+        "surum": "0-12",
+        "tarih": "2026-10-19",
+        "durum": "sim",
+        "geri_alindi": true,
+        "degisiklik": [
+          "APRS alma: kesme seli koruması, çözücü yalnız taşıyıcı varken. Gerçek telsizde hiçbir paket duyulmadı."
+        ]
       },
       {
-        "surum": "0-7", "tarih": "2026-10-19", "durum": "gercek",
-        "yeni": ["APRS menüsündeyken hoparlör kapalı; paketler yine çözülür."]
+        "surum": "0-11",
+        "tarih": "2026-10-19",
+        "durum": "sim",
+        "geri_alindi": true,
+        "yeni": [
+          "APRS alma: paketin tamamı ekranda kayan yazı. Gerçek telsizde ilk paketten sonra takıldı."
+        ]
       },
       {
-        "surum": "0-6", "tarih": "2026-10-19", "durum": "gercek",
-        "yeni": ["APRS alma: duyulan istasyonların çağrı işaretleri ekranda (~4 s).", "Son duyulan 8 istasyonun listesi: * bir eskiye, # bir yeniye."]
+        "surum": "0-7",
+        "tarih": "2026-10-19",
+        "durum": "gercek",
+        "yeni": [
+          "APRS menüsündeyken hoparlör kapalı; paketler yine çözülür."
+        ]
       },
       {
-        "surum": "0-4", "tarih": "2026-10-19", "durum": "gercek",
-        "yeni": ["Telsiz APRS modundayken kapanırsa açılışta yine APRS modunda başlar (EEPROM 0x732)."]
+        "surum": "0-6",
+        "tarih": "2026-10-19",
+        "durum": "gercek",
+        "yeni": [
+          "APRS alma: duyulan istasyonların çağrı işaretleri ekranda (~4 s).",
+          "Son duyulan 8 istasyonun listesi: * bir eskiye, # bir yeniye."
+        ]
       },
       {
-        "surum": "0-3", "tarih": "2026-10-19", "durum": "gercek",
-        "duzeltme": ["APRS gönderme: paket yerine boş taşıyıcı gidiyordu (FX806 modülatörü vericide susturuluyordu)."]
+        "surum": "0-4",
+        "tarih": "2026-10-19",
+        "durum": "gercek",
+        "yeni": [
+          "Telsiz APRS modundayken kapanırsa açılışta yine APRS modunda başlar (EEPROM 0x732)."
+        ]
       },
       {
-        "surum": "0-2", "tarih": "2026-10-19", "durum": "gercek",
-        "degisiklik": ["SAYI, HESAP ve OYUN örnek menüleri bu firmware'den çıkarıldı (yer açmak için; ayrı HEX'lerde duruyor)."]
+        "surum": "0-3",
+        "tarih": "2026-10-19",
+        "durum": "gercek",
+        "duzeltme": [
+          "APRS gönderme: paket yerine boş taşıyıcı gidiyordu (FX806 modülatörü vericide susturuluyordu)."
+        ]
       },
       {
-        "surum": "0-1", "tarih": "2026-10-19", "durum": "gercek",
+        "surum": "0-2",
+        "tarih": "2026-10-19",
+        "durum": "gercek",
+        "degisiklik": [
+          "SAYI, HESAP ve OYUN örnek menüleri bu firmware'den çıkarıldı (yer açmak için; ayrı HEX'lerde duruyor)."
+        ]
+      },
+      {
+        "surum": "0-1",
+        "tarih": "2026-10-19",
+        "durum": "gercek",
         "yeni": [
           "İlk numaralı sürüm: açılışta 5 s yATOLYE, ardından AT V0-1.",
           "FREKANS menüsü: kanal tablosundan bağımsız alma / gönderme frekansı (VFO); ekranda VR / VT.",
@@ -66,12 +157,36 @@
       }
     ]
   },
-  "YA4000S.HEX": { "ad": "ASELSAN YA4000S", "ozet": "ASELSAN orijinal, STANDART VERSIYON (AS V2-30, 23.11.1999). Özel firmware'lerimizin tabanı; gerçek telsizden okunan flash ile aynı." },
-  "YA4000D.HEX": { "ad": "ASELSAN YA4000D", "ozet": "ASELSAN orijinal, DENIZ EL TELSIZI OPSIYONU. Standart sürümle aynı kod; yalnız açılıştaki opsiyon ayarı farklı." },
-  "YA4000K.HEX": { "ad": "ASELSAN YA4000K", "ozet": "ASELSAN orijinal, KONVANSIYONEL VERI OPSIYONU. Standart sürümle aynı kod; veri (sipariş / yazıcı) bölümü açık." },
-  "YA4000P.HEX": { "ad": "ASELSAN YA4000P", "ozet": "ASELSAN orijinal, DISPATCH-TELSIZ OPSIYONU. Standart sürümle aynı kod; yalnız açılıştaki opsiyon bayrağı farklı." },
-  "YA4000R.HEX": { "ad": "ASELSAN YA4000R", "ozet": "ASELSAN orijinal, KIRSAL ROLE TELSIZ OPSIYONU. Standart sürümle aynı kod; yalnız açılıştaki opsiyon bayrağı farklı." },
-  "YA4000V.HEX": { "ad": "ASELSAN YA4000V", "ozet": "ASELSAN orijinal, VOX DEVREDE TELSIZ OPSIYONU. Standart sürümle aynı kod; yalnız açılıştaki opsiyon bayrağı farklı." },
-  "YA4000Y.HEX": { "ad": "ASELSAN YA4000Y", "ozet": "ASELSAN orijinal, KABLOSUZ SES YAYIN OPSIYONU. Standart sürümle aynı kod; yalnız açılıştaki opsiyon ayarı farklı." },
-  "YA4000E.HEX": { "ad": "ASELSAN YA4000E", "ozet": "ASELSAN orijinal \"radio\" derlemesi (AS V2-51, 12.04.2002). Ayrı kaynak: RAM yerleşimi farklı, sipariş / yazıcı modülü genişletilmiş, pil yönetimi ve taramada TKS beklemesi değişmiş. Özel firmware yamalarımız bu sürüme uymaz." }
+  "YA4000S.HEX": {
+    "ad": "ASELSAN YA4000S",
+    "ozet": "ASELSAN orijinal, STANDART VERSIYON (AS V2-30, 23.11.1999). Özel firmware'lerimizin tabanı; gerçek telsizden okunan flash ile aynı."
+  },
+  "YA4000D.HEX": {
+    "ad": "ASELSAN YA4000D",
+    "ozet": "ASELSAN orijinal, DENIZ EL TELSIZI OPSIYONU. Standart sürümle aynı kod; yalnız açılıştaki opsiyon ayarı farklı."
+  },
+  "YA4000K.HEX": {
+    "ad": "ASELSAN YA4000K",
+    "ozet": "ASELSAN orijinal, KONVANSIYONEL VERI OPSIYONU. Standart sürümle aynı kod; veri (sipariş / yazıcı) bölümü açık."
+  },
+  "YA4000P.HEX": {
+    "ad": "ASELSAN YA4000P",
+    "ozet": "ASELSAN orijinal, DISPATCH-TELSIZ OPSIYONU. Standart sürümle aynı kod; yalnız açılıştaki opsiyon bayrağı farklı."
+  },
+  "YA4000R.HEX": {
+    "ad": "ASELSAN YA4000R",
+    "ozet": "ASELSAN orijinal, KIRSAL ROLE TELSIZ OPSIYONU. Standart sürümle aynı kod; yalnız açılıştaki opsiyon bayrağı farklı."
+  },
+  "YA4000V.HEX": {
+    "ad": "ASELSAN YA4000V",
+    "ozet": "ASELSAN orijinal, VOX DEVREDE TELSIZ OPSIYONU. Standart sürümle aynı kod; yalnız açılıştaki opsiyon bayrağı farklı."
+  },
+  "YA4000Y.HEX": {
+    "ad": "ASELSAN YA4000Y",
+    "ozet": "ASELSAN orijinal, KABLOSUZ SES YAYIN OPSIYONU. Standart sürümle aynı kod; yalnız açılıştaki opsiyon ayarı farklı."
+  },
+  "YA4000E.HEX": {
+    "ad": "ASELSAN YA4000E",
+    "ozet": "ASELSAN orijinal \"radio\" derlemesi (AS V2-51, 12.04.2002). Ayrı kaynak: RAM yerleşimi farklı, sipariş / yazıcı modülü genişletilmiş, pil yönetimi ve taramada TKS beklemesi değişmiş. Özel firmware yamalarımız bu sürüme uymaz."
+  }
 }

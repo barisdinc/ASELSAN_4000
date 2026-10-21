@@ -108,7 +108,7 @@ Telsiz 1–999 arasında bir sayı tutar.
 
 ## FREKANS kullanımı (VFO modu)
 
-İki adım: önce **alma (RX)**, sonra **gönderme (TX)** frekansı.
+Dört adım: **alma (RX)** frekansı, **gönderme (TX)** frekansı, **alma TKS (CTCSS) tonu**, **gönderme tonu** (tonlar AT V0-17 ile).
 
 | Tuş | İş |
 |---|---|
@@ -118,12 +118,21 @@ Telsiz 1–999 arasında bir sayı tutar.
 | `s` | Girişi temizle |
 | `#` (1. adım) | Alma frekansını hafızaya al (onay sesi). Ekranda `GONDERME` (İngilizce `TX FREQ`): şimdi gönderme frekansı girilir |
 | `0–9`, `*` | Gönderme frekansı, aynı şekilde: `160 65--` (çizgiler gönderme frekansının girildiğini gösterir) |
-| `#` (2. adım) | Ayarla (onay sesi): telsiz almada 1. frekansı, gönderirken 2. frekansı kullanır. Ekranda alma frekansı kalır |
+| `#` (2. adım) | Gönderme frekansını hafızaya al. Ekranda `RX TONE` (Türkçe `ALMA TON`) |
 | `#` (2. adımda hiç hane yokken) | Simplex: gönderme frekansı = alma frekansı |
-| `*` (2. adımda giriş boşken) | 1. adıma dön; alma frekansı düzeltilebilir |
+| `0–9` (3. adım) | Alma tonu, Hz, en çok 4 hane: ekranda `RT 885_`. Son hane ondalık: `885` = 88,5 Hz, `2503` = 250,3 Hz. 600'den küçük sayı tam Hz sayılır: `67` = 67,0, `100` = 100,0. En yakın standart ton seçilir; 1 Hz içinde ton yoksa `ERROR` |
+| `#` (3. adım) | Alma tonunu al. Boşken `#`: alma tonu değişmez (son kanalın ya da önceki VFO ayarının tonu); `0 #`: ton yok. Ekranda `TX TONE` (`GON TON`) |
+| `0–9`, `#` (4. adım) | Gönderme tonu, aynı şekilde (`TT 100_`). `#` **ayarlar** (onay sesi): telsiz almada 1. frekansı ve alma tonunu, gönderirken 2. frekansı ve gönderme tonunu kullanır. Boşken `#`: alma tonuyla aynı; `0 #`: ton yok |
+| `*` (giriş boşken) | Bir önceki adıma dön (4 → 3 → 2 → 1) |
 | `m` | Çık. Telsiz yeni frekanslarda kalır |
 
-Örnek: `156525#160650#` → alma 156,525 MHz, gönderme 160,650 MHz. `156525##` → ikisi de 156,525 MHz.
+Örnekler:
+- `156525#160650##` `#` → alma 156,525 MHz, gönderme 160,650 MHz, tonlar değişmez.
+- `156525####` → ikisi de 156,525 MHz, tonlar değişmez.
+- `145600#145000#0#885#` → röle: alma 145,600 MHz tonsuz, gönderme 145,000 MHz 88,5 Hz tonla.
+- `156525#160650#885##` → alma ve gönderme 88,5 Hz.
+
+**Tonlar:** Firmware'in 50 tonluk tablosu (67,0 … 254,1 Hz; kanal kaydındaki sıra numarası) kullanılır. Alma tonu `$0375`'in, gönderme tonu `$037C`'nin alt 6 bitine yazılır; üst bitler kanalın bayrakları olarak kalır. Gönderme tonu PTT'de hep gönderilir. Alma tonunda firmware tonu çözer (0x023A bit 12), ama hoparlörü yalnız tonla açması orijinal firmware'deki gibi panelden açılan TKS susturmasına bağlıdır (0x023E bit 0).
 
 **VFO modunda ekran:** Almadayken alma frekansı (`156 5250`), PTT'ye basılıyken gönderme frekansı (`160 6500`) görünür; PTT bırakılınca alma frekansına döner. Bu, normal ekranda da ayardan sonra açık kalan FREKANS menüsünde de olur. Başka bir menüdeyken ekran değiştirilmez, yalnız kanal adı güncellenir. İki haneli kanal numarası yerine almada **VR**, gönderirken **VT** yazar. 7 parçalı hanelerde V `U`, R `r`, T `t` biçiminde görünür. Kanala dönünce kanal numarası geri gelir.
 

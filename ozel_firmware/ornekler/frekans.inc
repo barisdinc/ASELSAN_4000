@@ -8,9 +8,19 @@
 ;   #        alma frekansını hafızaya al (onay sesi), ekranda "GONDERME" ("TX FREQ")
 ;                                                 2. adım: GÖNDERME (TX) frekansı
 ;   0-9 *    aynı şekilde gönderme frekansı: "160 65--" ('-' = gönderme frekansı giriliyor)
-;   #        ayarla: telsiz RX'te 1. frekansı, TX'te 2. frekansı kullanır (onay sesi)
+;   #        gönderme frekansını hafızaya al, ekranda "RX TONE" ("ALMA TON")
 ;            hiç hane girmeden # = gönderme de alma frekansında (simplex)
 ;   * (boşken) 1. adıma, alma frekansına geri dön
+;                                                 3. adım: ALMA TKS (CTCSS) tonu, "RT  88 5"
+;   0-9      ton, Hz: son hane ondalık (885 = 88,5 Hz, 2503 = 250,3 Hz); 600'den küçük sayı tam
+;            Hz sayılır (67 = 67,0 Hz, 100 = 100,0 Hz). En yakın standart ton seçilir (1 Hz içinde)
+;   0 #      ton yok;  hiç hane girmeden # = tonu değiştirme (son kanalın / VFO'nun tonu kalır)
+;   #        ekranda "TX TONE" ("GON TON")
+;                                                 4. adım: GÖNDERME tonu, "TT  88 5"
+;   0-9 * #  aynı şekilde; hiç hane girmeden # = alma tonuyla aynı
+;   #        ayarla: telsiz RX'te 1. frekansı ve alma tonunu, TX'te 2. frekansı ve gönderme
+;            tonunu kullanır (onay sesi)
+;   * (boşken) bir önceki adıma dön
 ;   s        girişi temizle
 ;   m        çık (telsiz yeni frekanslarda kalır; kanal anahtarı çevrilince kanala döner)
 ; FREKANS açıkken firmware'in ~4 s'lik menü zaman aşımı kapalıdır (VFO_KANCA sayacı yeniler).
@@ -66,8 +76,16 @@ VFO_TX_KAYIT .EQU OZEL_RAM+$78  ; 5 bayt: gönderme frekansınınkiler
 VFO_METIN   .EQU OZEL_RAM+$7D   ; 8 bayt alma frekansı metni, ardından 8 bayt gönderme
 VFO_RX_HANE .EQU OZEL_RAM+$8D   ; 7 bayt: alma frekansının haneleri (geri dönmek / simplex için)
 
+VFO_RX_TON  .EQU OZEL_RAM+$94   ; alma tonu sıra numarası (0 = yok, 1..50), FR_UYGULA $0375'e yazar
+VFO_TX_TON  .EQU OZEL_RAM+$95   ; gönderme tonu ($037C)
+FR_TON      .EQU OZEL_RAM+$96   ; 2 bayt: girilen ton, 0,1 Hz
+
 F_HATA_G    .EQU 1
 F_TX_ADIM   .EQU 2
+F_RXTON     .EQU 4              ; 3. adım: alma tonu
+F_TXTON     .EQU 8              ; 4. adım: gönderme tonu
+F_TON       .EQU F_RXTON|F_TXTON
+TON_YOK     .EQU $FF            ; FR_TON_COZ: hane girilmedi
 VFO_IMZA_D  .EQU $4656          ; "VF"
 
 SYN_KAYIT   .EQU $0370          ; geçerli kanalın sentezör kaydı (13 bayt)
@@ -164,8 +182,16 @@ FK_SIL: .ASSUME M=1,X=0
         BEQ   FK_GERI
         DEC   FR_NDIG
         BRA   FK_SON
-FK_GERI:                                ; boşken *: gönderme adımından alma adımına dön
-        BBC   #F_TX_ADIM,FR_DURUM,FK_SON
+FK_GERI:                                ; boşken *: bir önceki adıma dön
+        BBC   #F_TXTON,FR_DURUM,FK_G1
+        CLB   #F_TXTON,FR_DURUM         ; gönderme tonu -> alma tonu
+        SEB   #F_RXTON,FR_DURUM
+        BRA   FK_SON
+FK_G1:  BBC   #F_RXTON,FR_DURUM,FK_G2
+        CLB   #F_RXTON,FR_DURUM         ; alma tonu -> gönderme frekansı (boş: # = simplex)
+        SEB   #F_TX_ADIM,FR_DURUM
+        BRA   FK_SON
+FK_G2:  BBC   #F_TX_ADIM,FR_DURUM,FK_SON
         CLB   #F_TX_ADIM,FR_DURUM
         CLM
         JSR   FR_RX_HANELER
@@ -189,14 +215,21 @@ FK_RAKAM:
         SEM
         CPX   #7
         BCS   FK_BIP
+        BBC   #F_TON,FR_DURUM,FK_HANE   ; ton adımında en çok 4 hane
+        CPX   #4
+        BCS   FK_BIP
+FK_HANE:
         LDA   A,FR_T
         STA   A,FR_HANE,X
         INC   FR_NDIG
-        BRA   FK_SON
+        JMP   FK_SON
 
 ; ---- # : alma frekansını sakla ya da (2. adımda) ayarla
 FK_AYARLA:
         .ASSUME M=1,X=0
+        BBC   #F_TON,FR_DURUM,FA_FREK
+        JMP   FA_TON
+FA_FREK:
         BBC   #F_TX_ADIM,FR_DURUM,FA_0
         LDA   A,FR_NDIG                 ; 2. adımda hane yoksa: simplex
         BNE   FA_0
@@ -205,11 +238,13 @@ FK_AYARLA:
         SEM
 FA_0:   LDA   A,FR_NDIG
         CMP   A,#6
-        BCC   FK_HATA
+        BCC   FA_HATA
         BBC   #F_TX_ADIM,FR_DURUM,FA_HESAP
         LDA   A,RADYO_DURUM             ; göndermedeyken değiştirme
         CMP   A,#4
-        BCS   FK_HATA
+        BCC   FA_HESAP
+FA_HATA:
+        JMP   FK_HATA
 FA_HESAP:
         CLM
         JSR   FR_HESAPLA                ; C = 1: geçersiz frekans
@@ -239,15 +274,48 @@ FA_RXH: LDA   A,FR_HANE,X
         SEB   #F_TX_ADIM,FR_DURUM
         LDM   #0,FR_NDIG
         BRA   FA_ONAY
-FA_TX:  ; 2. adım: gönderme frekansı (kayma yok) -> telsizi ayarla
+FA_TX:  ; 2. adım: gönderme frekansı (kayma yok) -> sakla, alma tonuna geç
         CLM
         LDA   A,#0
         JSR   FR_SENTEZ
         LDX   #5
         JSR   FR_SAKLA
-        JSR   FR_UYGULA                 ; sentezör kaydı, kanal adı, RX'i yeniden yükle
         SEM
         CLB   #F_TX_ADIM,FR_DURUM
+        SEB   #F_RXTON,FR_DURUM
+        LDM   #0,FR_NDIG
+        BRA   FA_ONAY
+
+; ---- # : 3. adım alma tonu, 4. adım gönderme tonu (ve telsizi ayarla)
+FA_TON: .ASSUME M=1,X=0
+        CLM
+        JSR   FR_TON_COZ                ; A = sıra numarası / TON_YOK, C = 1: geçersiz
+        SEM
+        BCC   FT_1
+        JMP   FK_HATA
+FT_1:   BBC   #F_RXTON,FR_DURUM,FT_TX
+        CMP   A,#TON_YOK                ; boş: şimdiki alma tonu kalır
+        BNE   FT_RX
+        LDA   A,SYN_KAYIT+5
+        AND   A,#$3F
+FT_RX:  STA   A,VFO_RX_TON
+        CLB   #F_RXTON,FR_DURUM
+        SEB   #F_TXTON,FR_DURUM
+        LDM   #0,FR_NDIG
+        BRA   FA_ONAY
+FT_TX:  CMP   A,#TON_YOK                ; boş: alma tonuyla aynı
+        BNE   FT_TX2
+        LDA   A,VFO_RX_TON
+FT_TX2: STA   A,VFO_TX_TON
+        LDA   A,RADYO_DURUM             ; göndermedeyken değiştirme
+        CMP   A,#4
+        BCC   FT_UYGULA
+        JMP   FK_HATA
+FT_UYGULA:
+        CLM
+        JSR   FR_UYGULA                 ; sentezör kaydı, tonlar, kanal adı, RX'i yeniden yükle
+        SEM
+        CLB   #F_TXTON,FR_DURUM
         CLM
         JSR   FR_RX_HANELER             ; ekranda alma frekansı kalır
 FA_ONAY:
@@ -258,6 +326,91 @@ FA_ONAY:
 
 ; ---------------------------------------------------------------------------------------------
 ; Alt yordamlar (JSR / RTS, M=0 giriş ve çıkış). Firmware fonksiyonu çağırmazlar.
+
+; FR_HANE (en çok 4 hane) -> A = ton sıra numarası (0 = yok, 1..50), TON_YOK = hane yok.
+; Son hane ondalık; 600'den küçük sayı tam Hz. En yakın tablo tonu, 1 Hz'den uzaksa C = 1.
+FR_TON_COZ:
+        .ASSUME M=0,X=0
+        SEM
+        LDA   A,FR_NDIG
+        CLM
+        AND   A,#$00FF
+        BNE   FTC_1
+        LDA   A,#TON_YOK
+        CLC
+        RTS
+FTC_1:  LDM   #0,FR_TON
+        LDX   #0
+FTC_HANE:
+        LDA   A,FR_TON                  ; FR_TON = FR_TON * 10 + hane
+        ASL   A
+        STA   A,FR_T
+        ASL   A
+        ASL   A
+        CLC
+        ADC   A,FR_T
+        STA   A,FR_TON
+        LDA   A,FR_HANE,X
+        AND   A,#$000F
+        CLC
+        ADC   A,FR_TON
+        STA   A,FR_TON
+        INX
+        SEM
+        TXA
+        CMP   A,FR_NDIG
+        CLM
+        BNE   FTC_HANE
+        LDA   A,FR_TON
+        BNE   FTC_2
+        CLC                             ; 0 = ton yok
+        RTS
+FTC_2:  CMP   A,#600                    ; tam Hz yazılmış: 0,1 Hz'e çevir
+        BCS   FTC_3
+        ASL   A
+        STA   A,FR_T
+        ASL   A
+        ASL   A
+        CLC
+        ADC   A,FR_T
+        STA   A,FR_TON
+FTC_3:  LDM   #$FFFF,FR_T               ; en iyi fark
+        LDX   #0                        ; tablo indeksi * 2
+FTC_ARA:
+        SEC
+        LDA   A,FR_TON
+        SBC   A,>TON_TABLO,X
+        BCS   FTC_POZ
+        EOR   A,#$FFFF
+        INC   A
+FTC_POZ:
+        CMP   A,FR_T
+        BCS   FTC_SONRAKI
+        STA   A,FR_T
+        STX   FR_T+2
+FTC_SONRAKI:
+        INX
+        INX
+        CPX   #2*50
+        BNE   FTC_ARA
+        LDA   A,FR_T
+        CMP   A,#11                     ; 1 Hz içinde mi
+        BCS   FTC_YOK
+        LDA   A,FR_T+2
+        LSR   A
+        INC   A                         ; sıra numarası 1..50
+        CLC
+        RTS
+FTC_YOK:
+        SEC
+        RTS
+
+; TKS tonları, 0,1 Hz; firmware'in sıra numarası 1..50 (ROM $2385 periyot tablosuyla aynı sıra)
+TON_TABLO:
+        .WORD 670,719,744,770,797,825,854,885,915,948,974,1000,1035,1072,1109,1148
+        .WORD 1188,1230,1273,1318,1365,1413,1462,1514,1567,1622,1679,1738,1799,1862,1928,2035
+        .WORD 2107,2181,2257,2336,2418,2503,693,1598,1655,1713,1773,1835,1899,1966,1995,2065
+        .WORD 2291,2541
 
 ; FR_HANE -> FR_FU (2,5 kHz birim), FR_KELIME, FR_D, FR_DP, FR_KOD, FR_RW.  C = 1: geçersiz
 FR_HESAPLA:
@@ -533,6 +686,14 @@ FU_1:   LDA   A,VFO_RX_KAYIT,X
         INX
         CPX   #5
         BNE   FU_1
+        LDA   A,SYN_KAYIT+5             ; tonlar: alt 6 bit; üst bitler kanalın bayrakları
+        AND   A,#$C0                    ; ($0375: kristal kaydırma, seçmeli çağrı)
+        ORA   A,VFO_RX_TON
+        STA   A,SYN_KAYIT+5
+        LDA   A,SYN_KAYIT+12
+        AND   A,#$C0
+        ORA   A,VFO_TX_TON
+        STA   A,SYN_KAYIT+12
         LDX   #0                        ; kaydın kopyası ($0363)
 FU_2:   LDA   A,SYN_KAYIT,X
         STA   A,SYN_YEDEK,X
@@ -734,6 +895,9 @@ FE_TR:  .ASSUME M=1,X=0
         RTS
 FE_GIRIS:                               ; 2. adımda giriş boşken: "GONDERME" / "TX FREQ"
         .ASSUME M=1,X=0
+        BBC   #F_TON,FR_DURUM,FE_FREK
+        JMP   FE_TON
+FE_FREK:
         BBC   #F_TX_ADIM,FR_DURUM,FE_HANE
         LDA   A,FR_NDIG
         BNE   FE_HANE
@@ -786,6 +950,57 @@ FM_KOY: STA   A,LCD,Y
         BNE   FM_DON
         CLM
         RTS
+
+; ton adımları: boşken "RX TONE" / "ALMA TON" ("TX TONE" / "GON TON"), hane varken "RT 885_"
+FE_TON: .ASSUME M=1,X=0
+        LDA   A,FR_NDIG
+        BNE   FET_HANE
+        LDX   #0                        ; metin: [RX/TX][EN/TR], 8'er bayt
+        BBC   #F_TXTON,FR_DURUM,FET_1
+        LDX   #16
+FET_1:  BBC   #$80,OPTIONS,FET_2
+        CLM
+        TXA
+        CLC
+        ADC   A,#8
+        TAX
+        SEM
+FET_2:  LDY   #0
+FET_3:  LDA   A,>TXT_FR_TON,X
+        STA   A,LCD,Y
+        INX
+        INY
+        CPY   #8
+        BNE   FET_3
+        CLM
+        RTS
+FET_HANE:
+        .ASSUME M=1,X=0
+        LDA   A,#'R'
+        BBC   #F_TXTON,FR_DURUM,FET_4
+        LDA   A,#'T'
+FET_4:  STA   A,LCD
+        LDM   #'T',LCD+1
+        LDM   #' ',LCD+2
+        LDM   #' ',LCD+7
+        LDX   #0
+FET_5:  TXA
+        CMP   A,FR_NDIG
+        LDA   A,#'_'                    ; LDA C'yi değiştirmez
+        BCS   FET_6
+        LDA   A,FR_HANE,X
+FET_6:  STA   A,LCD+3,X
+        INX
+        CPX   #4
+        BNE   FET_5
+        CLM
+        RTS
+
+TXT_FR_TON:
+        .TEXT8 "RX TONE"
+        .TEXT8 "ALMA TON"
+        .TEXT8 "TX TONE"
+        .TEXT8 "GON TON"
 
 TXT_FR_ERROR:
         .TEXT8 "ERROR"
