@@ -57,3 +57,4 @@ TITLES_TR:
         .INCLUDE "secmeli_kaldir.inc"   ; seçmeli çağrı kaldırıldı, ~4,1 KB boşaltıldı
         .INCLUDE "tarama_tks.inc"       ; taramada TKS bekleme süresi uzun (ASELSAN V2-51/V2-54)
         .INCLUDE "yazici_kaldir.inc"    ; YAZICI menüsü ve yazıcı çıkışı yok
+        .INCLUDE "ozellik_kaldir.inc"   ; trunk, veri mesajı, ses yayın, # arama, servis kapalı

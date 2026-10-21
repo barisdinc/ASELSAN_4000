@@ -40,9 +40,9 @@
         "aciklama": "Orijinal tarama (LIST menüsü + p tuşu) çalışır; TKS'li kanallarda ton için daha uzun bekleme (ASELSAN V2-51 / V2-54'ten)."
       },
       {
-        "baslik": "Seçmeli çağrı yok",
+        "baslik": "Sadeleştirilmiş firmware",
         "surum": "0-1",
-        "aciklama": "Select-5 (CCIR / ZVEI / EEA) kodu kaldırıldı; yer yeni özelliklere açıldı. # ile çağrı ve PTT kimliği gönderilmez."
+        "aciklama": "Select-5 (CCIR / ZVEI / EEA) kodu ve '#' ile arama kaldırıldı; yer yeni özelliklere açıldı. Trunk, veri mesajı, ses yayın, yazıcı ve servis terminali de kapalı (V0-19 / V0-21)."
       },
       {
         "baslik": "Açılış ekranı ve sürüm",
@@ -51,6 +51,14 @@
       }
     ],
     "surumler": [
+      {
+        "surum": "0-21",
+        "tarih": "2026-10-21",
+        "durum": "sim",
+        "degisiklik": [
+          "Kullanılmayan özellikler kapatıldı (kod çalışmaz, giriş noktaları kesildi): trunk / RADIO (TELSIZ) modu, veri mesajı ve sipariş baskısı ('*' tuşu, seri komut 80 / 82), kablosuz ses yayın, '#' ile seçmeli çağrı araması, seri servis terminali (0xF8, 2400 baud), '*' servis / test modu. Seri programlama protokolü aynı."
+        ]
+      },
       {
         "surum": "0-19",
         "tarih": "2026-10-21",

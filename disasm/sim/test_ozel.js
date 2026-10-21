@@ -601,6 +601,31 @@ if (RING.includes('FREQ')) {
   check('taramada TKS bekleme 67 Hz: 15 + 10 = 25 adım (800 ms)', ilk === 25, '0x020A = ' + ilk);
 }
 
+/* kapatılan özellikler (ozellik_kaldir.inc): trunk, veri mesajı / sipariş, ses yayın, servis terminali,
+ * '*' test modu, '#' ile seçmeli çağrı araması. Seçenekleri açık bir B tipi telsizde bu fonksiyonların
+ * hiçbirine girilmemeli; '#' "C GG___" açmamalı, 0xF8 seri portu 2400'e almamalı */
+if (RING.includes('FREQ')) {
+  const GIR = { trunk: 0x00C91C, trunk_ui: 0x016767, radio_menu: 0x004C59, veri_tus: 0x014A76, veri_kanal: 0x014AB3,
+    veri_seri: 0x014EB2, ses_yayin: 0x01691C, servis: 0x0099BD, test_modu: 0x01CA08 };
+  const b = radio(ee => { ee[0x000] |= 0x14; ee[0x014] |= 0x0C; ee[0x58B] |= 0x12;
+    for (let n = 1; n <= 16; n++) ee[0x2E + (n - 1) * 13 + 4] |= 0x80;
+    ee[0x54B] |= 0x10; let t = 0; for (let a = 0x54B; a <= 0x551; a++) t += ee[a]; ee[0x552] = t >> 8 & 255; ee[0x553] = t & 255; });
+  b.hwArac = true; b.inputs.P4 = 0xCF; b.panel.setExt(0xBF, b);
+  const hit = new Set(); for (const a of Object.values(GIR)) b.breakpoints.add(a);
+  const run = sec => { const end = b.now + FCLK * sec; while (b.now < end) if (b.run(end - b.now) === 'break') { const pc = b.cpu.PG << 16 | b.cpu.PC; hit.add(Object.keys(GIR).find(k => GIR[k] === pc)); b.breakpoints.delete(pc); } };
+  run(2.6 + (b.rom[0xE0E1] === 0x5C ? 5.5 : 0));
+  const tus = k => { const i = KP.indexOf(k); b.keypad.press(i, true, b); run(0.15); b.keypad.press(i, false, b); run(0.6); return lcd(b); };
+  const halka = []; for (let k = 0; k < 8; k++) halka.push(tus('m'));
+  for (let k = 0; k < 10 && !/^KANAL/.test(lcd(b)); k++) tus('m');
+  const diyez = tus('#'), yildiz = tus('*');
+  b.serialIn([0xF8]); run(1);
+  check('kapatılan özellikler: trunk / veri / ses yayın / servis / test koduna girilmiyor, RADIO ve YAZICI menüde yok',
+    hit.size === 0 && !(b.ram[0x246] & 2) && !halka.some(t => /RADIO|TELSIZ|PRINTER|YAZICI/.test(t)),
+    'giren: ' + ([...hit].join(',') || 'yok') + ' | ' + halka.join('|'));
+  check("'#' seçmeli çağrı araması açmıyor, 0xF8 seri portu 2400'e almıyor", !/^C /.test(diyez) && /^KANAL/.test(yildiz) && b.sfr[0x31] === 25,
+    '# -> "' + diyez + '", * -> "' + yildiz + '", U0BRG ' + b.sfr[0x31]);
+}
+
 /* boot screen built into the ROM (acilis_yatolye.inc): 5 s, independent of the EEPROM */
 if (new Board(rom).rom[0xE0E1] === 0x5C) {
   for (const [name, mod] of [['varsayılan EEPROM', null], ['Türkçe + UHF EEPROM', ee => { ee[0x018] |= 0x80; ee[0x58C] = 0x3E; ee[0x58D] = 0x80; }]]) {

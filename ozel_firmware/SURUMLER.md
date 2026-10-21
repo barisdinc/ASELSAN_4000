@@ -5,7 +5,7 @@ Aynı notlar sitede: [surumler.html](https://barisdinc.github.io/ASELSAN_4000/su
 
 ## yATOLYE özel firmware'i (`YA4000S_FREKANS_YATOLYE.HEX`)
 
-Güncel sürüm: **AT V0-19** (21.10.2026)
+Güncel sürüm: **AT V0-21** (21.10.2026)
 
 Orijinal YA4000S (AS V2-30) üzerine FREKANS (VFO) menüsü, APRS gönderme / alma, seçmeli çağrı kaldırıldı, açılışta 5 s yATOLYE.
 
@@ -18,10 +18,14 @@ Orijinal YA4000S (AS V2-30) üzerine FREKANS (VFO) menüsü, APRS gönderme / al
 - **APRS'te sessiz hoparlör** (AT V0-7 ile geldi): APRS menüsündeyken bip, uyarı ve hoparlör kapalı; alma çözücüsü çalışmaya devam eder.
 - **APRS modunu hatırlama** (AT V0-4 ile geldi): Telsiz APRS menüsündeyken kapatılırsa açılışta yine APRS'te başlar (EEPROM 0x732).
 - **Tarama** (AT V0-16 ile geldi): Orijinal tarama (LIST menüsü + p tuşu) çalışır; TKS'li kanallarda ton için daha uzun bekleme (ASELSAN V2-51 / V2-54'ten).
-- **Seçmeli çağrı yok** (AT V0-1 ile geldi): Select-5 (CCIR / ZVEI / EEA) kodu kaldırıldı; yer yeni özelliklere açıldı. # ile çağrı ve PTT kimliği gönderilmez.
+- **Sadeleştirilmiş firmware** (AT V0-1 ile geldi): Select-5 (CCIR / ZVEI / EEA) kodu ve '#' ile arama kaldırıldı; yer yeni özelliklere açıldı. Trunk, veri mesajı, ses yayın, yazıcı ve servis terminali de kapalı (V0-19 / V0-21).
 - **Açılış ekranı ve sürüm** (AT V0-1 ile geldi): Açılışta 5 s yATOLYE, ardından AT V0-x sürüm numarası. Sürüm, tarih ve metin ROM başlığında; T4000 ve yükleme sayfası da gösterir.
 
 ### Sürüm geçmişi
+
+#### AT V0-21 · 21.10.2026 · yalnız simülatörde denendi
+
+- Değişiklik: Kullanılmayan özellikler kapatıldı (kod çalışmaz, giriş noktaları kesildi): trunk / RADIO (TELSIZ) modu, veri mesajı ve sipariş baskısı ('*' tuşu, seri komut 80 / 82), kablosuz ses yayın, '#' ile seçmeli çağrı araması, seri servis terminali (0xF8, 2400 baud), '*' servis / test modu. Seri programlama protokolü aynı.
 
 #### AT V0-19 · 21.10.2026 · yalnız simülatörde denendi
 

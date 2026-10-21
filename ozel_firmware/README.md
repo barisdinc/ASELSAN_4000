@@ -278,6 +278,21 @@ Seçmeli çağrı (ANI) kaldırıldığı için kullanılmıyor ve APRS seri ç�
 
 Ayrıca `aprs_seri.inc` APRS menüsündeyken `F_007809`'u susturur. Seri port artık her zaman 9600 8N1.
 
+## Kullanılmayan özelliklerin kapatılması
+
+`ornekler/ozellik_kaldir.inc` (AT V0-21). Çağrı grafiğinden (her alt sistemin yalnız kendine ait kodu) bulunan özelliklerin giriş noktaları kesildi; kod flash'ta kalır ama hiçbir yoldan çalışmaz:
+
+| Özellik | Kod | Kapatılan giriş |
+|---|---|---|
+| Trunk: RADIO / TELSIZ modu (MPT1327 benzeri; ROAMING, PBX, FLEET, SDATA) | ~20,7 KB | ana döngüde 0x0246 bit 1 dalı (0x01A78C), RADIO menüsü (0x0055E1), bit 1'i kuran 4 yer |
+| Veri mesajı / sipariş baskısı (FFSK, yazıcı) | ~6,1 KB | `*` tuşu (0x00575A), kanal ekranı (0x003771), seri komut 80 / 82 |
+| Kablosuz ses yayın (Y opsiyonu) | ~5,2 KB | ana döngüde 0x0335 bit 4 dalı (0x01A761) |
+| `#` ile seçmeli çağrı araması (`C GG___`) | — | 0x00378E |
+| Seri servis terminali (0xF8, 2400 baud S-record) | ~1,7 KB | alma kesmesi 0x0194C0 |
+| `*` servis / test modu (`HELP 1 FLASH 3 EEPROM`) | ~4,1 KB | 0x00575A (zaten ROM 0x0100FF = 1 ister) |
+
+Not: S sürümünün opsiyon fonksiyonu (0x010630) trunk (0x334 bit 4) ve ses yayın (0x335 bit 4) bitlerini açılışta zaten siliyordu; bu iki mod tabanımızda hiç çalışmıyordu, RAM'leri boş sayılabilir. Seri programlama protokolü (yükleme sayfası, T4000) değişmedi. `test_ozel.js` seçenekleri açık bir B tipi telsizde bu fonksiyonlara hiç girilmediğini denetler.
+
 ## Seçmeli çağrının kaldırılması
 
 

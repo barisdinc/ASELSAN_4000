@@ -2603,7 +2603,57 @@
 00908D                               .ASSUME M=1,X=0
 00908D  80 08                        BRA   YK_ATLA
 00908F  EA EA                        .BYTE $EA,$EA
-009091  00 00 00 00 00 00 …          .ORG $00E0E1                    ; F_00E0E1: LDA A,$04,S / PHD / TAD
+009091  00 00 00 00 00 00 …          .ORG $01A78C                    ; ana döngü: BBC #$02,$0246 -> hep konvansiyonel dal
+01A78C                               .EXPECT $3C,$46,$02,$02,$14
+01A78C                               .ASSUME M=1,X=0
+01A78C  80 17                        BRA   OK_KONV
+01A78E  EA EA EA                     .BYTE $EA,$EA,$EA
+01A791                               .ORG $0055E1                    ; menü: RADIO (durum $11) her zaman atlanır -> 4 -> 8
+0055E1                               .EXPECT $3C,$34,$03,$10,$05
+0055E1                               .ASSUME M=1,X=0
+0055E1  80 08                        BRA   OK_RADIO_ATLA
+0055E3  EA EA EA                     .BYTE $EA,$EA,$EA
+0055E6                               .ORG $004CEE                    ; RADIO menüsü işleyicisi: SEB #$0002,$0246
+004CEE                               .EXPECT $0C,$46,$02,$02,$00
+004CEE  EA EA EA EA EA               .BYTE $EA,$EA,$EA,$EA,$EA
+004CF3  00 00 00 00 00 00 …          .ORG $0067C2                    ; A tipi kart, kanal anahtarı >= 15 ve trunk opsiyonu
+0067C2                               .EXPECT $0C,$46,$02,$02,$00
+0067C2  EA EA EA EA EA               .BYTE $EA,$EA,$EA,$EA,$EA
+0067C7  00 00 00 00 00 00 …          .ORG $008F64                    ; açılış: EE 0x000 bit 4 (trunk opsiyonu)
+008F64                               .EXPECT $0C,$46,$02,$02,$00
+008F64  EA EA EA EA EA               .BYTE $EA,$EA,$EA,$EA,$EA
+008F69  00 00 00 00 00 00 …          .ORG $00909D                    ; açılış: kayıtlı mod (EE 0x54B bit 4)
+00909D                               .EXPECT $0C,$46,$02,$02,$00
+00909D  EA EA EA EA EA               .BYTE $EA,$EA,$EA,$EA,$EA
+0090A2                               .ORG $00575A                    ; normal ekranda '*': JSRL F_01CA08 / JSRL F_014A76
+00575A                               .EXPECT $22,$08,$CA,$01,$22,$76,$4A,$01
+00575A  EA EA EA EA EA EA …          .BYTE $EA,$EA,$EA,$EA,$EA,$EA,$EA,$EA
+005762                               .ORG $003771                    ; kanal ekranı: JSRL F_014AB3 (A = 0: işlenmedi)
+003771                               .EXPECT $22,$B3,$4A,$01,$C9,$00
+003771                               .ASSUME M=0,X=0
+003771  F8                           SEM                             ; char fonksiyonu gibi M = 1, A = 0
+003772  A9 00                        LDA   A,#$00
+003774  EA                           NOP
+003775  00 00 00 00 00 00 …          .ORG $01A278                    ; seri komut 80: JSRL F_014EB2
+01A278                               .EXPECT $22,$B2,$4E,$01
+01A278  EA EA EA EA                  .BYTE $EA,$EA,$EA,$EA
+01A27C  00 00 00 00 00 00 …          .ORG $01A29A                    ; seri komut 82
+01A29A                               .EXPECT $22,$B2,$4E,$01
+01A29A  EA EA EA EA                  .BYTE $EA,$EA,$EA,$EA
+01A29E  00 00 00 00 00 00 …          .ORG $01A761                    ; ana döngü: BBC #$10,$0335 -> hep atla
+01A761                               .EXPECT $3C,$35,$03,$10,$05
+01A761                               .ASSUME M=1,X=0
+01A761  80 08                        BRA   OK_YAYIN_YOK
+01A763  EA EA EA                     .BYTE $EA,$EA,$EA
+01A766                               .ORG $00378E                    ; BBS #$04,$033F,L_003796 -> düşer: JMP L_003A1E (normal)
+00378E                               .EXPECT $2C,$3F,$03,$04,$03
+00378E  EA EA EA EA EA               .BYTE $EA,$EA,$EA,$EA,$EA
+003793  00 00 00 00 00 00 …          .ORG $0194C0                    ; BBC #$04,$0334,L_0194CA -> hep atla
+0194C0                               .EXPECT $3C,$34,$03,$04,$05
+0194C0                               .ASSUME M=1,X=0
+0194C0  80 08                        BRA   OK_SERVIS_YOK
+0194C2  EA EA EA                     .BYTE $EA,$EA,$EA
+0194C5                               .ORG $00E0E1                    ; F_00E0E1: LDA A,$04,S / PHD / TAD
 00E0E1                               .EXPECT $A3,$04,$0B,$5B
 00E0E1                               .ASSUME M=0,X=0
 00E0E1  5C 00 20 01                  JMPL  ACILIS
@@ -2839,6 +2889,7 @@ SINUS                    $0028FA
 TERS_TABLO               $002B06
 ARTIM_SPACE              $003AAB
 VFO_IMZA_D               $004656
+OK_RADIO_ATLA            $0055EB
 YK_ALT_MENU              $005600
 F_EE_OKU                 $0072EE
 F_EE_YAZ                 $0073C6
@@ -3222,4 +3273,7 @@ RCY_DOLDUR               $0131A3
 RCY_SON                  $0131B0
 SC_KOD_ADRES             $0131B1
 SC_TA1                   $0131B1
+OK_SERVIS_YOK            $0194CA
+OK_YAYIN_YOK             $01A76B
+OK_KONV                  $01A7A5
 TB1_ORIJINAL             $01C627
