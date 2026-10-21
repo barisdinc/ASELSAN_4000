@@ -188,3 +188,30 @@ AY_KOY:
         PLY
         PLX
         RTS
+
+AS_KOD_SON  .EQU *
+; ---------------------------------------------------------------------------------------------
+; Firmware'in çağrı günlüğü (F_007809, Y = olay; B tipi kartta 0x0240 bit 8 açıkken UART0'a
+; "4       ·01/01 00:02" gibi satırlar yazar: PTT'de durum 4, alınan çağrılar ...). APRS
+; menüsündeyken susturulur: seri portta yalnız APRS satırları olsun. Giriş 4 baytı (LDA A,$04,S /
+; PHD / TAD) yerine JMPL; menü dışında aynı komutlar yapılıp 0x00780D'ye dönülür.
+F_GUNLUK    .EQU $007809
+        .ORG F_GUNLUK
+        .EXPECT $A3,$04,$0B,$5B
+        .ASSUME M=0,X=0
+        JMPL  GUNLUK_KANCA
+        .ORG AS_KOD_SON
+
+GUNLUK_KANCA:
+        .ASSUME M=0,X=0
+        SEM
+        LDA   A,MENU
+        CMP   A,#ST_APRS_ON
+        CLM
+        BNE   GK_DEVAM
+        RTL                             ; APRS: günlük yazılmaz (çağıran JSRL ile geldi)
+GK_DEVAM:
+        LDA   A,$04,S                   ; orijinal giriş
+        PHD
+        TAD
+        JMPL  F_GUNLUK+4

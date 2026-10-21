@@ -5,7 +5,7 @@ Aynı notlar sitede: [surumler.html](https://barisdinc.github.io/ASELSAN_4000/su
 
 ## yATOLYE özel firmware'i (`YA4000S_FREKANS_YATOLYE.HEX`)
 
-Güncel sürüm: **AT V0-18** (21.10.2026)
+Güncel sürüm: **AT V0-19** (21.10.2026)
 
 Orijinal YA4000S (AS V2-30) üzerine FREKANS (VFO) menüsü, APRS gönderme / alma, seçmeli çağrı kaldırıldı, açılışta 5 s yATOLYE.
 
@@ -22,6 +22,12 @@ Orijinal YA4000S (AS V2-30) üzerine FREKANS (VFO) menüsü, APRS gönderme / al
 - **Açılış ekranı ve sürüm** (AT V0-1 ile geldi): Açılışta 5 s yATOLYE, ardından AT V0-x sürüm numarası. Sürüm, tarih ve metin ROM başlığında; T4000 ve yükleme sayfası da gösterir.
 
 ### Sürüm geçmişi
+
+#### AT V0-19 · 21.10.2026 · yalnız simülatörde denendi
+
+- Düzeltme: APRS menüsünde gönderirken seri porta "4       ·01/01 00:02" gibi bir satır çıkıyordu: B tipi kartta YAZICI açıkken firmware'in yazdığı çağrı günlüğü. Yazıcı açıkken seri port 9600 yerine 2400 baud'a da geçiyordu.
+- Değişiklik: YAZICI / PRINTER menüsü (yazıcı, tarih, saat) kaldırıldı; EEPROM'da açık kalmışsa da açılışta kapalı başlar. Seri port her zaman 9600 8N1. Seçmeli çağrı (ANI) olmadan kullanım alanı yoktu.
+- Değişiklik: APRS menüsündeyken firmware'in çağrı günlüğü ayrıca susturuldu: seri portta yalnız APRS satırları.
 
 #### AT V0-18 · 21.10.2026 · yalnız simülatörde denendi
 

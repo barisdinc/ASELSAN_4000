@@ -463,6 +463,22 @@ if (RING.includes('APRS')) {
     const a1 = yenidenAc(ea, true); for (let k = 0; k < 16 && lcd(a1) !== 'APRS    '; k++) keys(a1, 'm'); keys(a1, 's'); a1.run(FCLK * 0.3);   // araçta menü halkası farklı (CHN SCAN ...)
     const a2 = yenidenAc(Uint8Array.from(a1.eeprom.mem), true);
     check('APRS modu (araç / sabit kart): kapat-aç -> APRS PTT', a1.eeprom.mem[0x732] === 0xA5 && lcd(a2) === 'APRS PTT', '0x732 = ' + a1.eeprom.mem[0x732].toString(16) + ', ' + lcd(a2));
+    /* B tipi kartta YAZICI açıkken (0x0240 bit 8) firmware her kimlik gönderiminde UART0'a günlük
+     * satırı yazıyordu ("4       ·01/01 00:02"); APRS menüsünde susturuldu (aprs_seri.inc) */
+    { const g = yenidenAc(Uint8Array.from(a1.eeprom.mem), true); g.ram[0x241] |= 1;
+      let su = []; const ub = g.uartByte.bind(g); g.uartByte = (n, v) => { if (n === 0) su.push(v); return ub(n, v); };
+      g.inputs.P4 &= ~0x80; g.run(FCLK * 1.5); g.inputs.P4 |= 0x80; g.run(FCLK * 0.8);
+      const t = String.fromCharCode(...su);
+      check('APRS: YAZICI açıkken PTT seri porta günlük satırı yazmaz', lcd(g) === 'APRS OK ' && t === '', lcd(g) + ' ' + JSON.stringify(t)); }
+    /* YAZICI kaldırıldı (yazici_kaldir.inc): B tipi kartta menüde yok; EEPROM'da (0x54B bit 3,
+     * 0x552 sağlaması) açık kalmışsa da açılışta kapalı, UART0 9600'de (orijinalde 2400) */
+    { const y = radio(ee => { ee[0x014] |= 0x0A; ee[0x58B] |= 2; ee[0x54B] |= 0x08;
+        let t = 0; for (let a = 0x54B; a <= 0x551; a++) t += ee[a]; ee[0x552] = t >> 8 & 255; ee[0x553] = t & 255; });
+      y.hwArac = true; y.inputs.P4 = 0xCF; y.panel.setExt(0xBF, y); boot(y, 2.6);
+      const halka = keys(y, 'mmmmmmm');
+      check('YAZICI kaldırıldı: menü halkasında yok, kayıtlıysa da kapalı başlar, seri port 9600',
+        !halka.some(t => /PRINTER|YAZICI/.test(t)) && halka.includes('APRS    ') && !(y.ram[0x241] & 1) && y.sfr[0x31] === 25,
+        halka.join('|') + ' yazıcı=' + (y.ram[0x241] & 1) + ' U0BRG=' + y.sfr[0x31]); keys(y, 'm'); }
   }
   /* alma (aprs_rx.inc): P66'ya (TB1IN, sıfır-geçiş algılayıcısı) AFSK paket; ekranda gönderen */
   {

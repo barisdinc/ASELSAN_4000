@@ -266,7 +266,20 @@ TA7W-7>APRS,WIDE1-1*,WIDE2-1:!4050.63N/03109.39E>hello
 
 **TKS bekleme süresi (`ornekler/tarama_tks.inc`).** ASELSAN'ın sonraki "radio" sürümlerinden (YA4000E V2-51, `0ya4000s_son.hex` V2-54) alındı. Taramada sinyal olan bir kanalda alma TKS tonu tanımlıysa ve TKS susturması açıksa (0x023E bit 0), firmware tonun çözülmesini `0x020A` sayacı kadar bekler (32 ms adım). Ton gelmezse sonraki kanala geçer. Süre `ton_periyodu / 0x3F0 + 1`'di (67 Hz: 15 adım = 480 ms, 250 Hz: 4 adım = 128 ms); yeni sürümlerde + 11 (67 Hz: 800 ms, 250 Hz: 448 ms). Ton geç çözüldüğünde doğru kanalın atlanması azalır. Kanca: 0x00EFF1 → `TT_BEKLEME` ($012080).
 
+## YAZICI menüsünün kaldırılması
+
+`ornekler/yazici_kaldir.inc` (AT V0-19). B tipi (araç / sabit) kartta YAZICI / PRINTER menüsü (PRINTER, DATE, TIME) seri porttan yazıcıya çağrı günlüğü açıyordu (RAM 0x0240 bit 8). Açıkken:
+- firmware her kimlik gönderiminde ve alınan çağrıda UART0'a `4       ·01/01 00:02` gibi satırlar yazıyordu (`F_007809`; tarih / saat açılıştan beri sayılıyor),
+- UART0 9600 yerine 2400 baud'a geçiyordu (`F_0099AD`, U0BRG 0x68).
+
+Seçmeli çağrı (ANI) kaldırıldığı için kullanılmıyor ve APRS seri çıkışına karışıyordu. İki yama:
+- 0x0055F6: `m` YAZICI'ya gelince yapılan seçenek denetimi koşulsuz atlama oldu; YAZICI menüde görünmez (sonraki öğe ALT MENU ya da normal ekran).
+- 0x00908D: açılışta `F_008ECC` kayıtlı ayar baytından (EEPROM 0x54B bit 3, sağlaması 0x552–0x553) yazıcıyı açmaz.
+
+Ayrıca `aprs_seri.inc` APRS menüsündeyken `F_007809`'u susturur. Seri port artık her zaman 9600 8N1.
+
 ## Seçmeli çağrının kaldırılması
+
 
 `ornekler/secmeli_kaldir.inc`. Çağrı grafiğinden yalnız seçmeli çağrının kullandığı dört kod bölgesi bulundu ve bunlara dışarıdan giren tüm çağrılar tarandı (5 çağrı + TA1 kesme vektörü; başka referans yok). Çağrılar `NOP` yapıldı, bölgeler `.SERBEST` ile boşaltıldı (0xFF).
 

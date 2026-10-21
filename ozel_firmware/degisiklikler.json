@@ -52,6 +52,18 @@
     ],
     "surumler": [
       {
+        "surum": "0-19",
+        "tarih": "2026-10-21",
+        "durum": "sim",
+        "duzeltme": [
+          "APRS menüsünde gönderirken seri porta \"4       ·01/01 00:02\" gibi bir satır çıkıyordu: B tipi kartta YAZICI açıkken firmware'in yazdığı çağrı günlüğü. Yazıcı açıkken seri port 9600 yerine 2400 baud'a da geçiyordu."
+        ],
+        "degisiklik": [
+          "YAZICI / PRINTER menüsü (yazıcı, tarih, saat) kaldırıldı; EEPROM'da açık kalmışsa da açılışta kapalı başlar. Seri port her zaman 9600 8N1. Seçmeli çağrı (ANI) olmadan kullanım alanı yoktu.",
+          "APRS menüsündeyken firmware'in çağrı günlüğü ayrıca susturuldu: seri portta yalnız APRS satırları."
+        ]
+      },
+      {
         "surum": "0-18",
         "tarih": "2026-10-21",
         "durum": "sim",

@@ -1028,7 +1028,23 @@
 011ACD  7A                           PLY
 011ACE  FA                           PLX
 011ACF  60                           RTS
-011AD0  00 00 00 00 00 00 …          .ORG $012400                    ; bank 1 boş alanı (açılış ekranı $012000'de)
+011AD0                               .ORG F_GUNLUK
+007809                               .EXPECT $A3,$04,$0B,$5B
+007809                               .ASSUME M=0,X=0
+007809  5C D0 1A 01                  JMPL  GUNLUK_KANCA
+00780D  00 00 00 00 00 00 …          .ORG AS_KOD_SON
+011AD0                               .ASSUME M=0,X=0
+011AD0  F8                           SEM
+011AD1  AD 27 02                     LDA   A,MENU
+011AD4  C9 17                        CMP   A,#ST_APRS_ON
+011AD6  D8                           CLM
+011AD7  D0 01                        BNE   GK_DEVAM
+011AD9  6B                           RTL                             ; APRS: günlük yazılmaz (çağıran JSRL ile geldi)
+011ADA  A3 04                        LDA   A,$04,S                   ; orijinal giriş
+011ADC  0B                           PHD
+011ADD  5B                           TAD
+011ADE  5C 0D 78 00                  JMPL  F_GUNLUK+4
+011AE2  00 00 00 00 00 00 …          .ORG $012400                    ; bank 1 boş alanı (açılış ekranı $012000'de)
 012400                               .ORG $002028                    ; VEC_TB1
 002028                               .EXPECT $5C,$27,$C6,$01
 002028  5C 00 24 01                  JMPL  AFSK_TB1
@@ -2577,6 +2593,16 @@
 012082  69 0B                        ADC   A,#TT_EK
 012084  8D 0A 02                     STA   A,$020A
 012087  5C 30 F0 00                  JMPL  $00F030                   ; orijinal akış: JMP L_00F03E (M = 1)
+01208B                               .ORG $0055F6                    ; BBC #$02,$033F,L_005600 (+ BBS ...,$0335)
+0055F6                               .EXPECT $3C,$3F,$03,$02,$05
+0055F6                               .ASSUME M=1,X=0
+0055F6  80 08                        BRA   YK_ALT_MENU
+0055F8  EA EA EA                     .BYTE $EA,$EA,$EA
+0055FB  00 00 00 00 00 00 …          .ORG $00908D                    ; BBC #$08,$01,L_009097 / CLM / SEB #$0100,$0240
+00908D                               .EXPECT $34,$01,$08,$06
+00908D                               .ASSUME M=1,X=0
+00908D  80 08                        BRA   YK_ATLA
+00908F  EA EA                        .BYTE $EA,$EA
 
 ; semboller
 F_HATA_G                 $000001
@@ -2752,13 +2778,16 @@ SINUS                    $0028FA
 TERS_TABLO               $002B06
 ARTIM_SPACE              $003AAB
 VFO_IMZA_D               $004656
+YK_ALT_MENU              $005600
 F_EE_OKU                 $0072EE
 F_EE_YAZ                 $0073C6
 F_SERI                   $007627
+F_GUNLUK                 $007809
 F_DELAY                  $007D7F
 F_BEEP                   $0080AA
 F_LCD                    $00828C
 VK_STA                   $008336
+YK_ATLA                  $009097
 ACILIS_TAMAM             $00A55A
 F_FX806                  $00CB52
 F_RADYO_SON              $00E626
@@ -2909,6 +2938,9 @@ AYA_2                    $011A96
 AYA_3                    $011AB4
 AYA_SON                  $011ABA
 AY_KOY                   $011ABB
+AS_KOD_SON               $011AD0
+GUNLUK_KANCA             $011AD0
+GK_DEVAM                 $011ADA
 TT_BEKLEME               $012080
 AP_KOD_ADRES             $012400
 AFSK_TB1                 $012400

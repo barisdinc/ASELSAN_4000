@@ -56,3 +56,4 @@ TITLES_TR:
         .INCLUDE "aprs_rx.inc"          ; APRS alma: duyulan istasyonlar
         .INCLUDE "secmeli_kaldir.inc"   ; seçmeli çağrı kaldırıldı, ~4,1 KB boşaltıldı
         .INCLUDE "tarama_tks.inc"       ; taramada TKS bekleme süresi uzun (ASELSAN V2-51/V2-54)
+        .INCLUDE "yazici_kaldir.inc"    ; YAZICI menüsü ve yazıcı çıkışı yok
