@@ -95,7 +95,14 @@
 00F851                               .ORG $008332                    ; normal ekranın kanal numarası: VFO'da "VR" / "VT"
 008332                               .EXPECT $AD,$76,$03,$F8
 008332  22 77 16 01                  JSRL  VFO_KNO
-008336  00 00 00 00 00 00 …          .ORG FR_KOD_ADRES
+008336                               .ORG $00832C
+00832C                               .EXPECT $AD,$69,$03,$4C,$35,$83 ; LDA A,$0369 / JMP L_008335
+00832C                               .ASSUME M=0,X=0
+00832C  AD 69 03                     LDA   A,$0369
+00832F  F8                           SEM
+008330                               .ASSUME M=1,X=0
+008330  80 04                        BRA   VK_STA
+008332  22 77 16 01 00 00 …          .ORG FR_KOD_ADRES
 0111F8                               .ASSUME M=0,X=0
 0111F8  A3 04                        LDA   A,$04,S
 0111FA  48                           PHA
@@ -2178,6 +2185,17 @@
 006900                               .SERBEST $01C6C0,$01C8DE-$01C6C0,$C2,$39,$EB,$3F,$89,$C2,$00       ; TA1 kesmesi
 006900  00 00 00 00 00 00 …          .ORG SC_KOD_ADRES
 013149  40                   SC_TA1: RTI
+01314A                               .ORG $00EFF1
+00EFF1                               .EXPECT $F8,$3A,$8D,$0A
+00EFF1                               .ASSUME M=0,X=0
+00EFF1  5C 80 20 01                  JMPL  TT_BEKLEME
+00EFF5  00 00 00 00 00 00 …          .ORG $012080                    ; bank 1 boş alanı (açılış ekranı $012000-$012068)
+012080  F8                           SEM
+012081                               .ASSUME M=1,X=0
+012081  18                           CLC
+012082  69 0B                        ADC   A,#TT_EK
+012084  8D 0A 02                     STA   A,$020A
+012087  5C 30 F0 00                  JMPL  $00F030                   ; orijinal akış: JMP L_00F03E (M = 1)
 
 ; semboller
 F_HATA_G                 $000001
@@ -2193,6 +2211,7 @@ AB_CAGRI                 $000004
 AR_N_MAX                 $000008
 AP_EN_KISA               $00000A
 R_P4                     $00000A
+TT_EK                    $00000B
 AB_SEMBOL                $00000E
 AB_ENLEM                 $000010
 N_OLD                    $000014
@@ -2342,6 +2361,7 @@ F_EE_YAZ                 $0073C6
 F_DELAY                  $007D7F
 F_BEEP                   $0080AA
 F_LCD                    $00828C
+VK_STA                   $008336
 ACILIS_TAMAM             $00A55A
 F_FX806                  $00CB52
 F_RADYO_SON              $00E626
@@ -2433,6 +2453,7 @@ TXT_FR_ERROR             $011740
 TXT_FR_HATA              $011748
 TXT_FR_TX                $011750
 TXT_FR_GONDER            $011758
+TT_BEKLEME               $012080
 AP_KOD_ADRES             $012400
 AFSK_TB1                 $012400
 AT_ORJ                   $012416

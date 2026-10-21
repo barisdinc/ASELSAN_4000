@@ -521,6 +521,21 @@ if (RING.includes('APRS')) {
   check('seçmeli çağrı yok: # ile çağrı vericiyi açmıyor, ton yok', tx === 0 && sel === '', tx + ' TX örneği, "' + sel + '"');
 }
 
+/* tarama (frekans.inc: 0x832C düzeltmesi; tarama_tks.inc): liste 1 / 2 / 5, kanallarda 67 Hz alma TKS'si.
+ * Taramada telsiz yeniden başlamamalı; sinyal varken TKS bekleme süresi (0x020A) orijinal + 10 */
+if (RING.includes('FREQ')) {
+  const b = radio(ee => { for (const n of [1, 2, 5]) ee[0x2E + (n - 1) * 13 + 4] = (ee[0x2E + (n - 1) * 13 + 4] & 0xC0) | 1; });
+  boot(b, 2.5); const ev0 = b.events.length;
+  const g = keys(b, 'msmmsmms05mmsms' + 'p'); b.run(FCLK * 1);
+  const reset = b.events.slice(ev0).some(e => e[1] === 'RESET');
+  check('tarama başlıyor, telsiz yeniden başlamıyor', g[g.length - 1] === '  SCAN  ' && lcd(b) === '  SCAN  ' && !reset, g.slice(-2).join('|') + ' ' + lcd(b) + (reset ? ' RESET' : ''));
+  let ilk = 0; b.ramHook = (a, v) => { if (a === 0x20A && v > 1 && !ilk) ilk = v; };
+  b.inputs.P5 |= 0x80;
+  for (let i = 0; i < 100 && !ilk; i++) { b.ram[0x23E] |= 1; b.run(FCLK * 0.01); }   // 0x023E bit 0: TKS susturması (panelden)
+  b.ramHook = null; b.inputs.P5 &= ~0x80;
+  check('taramada TKS bekleme 67 Hz: 15 + 10 = 25 adım (800 ms)', ilk === 25, '0x020A = ' + ilk);
+}
+
 /* boot screen built into the ROM (acilis_yatolye.inc): 5 s, independent of the EEPROM */
 if (new Board(rom).rom[0xE0E1] === 0x5C) {
   for (const [name, mod] of [['varsayılan EEPROM', null], ['Türkçe + UHF EEPROM', ee => { ee[0x018] |= 0x80; ee[0x58C] = 0x3E; ee[0x58D] = 0x80; }]]) {

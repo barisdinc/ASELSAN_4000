@@ -237,6 +237,12 @@ Bölümdeki bir alan geçersizse (sayfa geçersiz değeri zaten yazmaz) ekranda 
 - 144,800 MHz kılavuzdaki donanım bandının (146–174 MHz) altında. VCO kilitlenmeyebilir; ilk deneme yapay yükle.
 - Paket yalnızca lisanslı çağrı işaretiyle, izinli frekansta gönderilmelidir.
 
+## Tarama
+
+**Çökme düzeltmesi (`ornekler/frekans.inc`, 0x00832C).** FREKANS kancası 0x008332'deki `LDA A,$0376 / SEM`'in üstüne `JSRL VFO_KNO` yazıyordu. Taramada (0x0240 bit 10) aynı yordam kanal numarasını 0x0369'dan alıp `JMP L_008335` ile SEM'e atlıyor. 0x8335 artık JSRL'nin son baytı (`$00` = BRK), bu yüzden `p` ile tarama başlayınca telsiz yeniden başlıyordu (AT V0-15 ve öncesindeki bütün FREKANS sürümleri). Şimdi 0x832C'de `LDA A,$0369 / SEM / BRA $8336` var.
+
+**TKS bekleme süresi (`ornekler/tarama_tks.inc`).** ASELSAN'ın sonraki "radio" sürümlerinden (YA4000E V2-51, `0ya4000s_son.hex` V2-54) alındı. Taramada sinyal olan bir kanalda alma TKS tonu tanımlıysa ve TKS susturması açıksa (0x023E bit 0), firmware tonun çözülmesini `0x020A` sayacı kadar bekler (32 ms adım). Ton gelmezse sonraki kanala geçer. Süre `ton_periyodu / 0x3F0 + 1`'di (67 Hz: 15 adım = 480 ms, 250 Hz: 4 adım = 128 ms); yeni sürümlerde + 11 (67 Hz: 800 ms, 250 Hz: 448 ms). Ton geç çözüldüğünde doğru kanalın atlanması azalır. Kanca: 0x00EFF1 → `TT_BEKLEME` ($012080).
+
 ## Seçmeli çağrının kaldırılması
 
 `ornekler/secmeli_kaldir.inc`. Çağrı grafiğinden yalnız seçmeli çağrının kullandığı dört kod bölgesi bulundu ve bunlara dışarıdan giren tüm çağrılar tarandı (5 çağrı + TA1 kesme vektörü; başka referans yok). Çağrılar `NOP` yapıldı, bölgeler `.SERBEST` ile boşaltıldı (0xFF).

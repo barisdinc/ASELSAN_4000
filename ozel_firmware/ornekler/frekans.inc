@@ -92,6 +92,17 @@ FR_KOD_ADRES .EQU *
         .ORG $008332                    ; normal ekranın kanal numarası: VFO'da "VR" / "VT"
         .EXPECT $AD,$76,$03,$F8
         JSRL  VFO_KNO
+        ; Taramada (0x0240 bit 10) aynı yer kanal numarasını 0x0369'dan alıp "JMP L_008335"
+        ; ile SEM'e atlıyordu; 0x8335 artık JSRL'nin son baytı ($00 = BRK) -> telsiz yeniden
+        ; başlıyordu. SEM'i buraya alıp JSRL'den sonraki STA'ya (0x8336) geçiyoruz.
+        .ORG $00832C
+        .EXPECT $AD,$69,$03,$4C,$35,$83 ; LDA A,$0369 / JMP L_008335
+        .ASSUME M=0,X=0
+        LDA   A,$0369
+        SEM
+        .ASSUME M=1,X=0
+        BRA   VK_STA
+VK_STA      .EQU $008336
         .ORG FR_KOD_ADRES
 
 ; ---------------------------------------------------------------------------------------------
