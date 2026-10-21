@@ -624,11 +624,40 @@ if (RING.includes('FREQ')) {
   check('taramada TKS bekleme 67 Hz: 15 + 10 = 25 adım (800 ms)', ilk === 25, '0x020A = ' + ilk);
 }
 
+/* APRS TR / DG / IG (aprs_ayar.inc): menüde '*' / '-', s ile değişir, EEPROM 0x733, kapat-aç sonrası kalır;
+ * TR kapalıyken otomatik gönderim yok; IG kapalıyken seri porta yazılmaz ama detay çalışır */
+if (RING.includes('APRS TR*')) {
+  const P = globalThis.P4000;
+  const AYAR = { cagri: 'ta7w-7', enlem: '4050.63N', boylam: '03109.39E', yorum: 'x', tablo: '/', kod: '>', aralik: 10 };
+  const b = radio(ee => P.aprsSet(ee, AYAR)); boot(b, 2.5);
+  const yer = t => { for (let k = 0; k < 12 && lcd(b).slice(0, 7) !== t; k++) keys(b, 'm'); return lcd(b); };
+  const tr0 = yer('APRS TR'), tr1 = keys(b, 's')[0], dg = (keys(b, 'm'), keys(b, 's')[0]), ig = (keys(b, 'm'), keys(b, 's')[0]);
+  check('APRS TR / DG / IG: başlıkta durum, s ile değişir', tr0 === 'APRS TR*' && tr1 === 'APRS TR-' && dg === 'APRS DG*' && ig === 'APRS IG-',
+    [tr0, tr1, dg, ig].join('|'));
+  check('APRS ayarı EEPROM 0x733 = A2 (TR -, DG *, IG -), P4000.aprsAyarGet aynı', b.eeprom.mem[0x733] === 0xA2 && JSON.stringify(P.aprsAyarGet(b.eeprom.mem)) === '{"gecerli":true,"tr":false,"dg":true,"ig":false}',
+    b.eeprom.mem[0x733].toString(16));
+  const r = new Board(rom); r.eeprom.mem.set(b.eeprom.mem); r.font = b.font; boot(r, 2.5);
+  for (let k = 0; k < 12 && lcd(r).slice(0, 7) !== 'APRS TR'; k++) keys(r, 'm');
+  const g2 = [lcd(r), ...keys(r, 'mm')];
+  check('APRS ayarı kapat-aç sonrası hatırlanıyor', g2.join('|') === 'APRS TR-|APRS DG*|APRS IG-', g2.join('|'));
+  /* APRS ekranında: TR kapalı -> 12 s'de otomatik paket yok; IG kapalı -> seri port boş, detay var */
+  keys(r, 'm'); for (let k = 0; k < 12 && lcd(r) !== 'APRS    '; k++) keys(r, 'm'); keys(r, 's');
+  const log = [], push = r.pushAudio; r.pushAudio = (buf, v) => { if (buf === r.audio.ta1) log.push(r.now, v); push.call(r, buf, v); };
+  r.run(FCLK * 13); r.pushAudio = push;
+  check('APRS TR kapalı: aralık 10 s olsa da otomatik gönderim yok', lcd(r) === 'APRS PTT' && AFSK.decode(log, FCLK).length === 0, lcd(r));
+  let seri = []; const ub = r.uartByte.bind(r); r.uartByte = (n, v) => { if (n === 0) seri.push(v); return ub(n, v); };
+  const e = AFSK.edges(AFSK.encode('TA9IG-1>APRS:!4050.63N/03109.39E>igate yok'), {}), t = r.now;
+  r.selIn.setEdges(e.map(x => t + Math.round(x * FCLK))); r.inputs.P5 |= 0x80; r.run(FCLK * (e[e.length - 1] + 0.05)); r.inputs.P5 &= ~0x80; r.run(FCLK * 0.4);
+  const ek = lcd(r), d = keys(r, 'sss');
+  check('APRS IG kapalı: seri porta yazılmaz, istasyon ve detay çalışır', seri.length === 0 && ek === 'TA9IG-1 ' && d.join('|') === '4050 63N|3109 39E|IGATE YO', seri.length + ' bayt, ' + ek + ' -> ' + d.join('|'));
+  keys(r, 'm');
+}
+
 /* yalnız Türkçe (dil_kaldir.inc): EEPROM'da İngilizce (0x018 bit 7 = 0) seçili olsa da menüler Türkçe */
 if (TR) {
   const b = radio(ee => { ee[0x018] = (ee[0x018] & 0x7F) | 0x20; }); boot(b, 2.5);
-  const g = keys(b, 'mmmm');
-  check('dil: EEPROM İngilizce iken de Türkçe (LISTE, FREKANS, APRS, ALT MENU)', g.join('|') === 'LISTE   |FREKANS |APRS    |ALT MENU' && (b.ram[0x340] & 0x80), g.join('|'));
+  const g = keys(b, 'mmm');
+  check('dil: EEPROM İngilizce iken de Türkçe (LISTE, FREKANS, APRS)', g.join('|') === 'LISTE   |FREKANS |APRS    ' && (b.ram[0x340] & 0x80), g.join('|'));
   keys(b, 'm');
 }
 

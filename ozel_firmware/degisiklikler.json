@@ -15,6 +15,11 @@
         "aciklama": "APRS menüsünde PTT ile ya da ayarlanan aralıkta (PTT'siz) 144,800 MHz'de 1200 baud konum paketi. Çağrı işareti, konum, simge, yorum ve aralık EEPROM'da (0x6E0); programlama sayfasının APRS sekmesinden düzenlenir."
       },
       {
+        "baslik": "APRS TR / DG / IG ayarları",
+        "surum": "0-24",
+        "aciklama": "Menüde APRS TR (tracker), APRS DG (digipeater), APRS IG (seri port / igate); 's' ile * / -. EEPROM 0x733'te kalıcı; programlama sayfasından da."
+      },
+      {
         "baslik": "APRS alma: duyulan istasyonlar",
         "surum": "0-6",
         "aciklama": "APRS menüsündeyken çözülen paketin gönderen çağrı işareti ~4 s ekranda. Son 8 istasyon listesi: * bir eskiye, # bir yeniye."
@@ -56,6 +61,19 @@
       }
     ],
     "surumler": [
+      {
+        "surum": "0-24",
+        "tarih": "2026-10-21",
+        "durum": "sim",
+        "yeni": [
+          "Menüde APRS'ten sonra APRS TR (tracker: otomatik konum paketi), APRS DG (digipeater) ve APRS IG (igate: duyulan paketleri seri porta yaz) öğeleri. Başlıkta '*' açık, '-' kapalı; 's' ile değişir. Ayarlar EEPROM 0x733'te kalıcı; programlama sayfasının APRS sekmesinden de değişir. Özellikler APRS ekranında çalışır.",
+          "Programlama sayfası: giden / gelen baytları gösteren seri izleme (HEX / ASCII) ve telsize bir şey göndermeden yalnız dinleme."
+        ],
+        "degisiklik": [
+          "APRS DG ayarı bu sürümde yalnız kaydedilir; digipeater bir sonraki sürümde.",
+          "İstasyon detay kodu flash'ta 0x01E600'e taşındı (0x011000 bölgesi doldu)."
+        ]
+      },
       {
         "surum": "0-23",
         "tarih": "2026-10-21",

@@ -237,6 +237,16 @@ Bölümdeki bir alan geçersizse (sayfa geçersiz değeri zaten yazmaz) ekranda 
 - Hoparlör APRS'te kapalı (yukarıdaki `APRS_SUS_KARAR`), çözücü çalışır: firmware seçmeli çağrıyı da hoparlör böyle kapalıyken çözüyor.
 - Gerçek cihazda bilinmeyen: P66'ya giden sesin seviyesi / süzgeci. Paketler hiç görünmezse susturmayı açıp (monitör) deneyin.
 
+**APRS TR / DG / IG (`ornekler/aprs_ayar.inc`, AT V0-24).** Menüde APRS'ten sonra üç öğe; başlığın 8. karakteri `*` açık, `-` kapalı, `s` değiştirir (menüde kalınır):
+
+| Öğe | Açıkken (APRS ekranında) |
+|---|---|
+| `APRS TR` | tracker: aralıkta (EEPROM 0x702) otomatik konum paketi |
+| `APRS DG` | digipeater (sonraki sürüm) |
+| `APRS IG` | igate: duyulan paketler seri porta (aşağıda) |
+
+Ayar EEPROM 0x733'te: `$A0` | bit 0 TR, bit 1 DG, bit 2 IG (APRS bölümünün sağlamasına girmez). Geçersizse TR ve IG açık, DG kapalı. Açılışta ve her `s`'de okunur; programlama sayfasının APRS sekmesindeki "Çalışma" çerçevesinden de değişir (`p4000.js` `aprsAyarGet` / `aprsAyarSet`). RAM: `AP_AYAR` $04ED, `AP_AYAR_B` $04EE. IG kapalıyken çerçeve yine tampona alınır (istasyon detayı için), yalnız seri porta yazılmaz.
+
 **İstasyon konumu (`ornekler/aprs_detay.inc`, AT V0-22).** Listede ya da yeni duyulan bir istasyon ekrandayken `s` sayfa değiştirir: çağrı işareti → enlem `4050 63N` → boylam `3109 39E` → çağrı işareti (boşluk ondalık nokta; boylam ≥ 100 ise `10200 5W`, son hane onda bir). Konumu olmayan pakette `KONUM -`. Boylamdan sonra **mesaj** sayfası (AT V0-23): konumdan sonraki yorum, durum (`>`), mesaj (`:ALICI    :`) metni ya da Mic-E yorumu; ilk 8 karakter, büyük harf, ekranda olmayan karakter boşluk (baştakiler atlanır); metin yoksa `MESAJ -`. Sayfa 8 s görünür.
 - Konum paketin bilgi alanından: düz biçim `!` / `=` ya da zaman damgalı `/` / `@`. Konum belirsizliği boşlukları 0 sayılır. Sıkıştırılmış konum ve Mic-E çözülmez.
 - 8 istasyon için 6 baytlık konum (0,01 dakika; yarımküre ve geçerlilik bitleri) ve 8 baytlık metin, kapatılan özelliklerden boşalan RAM parçalarında (adres tabloları `DET_TABLO`, `MET_TABLO`): metinler $02AB, $02B3, $02BB, $02C3, $0285, $0264, $0538, $0598; konumlar $02CB, $028D, $0123, $0129, $03C8, $03CE, $026D, $03A2. Kayıtlar listeyle birlikte kayar; konumu / metni olmayan bir paketle tekrar duyulan istasyonun eskisi kalır.

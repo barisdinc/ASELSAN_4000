@@ -1217,7 +1217,9 @@ APRS_KANCA:
         CMP   A,#ACILIS_TAMAM
         BEQ   AKN_0
         JMP   AP_ACILIS_DENETLE
-AKN_0:  SEM
+AKN_0:  LDA   A,$0E,S                   ; APRS TR / DG / IG başlığında durum işareti
+        JSR   AY_GOSTER
+        SEM
         BBC   #F_AP_KURULU,AP_DURUM,AKN_SON
         LDA   A,MENU
         CMP   A,#ST_APRS_ON
@@ -1296,6 +1298,7 @@ AP_ACILIS_DENETLE:
         TAD
         CLC                             ; oku
         JSR   AP_MOD_ERIS
+        JSR   AY_YUKLE                  ; APRS TR / DG / IG (aprs_ayar.inc)
         PLD
         SEM
         LDA   A,AP_MOD_B
@@ -1380,6 +1383,7 @@ AP_OTO_ZAMAN:
         LDA   A,AP_ARALIK
         BEQ   AOZ_SON
         SEM
+        BBC   #AYAR_TR,AP_AYAR,AOZ_SON  ; APRS TR kapalı (aprs_ayar.inc)
         LDA   A,AP_OTO
         BEQ   AOZ_SAY
         LDA   A,AP_OTO_SURE             ; istek bekliyor: süresi dolarsa bırak

@@ -429,6 +429,18 @@ function aprsSet(ee, o) {
   put(36, yorum);
   return aprsFix(ee);
 }
+/* APRS TR / DG / IG (özel firmware aprs_ayar.inc): EEPROM 0x733 = $A0 | bit 0 TR, bit 1 DG, bit 2 IG;
+ * sağlamaya girmez. Geçersizse firmware varsayılanı: TR ve IG açık, DG kapalı */
+const APRS_AYAR = 0x733;
+function aprsAyarGet(ee) {
+  const b = ee[APRS_AYAR], ok = (b & 0xF8) === 0xA0, v = ok ? b & 7 : 5;
+  return { gecerli: ok, tr: !!(v & 1), dg: !!(v & 2), ig: !!(v & 4) };
+}
+function aprsAyarSet(ee, o) {
+  const v = Object.assign(aprsAyarGet(ee), o);
+  ee[APRS_AYAR] = 0xA0 | (v.tr ? 1 : 0) | (v.dg ? 2 : 0) | (v.ig ? 4 : 0);
+  return ee;
+}
 /* firmware'in göndereceği paket (metin; yorumun baytları Latin-1 olarak, afsk.js gibi) */
 function aprsPaket(ee) {
   const a = aprsGet(ee), yb = a.gecerli ? (() => { const b = []; for (let i = 0; i < APRS_YORUM && ee[APRS0 + 36 + i]; i++) b.push(ee[APRS0 + 36 + i]); return b; })() : utf8(a.yorum);
@@ -544,7 +556,11 @@ function pageHtml(id, ee, ro, chPage) {
         rw('Yorum', inp('yorum', a.yorum, 44, ' maxlength="43"'), 'en çok 43 bayt; her karakter gider (Türkçe harfler UTF-8, 2 bayt). 0x704..0x72E')) +
         frame('Konum', rw('Enlem', inp('enlem', a.enlem, 10) + de(a.enlem), '3955.52N, 39 55.52 N ya da 39.92533. 0x6F0') +
           rw('Boylam', inp('boylam', a.boylam, 10) + de(a.boylam), '03250.22E, 32 50.22 E ya da 32.837. 0x6F8')) +
-        frame('Otomatik gönderim', rw('Aralık (s)', inp('aralik', a.aralik || '', 6), '0 ya da boş: kapalı; en az 10 s. APRS menüsündeyken PTT\'siz gönderir. 0x702') ) + '</div>';
+        frame('Otomatik gönderim', rw('Aralık (s)', inp('aralik', a.aralik || '', 6), '0 ya da boş: kapalı; en az 10 s. APRS menüsündeyken PTT\'siz gönderir. 0x702') ) +
+        (() => { const y = aprsAyarGet(ee), cb = (k, l, t) => rw(l, '<input type="checkbox" data-aprs-ayar="' + k + '"' + (y[k] ? ' checked' : '') + dis + '>', t);
+          return frame('Çalışma (telsizde APRS TR / DG / IG)', cb('tr', 'Tracker (TR)', 'aralıkta otomatik konum paketi. 0x733 bit 0') +
+            cb('dg', 'Digipeater (DG)', 'duyulan paketleri tekrarla (WIDE1-1, WIDEn-N). 0x733 bit 1') +
+            cb('ig', 'Seri port / igate (IG)', 'duyulan paketleri seri porta yaz. 0x733 bit 2')); })() + '</div>';
       h += '<div class="p4-row"><span class="p4-l">Gidecek paket</span><span class="mono">' + esc(aprsPaket(ee)) + '</span></div>';
       if (!ro) h += '<div class="p4-row"><button data-aprs-cmd="varsayilan">Varsayılanları yaz</button>' + (a.gecerli ? '<button data-aprs-cmd="sil">Bölümü sil (firmware varsayılanı kullanır)</button>' : '') + '</div>';
       return h;
@@ -593,6 +609,7 @@ function render(el, ee, opt) {
       done('APRS');
     } catch (e) { alert('APRS: ' + e.message); render(el, ee, opt); }
   });
+  el.querySelectorAll('[data-aprs-ayar]').forEach(inp => inp.onchange = () => { aprsAyarSet(ee, { [inp.dataset.aprsAyar]: inp.checked }); done('APRS'); });
   el.querySelectorAll('[data-aprs-cmd]').forEach(b => b.onclick = () => {
     if (b.dataset.aprsCmd === 'varsayilan') aprsSet(ee, APRS_VARSAYILAN);
     else ee.fill(0xFF, APRS0, APRS0 + APRS_UZ + 2);
@@ -630,7 +647,7 @@ function injectCss(doc) {
 
 const api = { FIELDS, PAGES, SUMS, TCS_HZ, get, set, getBits, setBits, channel, setChannel, xshift, base, checkSums, fixSums,
   toP40, fromP40, p40Base, parseIni, dec1254, render, injectCss, telsizTipi, donanimTipi, bandText, where,
-  APRS0, APRS_UZ, APRS_VARSAYILAN, aprsGet, aprsSet, aprsGecerli, aprsFix, aprsKonum, aprsPaket, utf8 };
+  APRS0, APRS_UZ, APRS_VARSAYILAN, aprsGet, aprsSet, aprsGecerli, aprsFix, aprsKonum, aprsPaket, utf8, APRS_AYAR, aprsAyarGet, aprsAyarSet };
 if (typeof module !== 'undefined' && module.exports) module.exports = api;
 root.P4000 = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);

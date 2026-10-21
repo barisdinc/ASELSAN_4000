@@ -267,8 +267,9 @@ AR_BAYRAK:
         LDA   A,#AR_CER_N
 RBY_Y1: SEM
         STA   A,AR_Y_N
-        LDM   #1,AR_Y_DURUM
         LDM   #1,AR_DETAY
+        BBC   #AYAR_IG,AP_AYAR,RBY_Y0   ; APRS IG kapalı: seri porta yazma (aprs_ayar.inc)
+        LDM   #1,AR_Y_DURUM
 RBY_Y0: .ASSUME M=1,X=0
         LDX   #0
 RBY_1:  LDA   A,AR_ADR+7,X              ; gönderen
