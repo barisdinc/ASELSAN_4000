@@ -242,10 +242,25 @@ Bölümdeki bir alan geçersizse (sayfa geçersiz değeri zaten yazmaz) ekranda 
 | Öğe | Açıkken (APRS ekranında) |
 |---|---|
 | `APRS TR` | tracker: aralıkta (EEPROM 0x702) otomatik konum paketi |
-| `APRS DG` | digipeater (sonraki sürüm) |
+| `APRS DG` | digipeater (aşağıda, AT V0-25) |
 | `APRS IG` | igate: duyulan paketler seri porta (aşağıda) |
 
 Ayar EEPROM 0x733'te: `$A0` | bit 0 TR, bit 1 DG, bit 2 IG (APRS bölümünün sağlamasına girmez). Geçersizse TR ve IG açık, DG kapalı. Açılışta ve her `s`'de okunur; programlama sayfasının APRS sekmesindeki "Çalışma" çerçevesinden de değişir (`p4000.js` `aprsAyarGet` / `aprsAyarSet`). RAM: `AP_AYAR` $04ED, `AP_AYAR_B` $04EE. IG kapalıyken çerçeve yine tampona alınır (istasyon detayı için), yalnız seri porta yazılmaz.
+
+**Digipeater (`ornekler/aprs_digi.inc`, AT V0-25).** APRS DG açıkken, APRS ekranında duyulan her geçerli paketin yolundaki ilk tekrarlanmamış (H biti 0) adrese bakılır:
+
+| Gelen yol | Giden yol |
+|---|---|
+| `WIDE1-1` | `ÇAĞRIM*` |
+| `WIDE2-2` | `ÇAĞRIM*,WIDE2-1` |
+| `WIDE2-1` | `ÇAĞRIM,WIDE2*` |
+| `ÇAĞRIM` (doğrudan) | `ÇAĞRIM*` |
+
+- Tekrarlanmaz: kendi paketimiz; yolda zaten `ÇAĞRIM*`; başka yollar (`WIDE3-3`, `WIDE2-3`, `TRACE`…); yol dolu (8 tekrarlayıcı) ya da paket 151 bayttan uzun; son 30 s'de tekrarlanan aynı paket (anahtar: hedef + gönderen + bilgi alanının CRC'si, yol hariç; 3 kayıt).
+- Çağrı işareti EEPROM'daki APRS bölümünden (gönderdiğimiz paketteki ile aynı).
+- Akış: kesme geçerli paketi tampona aldığında IG ya da DG açıksa tamponu kilitler (`AR_Y_DURUM` = 8). Ana döngü karar verir (`DG_ISLE`): IG açıksa paket önce olduğu gibi seri porta yazılır, satır bitince digi; değilse hemen. Çerçeve tamponda düzenlenir, FCS eklenir (`AR_Y_DURUM` = 7) ve tracker'ın PTT isteğiyle gönderilir (`APRS_PTT`). Verici ~3 s'de açılmazsa bırakılır; kendi gönderimimiz (PTT / tracker) bekleyen digiyi iptal eder.
+- RAM: `DIGI_ISTE` $012F, `DG_SURE` $0130, tekrar kayıtları $0399–$039C ve $03AB–$03B0.
+- **Dikkat:** digipeater bir verici istasyonudur; yalnız amatör telsiz lisansıyla, izinli frekansta (144,800 MHz) çalıştırın. İlk denemeleri yapay yükle yapın.
 
 **İstasyon konumu (`ornekler/aprs_detay.inc`, AT V0-22).** Listede ya da yeni duyulan bir istasyon ekrandayken `s` sayfa değiştirir: çağrı işareti → enlem `4050 63N` → boylam `3109 39E` → çağrı işareti (boşluk ondalık nokta; boylam ≥ 100 ise `10200 5W`, son hane onda bir). Konumu olmayan pakette `KONUM -`. Boylamdan sonra **mesaj** sayfası (AT V0-23): konumdan sonraki yorum, durum (`>`), mesaj (`:ALICI    :`) metni ya da Mic-E yorumu; ilk 8 karakter, büyük harf, ekranda olmayan karakter boşluk (baştakiler atlanır); metin yoksa `MESAJ -`. Sayfa 8 s görünür.
 - Konum paketin bilgi alanından: düz biçim `!` / `=` ya da zaman damgalı `/` / `@`. Konum belirsizliği boşlukları 0 sayılır. Sıkıştırılmış konum ve Mic-E çözülmez.

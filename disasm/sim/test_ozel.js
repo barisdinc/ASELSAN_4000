@@ -653,6 +653,45 @@ if (RING.includes('APRS TR*')) {
   keys(r, 'm');
 }
 
+/* APRS DG (aprs_digi.inc): WIDE1-1 -> ÇAĞRIM*, WIDE2-2 -> ÇAĞRIM*,WIDE2-1, WIDE2-1 -> ÇAĞRIM,WIDE2*, doğrudan;
+ * WIDE3-3 / kendi paketimiz / bizden geçmiş / 30 s'de aynısı tekrarlanmaz; IG açıkken önce seri porta, sonra digi */
+if (RING.includes('APRS TR*')) {
+  const P = globalThis.P4000;
+  const b = radio(ee => { P.aprsSet(ee, { cagri: 'ta7w-7', enlem: '4050.63N', boylam: '03109.39E', yorum: 'x', tablo: '/', kod: '>', aralik: 0 });
+    P.aprsAyarSet(ee, { tr: false, dg: true, ig: true }); }); boot(b, 2.5);
+  for (let k = 0; k < 12 && lcd(b) !== 'APRS    '; k++) keys(b, 'm'); keys(b, 's');
+  let seri = []; const ub = b.uartByte.bind(b); b.uartByte = (n, v) => { if (n === 0) seri.push(v); return ub(n, v); };
+  const dene = text => {
+    const log = [], push = b.pushAudio; b.pushAudio = (buf, v) => { if (buf === b.audio.ta1) log.push(b.now, v); push.call(b, buf, v); };
+    const e = AFSK.edges(AFSK.encode(text), {}), t = b.now; seri = [];
+    b.selIn.setEdges(e.map(x => t + Math.round(x * FCLK))); b.inputs.P5 |= 0x80; b.run(FCLK * (e[e.length - 1] + 0.05)); b.inputs.P5 &= ~0x80;
+    b.run(FCLK * 3.5); b.pushAudio = push;
+    const f = AFSK.decode(log, FCLK);
+    return { tx: f.map(x => (x.fcsOk ? '' : '[FCS] ') + x.text).join(' ; '), seri: String.fromCharCode(...seri) };
+  };
+  for (const [ad, giren, bek] of [
+    ['WIDE1-1', 'TA1AA>APRS,WIDE1-1,WIDE2-1:!4050.63N/03109.39E>a', 'TA1AA>APRS,TA7W-7*,WIDE2-1:!4050.63N/03109.39E>a'],
+    ['WIDE2-2', 'TA1AB>APRS,WIDE2-2:>b', 'TA1AB>APRS,TA7W-7*,WIDE2-1:>b'],
+    ['30 s içinde aynı paket (başka digiden) tekrarlanmaz', 'TA1AB>APRS,DIGI1*,WIDE2-1:>b', ''],
+    ['WIDE2-1', 'TA1AC>APRS,WIDE2-1:>c', 'TA1AC>APRS,TA7W-7,WIDE2*:>c'],
+    ['doğrudan bize', 'TA1AD>APRS,TA7W-7:>d', 'TA1AD>APRS,TA7W-7*:>d'],
+    ['başka digiden sonra WIDE2-1', 'TA1AE>APRS,TB2XX*,WIDE2-1:>e', 'TA1AE>APRS,TB2XX,TA7W-7,WIDE2*:>e'],
+    ['WIDE3-3 tekrarlanmaz', 'TA1AF>APRS,WIDE3-3:>f', ''], ['yolsuz tekrarlanmaz', 'TA1AG>APRS:>g', ''],
+    ['kendi paketimiz tekrarlanmaz', 'TA7W-7>APRS,WIDE1-1:>kendim', ''], ['bizden geçmiş tekrarlanmaz', 'TA1AH>APRS,TA7W-7*,WIDE2-1:>h', ''],
+    ['30 s sonra aynı paket yeniden tekrarlanır', 'TA1AB>APRS,WIDE2-2:>b', 'TA1AB>APRS,TA7W-7*,WIDE2-1:>b']]) {
+    const r = dene(giren), yol = giren.replace(/\*/g, '');
+    check('APRS DG: ' + ad, r.tx === bek && r.seri === giren + '\r\n', JSON.stringify(r.tx) + ' | seri ' + JSON.stringify(r.seri));
+  }
+  /* DG kapalı: aynı paket tekrarlanmaz */
+  const c = radio(ee => { P.aprsSet(ee, { cagri: 'ta7w-7', enlem: '4050.63N', boylam: '03109.39E', yorum: 'x', tablo: '/', kod: '>', aralik: 0 }); }); boot(c, 2.5);
+  for (let k = 0; k < 12 && lcd(c) !== 'APRS    '; k++) keys(c, 'm'); keys(c, 's');
+  const log = [], push = c.pushAudio; c.pushAudio = (buf, v) => { if (buf === c.audio.ta1) log.push(c.now, v); push.call(c, buf, v); };
+  const e = AFSK.edges(AFSK.encode('TA1ZZ>APRS,WIDE1-1:>z'), {}), t = c.now;
+  c.selIn.setEdges(e.map(x => t + Math.round(x * FCLK))); c.inputs.P5 |= 0x80; c.run(FCLK * (e[e.length - 1] + 0.05)); c.inputs.P5 &= ~0x80; c.run(FCLK * 3.5);
+  check('APRS DG kapalı (varsayılan): tekrarlanmaz', AFSK.decode(log, FCLK).length === 0 && lcd(c) === 'TA1ZZ   ', lcd(c));
+  keys(b, 'm'); keys(c, 'm');
+}
+
 /* yalnız Türkçe (dil_kaldir.inc): EEPROM'da İngilizce (0x018 bit 7 = 0) seçili olsa da menüler Türkçe */
 if (TR) {
   const b = radio(ee => { ee[0x018] = (ee[0x018] & 0x7F) | 0x20; }); boot(b, 2.5);

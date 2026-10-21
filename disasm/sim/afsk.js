@@ -52,8 +52,10 @@ function addr(bytes, o) {
 
 function frameText(b) {
   let o = 0; const a = [];
-  while (o + 7 <= b.length) { a.push(addr(b, o)); o += 7; if (b[o - 1] & 1) break; }
+  let son = -1;                         // TNC2: tekrarlanmış (H biti) son yol adresine '*'
+  while (o + 7 <= b.length) { if (a.length >= 2 && (b[o + 6] & 0x80)) son = a.length; a.push(addr(b, o)); o += 7; if (b[o - 1] & 1) break; }
   if (a.length < 2 || o + 2 > b.length) return null;
+  if (son >= 0) a[son] += '*';
   const info = b.slice(o + 2, b.length - 2).map(c => String.fromCharCode(c)).join('');
   return a[1] + '>' + a[0] + (a.length > 2 ? ',' + a.slice(2).join(',') : '') + ':' + info;
 }

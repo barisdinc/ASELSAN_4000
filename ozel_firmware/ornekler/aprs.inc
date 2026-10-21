@@ -406,6 +406,22 @@ APRS_PTT:
         SEM
         JSR   AP_HAZIR
         BNE   AP_YOK
+        LDA   A,AR_Y_DURUM              ; digipeater paketi bekliyor (aprs_digi.inc): onu gönder
+        CMP   A,#7
+        BNE   AP_KENDI
+        JSR   AR_KAPAT
+        CLM
+        JSR   AFSK_GONDER
+        CLB   #F_PTT_APRS,PTT_ISTEK
+        SEM
+        LDM   #0,AR_Y_DURUM
+        BRA   AP_YOK
+AP_KENDI:
+        CMP   A,#7                      ; kendi paketimiz: bekleyen digi / karar iptal
+        BCC   AP_KENDI2
+        LDM   #0,AR_Y_DURUM
+AP_KENDI2:
+        LDM   #0,DIGI_ISTE
         ; Paketi şimdi yeniden kur: AP_CER almada seri port tamponu (aprs_rx.inc AR_CER) olarak
         ; kullanılıyor. Önce alma kapatılır ki kesme tampona yazmasın. EEPROM okuması bu
         ; çerçeveyle (AP_F geçici olarak).

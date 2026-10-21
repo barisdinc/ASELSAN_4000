@@ -67,6 +67,7 @@ TITLES_TR:
         .INCLUDE "aprs_seri.inc"        ; APRS alma: paketleri seri porta yaz
         .ORG $01E600                    ; bank 1 boş alanı ($01E4F4..$01FFFF; $011000 bölgesi doldu)
         .INCLUDE "aprs_detay.inc"       ; APRS alma: istasyonların konumu
+        .INCLUDE "aprs_digi.inc"        ; APRS digipeater
 
         .ORG $012400                    ; bank 1 boş alanı (açılış ekranı $012000'de)
         .INCLUDE "aprs.inc"

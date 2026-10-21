@@ -9,12 +9,15 @@ AR_SERI:
         .ASSUME M=0,X=0
         SEM
         LDA   A,AR_Y_DURUM
-        BNE   AS_1
-        RTS
+        BEQ   AS_YOK
+        CMP   A,#7                      ; 7 / 8: digipeater (aprs_digi.inc)
+        BCC   AS_1
+AS_YOK: RTS
 AS_1:   LDA   A,RADYO_DURUM             ; gönderiyor: tampon gönderme paketine geçecek
         CMP   A,#4
         BCC   AS_DON
         LDM   #5,AR_Y_DURUM             ; satırı kapat
+        LDM   #0,DIGI_ISTE              ; tampon değişecek: digi de olmaz
 AS_DON: .ASSUME M=1,X=0
         JSR   AY_YER
         BCC   AS_2
@@ -117,6 +120,10 @@ AS_P5:  LDA   A,#$0D                    ; satır sonu
         JSR   AY_KOY
         LDA   A,#$0A
         JSR   AY_KOY
+        LDA   A,DIGI_ISTE               ; satır bitti: tekrarlanacaksa şimdi (aprs_digi.inc)
+        BEQ   AS_BITTI
+        JMP   DG_BASLAT
+AS_BITTI:
         LDM   #0,AR_Y_DURUM
         RTS
 

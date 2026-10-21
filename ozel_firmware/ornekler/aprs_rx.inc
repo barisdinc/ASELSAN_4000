@@ -268,8 +268,10 @@ AR_BAYRAK:
 RBY_Y1: SEM
         STA   A,AR_Y_N
         LDM   #1,AR_DETAY
-        BBC   #AYAR_IG,AP_AYAR,RBY_Y0   ; APRS IG kapalı: seri porta yazma (aprs_ayar.inc)
-        LDM   #1,AR_Y_DURUM
+        LDA   A,AP_AYAR                 ; IG ya da DG açıksa tampon kilitlenir, karar ana döngüde
+        AND   A,#AYAR_IG|AYAR_DG        ; (aprs_digi.inc DG_ISLE)
+        BEQ   RBY_Y0
+        LDM   #8,AR_Y_DURUM
 RBY_Y0: .ASSUME M=1,X=0
         LDX   #0
 RBY_1:  LDA   A,AR_ADR+7,X              ; gönderen
@@ -368,6 +370,7 @@ RIS_1:   LDA   A,AR_YENI
         AND   A,#$7E                    ; yola göre değişir; aynı istasyon iki kez girmesin
         STA   A,AR_YENI_ADR+6
         JSR   AR_LISTEYE
+        JSR   DG_ISLE                   ; aprs_digi.inc: seri port / digipeater kararı
         LDM   #0,AR_YENI
         LDM   #0,AR_SEC
         LDM   #0,AR_SAYFA
@@ -404,7 +407,9 @@ RIS_LCD: CLM
         JSRL  F_LCD
         CLM
         PLA
-RIS_SON: JSR   AR_SERI
+RIS_SON: SEM
+        JSR   DG_ZAMAN                  ; aprs_digi.inc
+        JSR   AR_SERI
         CLM
         RTS
 
