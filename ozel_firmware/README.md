@@ -237,6 +237,12 @@ Bölümdeki bir alan geçersizse (sayfa geçersiz değeri zaten yazmaz) ekranda 
 - Hoparlör APRS'te kapalı (yukarıdaki `APRS_SUS_KARAR`), çözücü çalışır: firmware seçmeli çağrıyı da hoparlör böyle kapalıyken çözüyor.
 - Gerçek cihazda bilinmeyen: P66'ya giden sesin seviyesi / süzgeci. Paketler hiç görünmezse susturmayı açıp (monitör) deneyin.
 
+**İstasyon konumu (`ornekler/aprs_detay.inc`, AT V0-22).** Listede ya da yeni duyulan bir istasyon ekrandayken `s` sayfa değiştirir: çağrı işareti → enlem `4050 63N` → boylam `3109 39E` → çağrı işareti (boşluk ondalık nokta; boylam ≥ 100 ise `10200 5W`, son hane onda bir). Konumu olmayan pakette `KONUM -`. Sayfa 8 s görünür.
+- Konum paketin bilgi alanından: düz biçim `!` / `=` ya da zaman damgalı `/` / `@`. Konum belirsizliği boşlukları 0 sayılır. Sıkıştırılmış konum ve Mic-E çözülmez.
+- 8 istasyon için 6'şar bayt (0,01 dakika; yarımküre ve geçerlilik bitleri), kapatılan özelliklerden boşalan RAM'de: 6 kayıt $02AB–$02CE (seçmeli çağrı alma tamponu), 2 kayıt $0285–$0290 (veri mesajı modülü). Kayıtlar listeyle birlikte kayar; konumsuz bir paketle tekrar duyulan istasyonun eski konumu kalır.
+- Paket seri port tamponundan (`AR_CER`) okunur; kesme çerçeveyi tampona aldıysa `AR_DETAY` = 1 ($04FE). Sayfa $04FF.
+- Aynı düzeltmeyle: aynı istasyon farklı yollu bir paketle duyulunca listeye ikinci kez girmiyor (SSID baytının yol bitleri karşılaştırmadan önce temizlenir).
+
 **Seri port çıkışı (`ornekler/aprs_seri.inc`, AT V0-18).** APRS menüsündeyken sağlaması tutan her paket UART0'a (programlama kablosu; firmware'in hızı, normalde 9600 8N1) TNC2 metni olarak yazılır:
 
 ```
@@ -277,6 +283,10 @@ Seçmeli çağrı (ANI) kaldırıldığı için kullanılmıyor ve APRS seri ç�
 - 0x00908D: açılışta `F_008ECC` kayıtlı ayar baytından (EEPROM 0x54B bit 3, sağlaması 0x552–0x553) yazıcıyı açmaz.
 
 Ayrıca `aprs_seri.inc` APRS menüsündeyken `F_007809`'u susturur. Seri port artık her zaman 9600 8N1.
+
+## Yalnız Türkçe
+
+`ornekler/dil_kaldir.inc` (AT V0-22). Menü / mesaj dili EEPROM 0x018 bit 7'den RAM 0x0340'a (`OPTIONS`) iki yerde yükleniyor: açılışta (0x00E45C) ve ayar denetiminde (`F_00DA32`). İkisinin ardından bit 7 kurulur (kancalar 0x00E460, 0x00DAB0; kod $012090): EEPROM'da İngilizce seçili olsa da firmware'in ve özel menülerin bütün ekranları Türkçe. İngilizce metinler ROM'da kalır, seçilmez. P4000 sayfasındaki "Dil" alanı bu firmware'de etkisiz.
 
 ## Kullanılmayan özelliklerin kapatılması
 

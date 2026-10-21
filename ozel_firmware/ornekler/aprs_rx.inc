@@ -5,6 +5,7 @@
 ; dönülür. Son duyulan 8 farklı istasyon bir listede tutulur (en yeni başta; aynı istasyon
 ; yeniden duyulursa başa alınır). APRS ekranında:
 ;   *   listede bir eskiye     #   bir yeniye (en yeniden sonra APRS ekranı)
+;   s      gösterilen istasyonun konumu: enlem, boylam (aprs_detay.inc)
 ; Liste telsiz kapanana kadar durur. Liste boşsa "EMPTY" / "BOS".
 ;
 ; Donanım: alma sesi FX806 süzgecinden (TD3-17) ve TD12 sıfır-geçiş algılayıcısından geçip P66'ya
@@ -250,6 +251,9 @@ AR_BAYRAK:
         CMP   A,#$F0B8
         BNE   RBY_YENI
         SEM
+        LDA   A,AR_YENI
+        BNE   RBY_YENI                  ; öncekini ana döngü henüz almadı
+        LDM   #0,AR_DETAY               ; aprs_detay.inc: tampon bu istasyonun mu
         LDA   A,AR_Y_TAM                ; seri port: çerçevenin tamamı tampondaysa yazmaya başla
         BEQ   RBY_Y0
         LDA   A,AR_Y_DURUM
@@ -264,9 +268,8 @@ AR_BAYRAK:
 RBY_Y1: SEM
         STA   A,AR_Y_N
         LDM   #1,AR_Y_DURUM
+        LDM   #1,AR_DETAY
 RBY_Y0: .ASSUME M=1,X=0
-        LDA   A,AR_YENI
-        BNE   RBY_YENI                  ; öncekini ana döngü henüz almadı
         LDX   #0
 RBY_1:  LDA   A,AR_ADR+7,X              ; gönderen
         STA   A,AR_YENI_ADR,X
@@ -359,9 +362,14 @@ RIS_KAPAT:
         JSR   AR_KAPAT
 RIS_1:   LDA   A,AR_YENI
         BEQ   RIS_SURE
+        JSR   DET_HAZIRLA               ; aprs_detay.inc: paketteki konum
+        LDA   A,AR_YENI_ADR+6           ; SSID baytı: son adres (bit 0) ve C / H (bit 7) bitleri
+        AND   A,#$7E                    ; yola göre değişir; aynı istasyon iki kez girmesin
+        STA   A,AR_YENI_ADR+6
         JSR   AR_LISTEYE
         LDM   #0,AR_YENI
         LDM   #0,AR_SEC
+        LDM   #0,AR_SAYFA
         LDA   A,RADYO_DURUM
         CMP   A,#4
         BCS   RIS_SON                    ; gönderiyor: ekrana dokunma
@@ -409,9 +417,14 @@ AR_TUS:
         BEQ   RTU_ESKI
         CMP   A,#'#'
         BEQ   RTU_YENI
+        CMP   A,#'s'
+        BEQ   RTU_DETAY
         CLM
         CLC
         RTS
+RTU_DETAY:
+        .ASSUME M=1,X=0
+        JMP   DET_TUS                   ; aprs_detay.inc
         .ASSUME M=1,X=0
 RTU_ESKI:
         LDA   A,AR_SEC
@@ -424,6 +437,7 @@ RTU_YENI:
         BEQ   RTU_GOSTER
         DEC   AR_SEC
 RTU_GOSTER:
+        LDM   #0,AR_SAYFA
         LDA   A,AR_SEC
         BNE   RTU_OGE
         LDA   A,AR_LN                   ; liste boş ve '*': "EMPTY"
@@ -494,7 +508,8 @@ RLY_K:  LDA   A,AR_LISTE,X
         CPY   #7
         BNE   RLY_K
         PLX                             ; bulundu: önündekiler bir kayar, bu öğenin üstüne
-        BRA   RLY_KAYDIR
+        LDM   #1,DET_BULUNDU
+        BRA   RLY_KAYDIR0
 RLY_FARKLI:
         PLX
         CLM
@@ -506,6 +521,7 @@ RLY_FARKLI:
         INC   AR_T
         BRA   RLY_ARA
 RLY_YOK:                                ; yok: liste doluysa sonuncusu düşer
+        LDM   #0,DET_BULUNDU
         LDA   A,AR_LN
         CMP   A,#AR_N_MAX
         BCS   RLY_DOLU
@@ -523,6 +539,8 @@ RLY_DOLU:
         AND   A,#$00FF
         TAX                             ; X = kayacak bayt sayısı
         SEM
+RLY_KAYDIR0:
+        JSR   DET_KAYDIR                ; aprs_detay.inc: konum kayıtları da kayar (X korunur)
 RLY_KAYDIR:                             ; AR_LISTE[0..X-1] -> AR_LISTE[7..X+6] (sondan başa)
         CPX   #0
         BEQ   RLY_KOY

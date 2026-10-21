@@ -50,6 +50,7 @@ TITLES_TR:
 
         .INCLUDE "frekans.inc"
         .INCLUDE "aprs_seri.inc"        ; APRS alma: paketleri seri porta yaz
+        .INCLUDE "aprs_detay.inc"       ; APRS alma: istasyonların konumu
 
         .ORG $012400                    ; bank 1 boş alanı (açılış ekranı $012000'de)
         .INCLUDE "aprs.inc"
@@ -58,3 +59,5 @@ TITLES_TR:
         .INCLUDE "tarama_tks.inc"       ; taramada TKS bekleme süresi uzun (ASELSAN V2-51/V2-54)
         .INCLUDE "yazici_kaldir.inc"    ; YAZICI menüsü ve yazıcı çıkışı yok
         .INCLUDE "ozellik_kaldir.inc"   ; trunk, veri mesajı, ses yayın, # arama, servis kapalı
+DIL_KOD     .EQU $012090        ; bank 1 boş alanı (tarama_tks $012080..$01208A)
+        .INCLUDE "dil_kaldir.inc"       ; yalnız Türkçe

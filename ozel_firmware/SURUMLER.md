@@ -5,7 +5,7 @@ Aynı notlar sitede: [surumler.html](https://barisdinc.github.io/ASELSAN_4000/su
 
 ## yATOLYE özel firmware'i (`YA4000S_FREKANS_YATOLYE.HEX`)
 
-Güncel sürüm: **AT V0-21** (21.10.2026)
+Güncel sürüm: **AT V0-22** (21.10.2026)
 
 Orijinal YA4000S (AS V2-30) üzerine FREKANS (VFO) menüsü, APRS gönderme / alma, seçmeli çağrı kaldırıldı, açılışta 5 s yATOLYE.
 
@@ -14,14 +14,21 @@ Orijinal YA4000S (AS V2-30) üzerine FREKANS (VFO) menüsü, APRS gönderme / al
 - **FREKANS (VFO) menüsü** (AT V0-1 ile geldi): Kanal tablosundan bağımsız alma ve gönderme frekansı, alma ve gönderme TKS (CTCSS) tonu tuşlarla girilir (tonlar V0-17 ile). Ekranda kanal numarası yerine VR (alma) / VT (gönderme); PTT'de gönderme frekansı görünür.
 - **APRS gönderme** (AT V0-1 ile geldi): APRS menüsünde PTT ile ya da ayarlanan aralıkta (PTT'siz) 144,800 MHz'de 1200 baud konum paketi. Çağrı işareti, konum, simge, yorum ve aralık EEPROM'da (0x6E0); programlama sayfasının APRS sekmesinden düzenlenir.
 - **APRS alma: duyulan istasyonlar** (AT V0-6 ile geldi): APRS menüsündeyken çözülen paketin gönderen çağrı işareti ~4 s ekranda. Son 8 istasyon listesi: * bir eskiye, # bir yeniye.
+- **APRS alma: istasyon konumu** (AT V0-22 ile geldi): Listede bir istasyon görünürken 's': enlem, boylam, çağrı işareti sayfaları (8 s). Düz konum biçimleri; sıkıştırılmış ve Mic-E çözülmez.
 - **APRS alma: seri port çıkışı** (AT V0-18 ile geldi): Çözülen her paket UART0'a (programlama kablosu, 9600 8N1) TNC2 satırı olarak yazılır. 160 baytı aşan paketlerin bilgi alanı kesilir.
 - **APRS'te sessiz hoparlör** (AT V0-7 ile geldi): APRS menüsündeyken bip, uyarı ve hoparlör kapalı; alma çözücüsü çalışmaya devam eder.
 - **APRS modunu hatırlama** (AT V0-4 ile geldi): Telsiz APRS menüsündeyken kapatılırsa açılışta yine APRS'te başlar (EEPROM 0x732).
 - **Tarama** (AT V0-16 ile geldi): Orijinal tarama (LIST menüsü + p tuşu) çalışır; TKS'li kanallarda ton için daha uzun bekleme (ASELSAN V2-51 / V2-54'ten).
-- **Sadeleştirilmiş firmware** (AT V0-1 ile geldi): Select-5 (CCIR / ZVEI / EEA) kodu ve '#' ile arama kaldırıldı; yer yeni özelliklere açıldı. Trunk, veri mesajı, ses yayın, yazıcı ve servis terminali de kapalı (V0-19 / V0-21).
+- **Sadeleştirilmiş firmware** (AT V0-1 ile geldi): Select-5 (CCIR / ZVEI / EEA) kodu ve '#' ile arama kaldırıldı; yer yeni özelliklere açıldı. Trunk, veri mesajı, ses yayın, yazıcı ve servis terminali de kapalı (V0-19 / V0-21). Yalnız Türkçe (V0-22).
 - **Açılış ekranı ve sürüm** (AT V0-1 ile geldi): Açılışta 5 s yATOLYE, ardından AT V0-x sürüm numarası. Sürüm, tarih ve metin ROM başlığında; T4000 ve yükleme sayfası da gösterir.
 
 ### Sürüm geçmişi
+
+#### AT V0-22 · 21.10.2026 · yalnız simülatörde denendi
+
+- Yeni: APRS istasyon detayı: listede (ya da yeni duyulan) bir istasyon görünürken 's' ile enlem "4050 63N" ve boylam "3109 39E" sayfaları. Düz konum biçimleri (!, =, /, @); sıkıştırılmış konum ve Mic-E için "KONUM -". Konum 8 istasyon için kapatılan özelliklerden boşalan RAM'de tutulur.
+- Düzeltme: APRS listesi: aynı istasyon farklı yollu bir paketle duyulunca listeye ikinci kez giriyordu (adresin son baytındaki yol bitleri).
+- Değişiklik: Dil desteği kaldırıldı: menüler ve mesajlar her zaman Türkçe. EEPROM'daki dil ayarı (0x018 bit 7) yok sayılır.
 
 #### AT V0-21 · 21.10.2026 · yalnız simülatörde denendi
 

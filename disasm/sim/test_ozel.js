@@ -38,6 +38,11 @@ const lcd = b => V.decodeLcd(b, b.font).text;
 const KP = '*0#q789p456s123m';
 const RING = (ringArg || 'NUMBER').split(',');
 let last;          // titles inserted after LIST
+/* FREKANS firmware'i yalnız Türkçe (dil_kaldir.inc): beklenen İngilizce ekranlar Türkçeye çevrilir */
+const TR = RING.includes('FREQ');
+const TRMAP = { 'LIST': 'LISTE', 'FREQ': 'FREKANS', 'SUB MENU': 'ALT MENU', 'TX FREQ': 'GONDERME', 'RX TONE': 'ALMA TON',
+  'TX TONE': 'GON TON', 'ERROR': 'HATA', '  SCAN  ': ' TARAMA ', 'CALL -': 'CAGRI -', 'LAT -': 'ENLEM -', 'LON -': 'BOYLAM -' };
+const T = s => TR ? s.split('|').map(x => TRMAP[x] !== undefined ? TRMAP[x] : TRMAP[x.trimEnd()] !== undefined ? TRMAP[x.trimEnd()].padEnd(8) : x).join('|') : s;
 const AFTER_NUMBER = RING[RING.indexOf('NUMBER') + 1] || 'KANAL 01';
 function keys(b, seq) {
   const screens = [];
@@ -51,7 +56,7 @@ function keys(b, seq) {
 /* "m m s 1 2 3 ..." -> ekranlar; beklenenle karşılaştır */
 function scenario(b, name, seq, expect) {
   const got = keys(b, seq.replace(/ /g, ''));
-  const exp = expect.split('|');
+  const exp = T(expect).split('|');
   const ok = got.length === exp.length && got.every((g, i) => g === exp[i].padEnd(8));
   check(name, ok, got.map(s => '"' + s + '"').join(' '));
   return ok;
@@ -93,11 +98,11 @@ if (RING.includes('NUMBER')) {
 if (origText) {
   const orig = parseHex(origText);
   // [original keys, patched keys]: SUB MENU is one m further in the patched ring (after NUMBER)
-  const run = (r, seq) => { const b = new Board(r), ee = B.defaultEeprom(); ee[0x018] |= 0x20; B.eeFixSums(ee); b.eeprom.mem.set(ee);
+  const run = (r, seq) => { const b = new Board(r), ee = B.defaultEeprom(); ee[0x018] |= 0x20 | (TR ? 0x80 : 0); B.eeFixSums(ee); b.eeprom.mem.set(ee);
     b.font = V.buildFont(b.rom); boot(b, 2.5); return keys(b, seq).join('|'); };
   const extra = 'm'.repeat(RING.length);
   for (const [so, sp] of [['ms05mmsms', 'ms05mmsms'], ['p', 'p'], ['mmsmsmmsm', 'm' + extra + 'msmsmmsm']]) {
-    let c = run(rom, sp); for (const t of RING) c = c.replace('|' + t.padEnd(8), '');
+    let c = run(rom, sp); for (const t of RING) c = c.replace('|' + T(t).padEnd(8), '');
     const a = run(orig, so);
     check('orijinalle aynı: ' + so, a === c, a + '  /  ' + c);
   }
@@ -208,7 +213,7 @@ if (RING.includes('FREQ')) {
   scenario(b, '# alma frekansını saklar, gönderme adımı', '#', 'TX FREQ');
   check('1. adımda telsiz değişmedi', vco(b) === vco0, vco(b));
   b.run(FCLK * 8);
-  check('FREKANS açıkken menü zaman aşımı yok (8 s)', lcd(b) === 'TX FREQ ' && b.ram[0x227] !== 0, lcd(b) + ' menü ' + b.ram[0x227]);
+  check('FREKANS açıkken menü zaman aşımı yok (8 s)', lcd(b) === T('TX FREQ ') && b.ram[0x227] !== 0, lcd(b) + ' menü ' + b.ram[0x227]);
   scenario(b, 'gönderme frekansı haneleri', '1 6 0 6 5', '1-- ----|16- ----|160 ----|160 6---|160 65--');
   scenario(b, 'boşken * alma frekansına döner', '* * * * * *', '160 6---|160 ----|16- ----|1-- ----|TX FREQ|156 5250');
   scenario(b, 'alma frekansı düzeltilir', '* * 7 5 #', '156 525_|156 52__|156 527_|156 5275|TX FREQ');
@@ -236,7 +241,7 @@ if (RING.includes('FREQ')) {
   b.inputs.P4 = 0xFF; b.run(FCLK * 0.4);
   scenario(b, 'bırakınca # ve ton adımları ayarlar', '# # #', 'RX TONE|TX TONE|156 5250');
   { const g = keys(b, 's156525#177000#*');
-    check('gönderme adımında bant dışı: hata, sonra girişe dönüş', g[g.length - 2] === 'ERROR   ' && g[g.length - 1] === '177 000-', g.join('|')); }
+    check('gönderme adımında bant dışı: hata, sonra girişe dönüş', g[g.length - 2] === T('ERROR   ') && g[g.length - 1] === '177 000-', g.join('|')); }
   keys(b, 'm');
   for (const [ks, f, name] of [['1565125', 156.5125e6, '12,5 kHz adım'], ['156010', 156.010e6, '10 kHz adım'], ['1560050', 156.005e6, '5 kHz adım'], ['176900', 176.9e6, 'bant üst ucu']]) {
     keys(b, enter + 's' + ks + '####');
@@ -248,7 +253,7 @@ if (RING.includes('FREQ')) {
   scenario(b, '2,5 kHz ızgarası dışı: hata', '1 5 6 0 0 1 0 #', '1__ ____|15_ ____|156 ____|156 0___|156 00__|156 001_|156 0010|ERROR   ');
   scenario(b, 'hatadan sonraki tuş girişe döner', '*', '156 0010');
   scenario(b, '8. hane yok sayılır', '5', '156 0010');
-  last = (name, seq, exp) => { const g = keys(b, seq.replace(/ /g, '')); check(name, g[g.length - 1] === exp.padEnd(8), '"' + g[g.length - 1] + '"'); };
+  last = (name, seq, exp) => { const g = keys(b, seq.replace(/ /g, '')); check(name, g[g.length - 1] === T(exp).padEnd(8), '"' + g[g.length - 1] + '"'); };
   last('6 haneden az: hata', 's 1 5 6 5 2 #', 'ERROR');
   last('bandın altı: hata', '* s 1 2 0 0 0 0 #', 'ERROR');
   last('bandın üstü: hata', '* s 1 7 7 0 0 0 #', 'ERROR');
@@ -307,7 +312,7 @@ if (RING.includes('FREQ')) {
   tonla('67#2503#', 'tam Hz (67) ve ondalıklı (250,3)', '1/38');
   tonla('700#1234#', 'en yakın ton: 70,0 -> 69,3 (39), 123,4 -> 123,0 (18)', '39/18');
   { const g = keys(c, enter + 's156525#160650#50#');
-    check('tablodan uzak ton (50 Hz): hata, tonlar değişmedi', g[g.length - 1] === 'ERROR   ' && ton() === '39/18', g.slice(-1) + ' ' + ton());
+    check('tablodan uzak ton (50 Hz): hata, tonlar değişmedi', g[g.length - 1] === T('ERROR   ') && ton() === '39/18', g.slice(-1) + ' ' + ton());
     keys(c, '*'); scenario(c, 'hatadan sonra girişe dönüş, boşken * bir adım geri', '* * * *', 'RT 5___|RX TONE|TX FREQ|156 5250'); keys(c, 'm'); }
 }
 
@@ -408,7 +413,7 @@ if (RING.includes('APRS')) {
                                    ['boylamda rakam yerine harf', ham(AYAR, yaz(25, 'A')), 'LON -']]) {
     const r = radio(mod); boot(r, 2.5); const g = keys(r, enter); r.run(FCLK * 0.3);
     const f = paketGonder(r);
-    check('APRS hatalı ayar: ' + ad + ' -> ' + ekran + ', paket yok', g[g.length - 1] === ekran.padEnd(8) && f.length === 0, g[g.length - 1] + ' / ' + f.length + ' paket');
+    check('APRS hatalı ayar: ' + ad + ' -> ' + ekran + ', paket yok', g[g.length - 1] === T(ekran).padEnd(8) && f.length === 0, g[g.length - 1] + ' / ' + f.length + ' paket');
   }
   /* otomatik gönderim (PTT'ye basılmadan): bölümdeki aralık */
   {
@@ -457,7 +462,7 @@ if (RING.includes('APRS')) {
     const r4 = yenidenAc(Uint8Array.from(r3.eeprom.mem));
     check('APRS modu: çıktıktan sonra kapat-aç -> normal ekran', lcd(r4) === 'KANAL 01' && r4.ram[0x227] === 0, lcd(r4));
     keys(r4, 'm');
-    check('APRS modu: menü halkası normal', lcd(r4) === 'LIST    ', lcd(r4));
+    check('APRS modu: menü halkası normal', lcd(r4) === T('LIST    '), lcd(r4));
     /* araç / sabit kart (EE 0x58B bit 1: I²C P60 üzerinden; kullanıcının telsizi) */
     const ea = Uint8Array.from(ee0); ea[0x58B] |= 2; B.eeFixSums(ea);
     const a1 = yenidenAc(ea, true); for (let k = 0; k < 16 && lcd(a1) !== 'APRS    '; k++) keys(a1, 'm'); keys(a1, 's'); a1.run(FCLK * 0.3);   // araçta menü halkası farklı (CHN SCAN ...)
@@ -531,6 +536,18 @@ if (RING.includes('APRS')) {
     al('TA2AB-2>APRS:>tekrar');
     const l2 = keys(r, '**');
     check('APRS alma: tekrar duyulan istasyon başa geçer, çift kayıt yok', l2.join('|') === 'TA2AB-2 |TA2AE-5 ' && r.ram[0x623] === 8, l2.join('|') + ', ' + r.ram[0x623]);
+    /* istasyon detayı (aprs_detay.inc): 's' çağrı işareti -> enlem -> boylam; konumsuzda KONUM - */
+    { const d1 = al('TA5DT-1>APRS,WIDE1-1:!4050.63N/03109.39E>detay'), s1 = keys(r, 'sss');
+      check('APRS detay: s ile enlem / boylam / çağrı işareti', d1 === 'TA5DT-1 ' && s1.join('|') === '4050 63N|3109 39E|TA5DT-1 ', d1 + ' -> ' + s1.join('|'));
+      const d2 = al('TA6DT-2>APDR15:@092345z4100.12S/10200.50W-x'), s2 = keys(r, 'ss');
+      check('APRS detay: zaman damgalı, güney / batı, boylam >= 100', s2.join('|') === '4100 12S|10200 5W', s2.join('|'));
+      al('TA7DT-3>APRS:>yalniz durum'); const s3 = keys(r, 'ss');
+      check('APRS detay: konumsuz paket KONUM -', s3.join('|') === 'KONUM - |KONUM - ', s3.join('|'));
+      const g = keys(r, '**'), s4 = keys(r, 's');
+      check('APRS detay: listede gezinirken o istasyonun konumu', g[1] === 'TA6DT-2 ' && s4[0] === '4100 12S', g.join('|') + ' -> ' + s4.join('|'));
+      const n0 = r.ram[0x623]; al('TA5DT-1>APRS:>yine ben'); const s5 = keys(r, 'ss');
+      check('APRS detay: farklı yollu paketle tekrar duyulan istasyon çift girmez, eski konumu kalır', r.ram[0x623] === n0 && s5.join('|') === '4050 63N|3109 39E', 'liste ' + n0 + ' -> ' + r.ram[0x623] + ', ' + s5.join('|'));
+      keys(r, '#'.repeat(9)); }
     /* gönderme sonrası alma sürer */
     const f = paketGonder(r);
     check('APRS alma: PTT ile paket hâlâ gidiyor', f.length === 1 && f[0].fcsOk && f[0].text === PAKET, f.length + ' paket');
@@ -593,12 +610,20 @@ if (RING.includes('FREQ')) {
   boot(b, 2.5); const ev0 = b.events.length;
   const g = keys(b, 'msmmsmms05mmsms' + 'p'); b.run(FCLK * 1);
   const reset = b.events.slice(ev0).some(e => e[1] === 'RESET');
-  check('tarama başlıyor, telsiz yeniden başlamıyor', g[g.length - 1] === '  SCAN  ' && lcd(b) === '  SCAN  ' && !reset, g.slice(-2).join('|') + ' ' + lcd(b) + (reset ? ' RESET' : ''));
+  check('tarama başlıyor, telsiz yeniden başlamıyor', g[g.length - 1] === T('  SCAN  ') && lcd(b) === T('  SCAN  ') && !reset, g.slice(-2).join('|') + ' ' + lcd(b) + (reset ? ' RESET' : ''));
   let ilk = 0; b.ramHook = (a, v) => { if (a === 0x20A && v > 1 && !ilk) ilk = v; };
   b.inputs.P5 |= 0x80;
   for (let i = 0; i < 100 && !ilk; i++) { b.ram[0x23E] |= 1; b.run(FCLK * 0.01); }   // 0x023E bit 0: TKS susturması (panelden)
   b.ramHook = null; b.inputs.P5 &= ~0x80;
   check('taramada TKS bekleme 67 Hz: 15 + 10 = 25 adım (800 ms)', ilk === 25, '0x020A = ' + ilk);
+}
+
+/* yalnız Türkçe (dil_kaldir.inc): EEPROM'da İngilizce (0x018 bit 7 = 0) seçili olsa da menüler Türkçe */
+if (TR) {
+  const b = radio(ee => { ee[0x018] = (ee[0x018] & 0x7F) | 0x20; }); boot(b, 2.5);
+  const g = keys(b, 'mmmm');
+  check('dil: EEPROM İngilizce iken de Türkçe (LISTE, FREKANS, APRS, ALT MENU)', g.join('|') === 'LISTE   |FREKANS |APRS    |ALT MENU' && (b.ram[0x340] & 0x80), g.join('|'));
+  keys(b, 'm');
 }
 
 /* kapatılan özellikler (ozellik_kaldir.inc): trunk, veri mesajı / sipariş, ses yayın, servis terminali,
