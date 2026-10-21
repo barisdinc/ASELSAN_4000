@@ -20,9 +20,9 @@
         "aciklama": "APRS menüsündeyken çözülen paketin gönderen çağrı işareti ~4 s ekranda. Son 8 istasyon listesi: * bir eskiye, # bir yeniye."
       },
       {
-        "baslik": "APRS alma: istasyon konumu",
+        "baslik": "APRS alma: istasyon konumu ve mesajı",
         "surum": "0-22",
-        "aciklama": "Listede bir istasyon görünürken 's': enlem, boylam, çağrı işareti sayfaları (8 s). Düz konum biçimleri; sıkıştırılmış ve Mic-E çözülmez."
+        "aciklama": "Listede bir istasyon görünürken 's': enlem, boylam, mesaj (ilk 8 karakter), çağrı işareti sayfaları (8 s). Düz konum biçimleri; sıkıştırılmış ve Mic-E konumu çözülmez (Mic-E yorumu gösterilir)."
       },
       {
         "baslik": "APRS alma: seri port çıkışı",
@@ -56,6 +56,17 @@
       }
     ],
     "surumler": [
+      {
+        "surum": "0-23",
+        "tarih": "2026-10-21",
+        "durum": "sim",
+        "yeni": [
+          "APRS istasyon detayına mesaj sayfası: konumdan sonra 's' ile paketin metni (konum yorumu, durum, mesaj ya da Mic-E yorumu), ilk 8 karakter, büyük harf. Metin yoksa \"MESAJ -\". 8 istasyon için saklanır; tekrar duyulan istasyonun metni yenisiyle değişir, metinsiz pakette eskisi kalır."
+        ],
+        "degisiklik": [
+          "Konum kayıtları RAM'de yeniden yerleştirildi (metinlere yer açmak için)."
+        ]
+      },
       {
         "surum": "0-22",
         "tarih": "2026-10-21",

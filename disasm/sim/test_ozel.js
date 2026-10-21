@@ -537,8 +537,8 @@ if (RING.includes('APRS')) {
     const l2 = keys(r, '**');
     check('APRS alma: tekrar duyulan istasyon başa geçer, çift kayıt yok', l2.join('|') === 'TA2AB-2 |TA2AE-5 ' && r.ram[0x623] === 8, l2.join('|') + ', ' + r.ram[0x623]);
     /* istasyon detayı (aprs_detay.inc): 's' çağrı işareti -> enlem -> boylam; konumsuzda KONUM - */
-    { const d1 = al('TA5DT-1>APRS,WIDE1-1:!4050.63N/03109.39E>detay'), s1 = keys(r, 'sss');
-      check('APRS detay: s ile enlem / boylam / çağrı işareti', d1 === 'TA5DT-1 ' && s1.join('|') === '4050 63N|3109 39E|TA5DT-1 ', d1 + ' -> ' + s1.join('|'));
+    { const d1 = al('TA5DT-1>APRS,WIDE1-1:!4050.63N/03109.39E>detay'), s1 = keys(r, 'ssss');
+      check('APRS detay: s ile enlem / boylam / mesaj / çağrı işareti', d1 === 'TA5DT-1 ' && s1.join('|') === '4050 63N|3109 39E|DETAY   |TA5DT-1 ', d1 + ' -> ' + s1.join('|'));
       const d2 = al('TA6DT-2>APDR15:@092345z4100.12S/10200.50W-x'), s2 = keys(r, 'ss');
       check('APRS detay: zaman damgalı, güney / batı, boylam >= 100', s2.join('|') === '4100 12S|10200 5W', s2.join('|'));
       al('TA7DT-3>APRS:>yalniz durum'); const s3 = keys(r, 'ss');
@@ -547,6 +547,12 @@ if (RING.includes('APRS')) {
       check('APRS detay: listede gezinirken o istasyonun konumu', g[1] === 'TA6DT-2 ' && s4[0] === '4100 12S', g.join('|') + ' -> ' + s4.join('|'));
       const n0 = r.ram[0x623]; al('TA5DT-1>APRS:>yine ben'); const s5 = keys(r, 'ss');
       check('APRS detay: farklı yollu paketle tekrar duyulan istasyon çift girmez, eski konumu kalır', r.ram[0x623] === n0 && s5.join('|') === '4050 63N|3109 39E', 'liste ' + n0 + ' -> ' + r.ram[0x623] + ', ' + s5.join('|'));
+      /* mesaj sayfası: konumdan sonraki yorum, durum, mesaj metni, Mic-E yorumu; ilk 8 karakter */
+      const m1 = al('TA5DT-1>APRS,WIDE1-1:!4050.63N/03109.39E>Merhaba Duzce 73'), sm1 = keys(r, 'ssss');
+      check('APRS detay: 4. sayfa yorum, büyük harf; sonra çağrı işaretine döner', sm1.join('|') === '4050 63N|3109 39E|MERHABA |TA5DT-1 ', sm1.join('|'));
+      const mt = [['durum', 'TA8DT-4>APRS:>durum: qrv', 'DURUM  Q'], ['mesaj', 'TA8DT-5>APRS::TA7W-7   :selam abi{01', 'SELAM AB'],
+        ['Mic-E yorumu', "TA8DT-6>S32U6T,WIDE1-1:`(_fn\"Oj/]yolda", 'YOLDA   '], ['metinsiz konum', 'TA8DT-7>APRS:!4050.63N/03109.39E>', 'MESAJ - ']];
+      for (const [ad, pk, bek] of mt) { al(pk); const g2 = keys(r, 'sss'); check('APRS detay mesajı: ' + ad, g2[2] === bek, g2.join('|')); }
       keys(r, '#'.repeat(9)); }
     /* gönderme sonrası alma sürer */
     const f = paketGonder(r);

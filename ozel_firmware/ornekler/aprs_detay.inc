@@ -1,7 +1,9 @@
 ; aprs_detay.inc - APRS alma: duyulan istasyonların konumu (AT V0-23)
 ;
 ; Listede (aprs_rx.inc) bir istasyon görünürken 's' sayfa değiştirir:
-;   çağrı işareti  ->  enlem "4050 63N"  ->  boylam "3109 39E"  ->  çağrı işareti ...
+;   çağrı işareti -> enlem "4050 63N" -> boylam "3109 39E" -> mesaj "MERHABA " -> çağrı işareti ...
+; Mesaj: konumdan sonraki yorum, durum (">") metni, mesaj (":ALICI    :") metni ya da Mic-E
+; yorumu; ilk 8 karakter, büyük harf; LCD'de olmayan karakter boşluk. Yoksa "MESAJ -".
 ; (boşluk ondalık nokta, frekans ekranındaki gibi; boylam 100 ve üstündeyse "10109 3E").
 ; Konumu olmayan / çözülemeyen pakette "KONUM -". Sayfa 8 s görünür, sonra APRS ekranı.
 ;
@@ -12,8 +14,8 @@
 ;
 ; Kayıt (6 bayt): +0..+2 enlem, 0,01 dakika (20 bit), +2 bit 6 güney, bit 7 geçerli;
 ;                 +3..+5 boylam, 0,01 dakika (21 bit), +5 bit 7 batı.
-; RAM: 8 kayıt, kapatılan özelliklerden boşalan yerde (ozel_firmware/README.md "Boşalan RAM"):
-;   0..5 $02AB..$02CE (seçmeli çağrı alma tamponu), 6..7 $0285..$0290 (veri mesajı modülü).
+; RAM: kapatılan özelliklerden boşalan yerde (ozel_firmware/README.md "Boşalan RAM"), parçalı:
+;   konum kayıtları (6 bayt) DET_TABLO, metinler (8 bayt) MET_TABLO adreslerinde.
 ; Geçiciler: FREKANS girişinin değişkenleri (APRS'teyken kullanılmıyor): FR_HANE (eski kayıt +
 ; bulundu bayrağı), FR_BOLUNEN.. (yeni kayıt / bölme).
 
@@ -23,13 +25,17 @@ DET_YENI    .EQU FR_BOLUNEN     ; 6 bayt: bu paketten çözülen kayıt (FR_BOLU
 DET_ESKI    .EQU FR_HANE        ; 6 bayt: bulunan istasyonun eski kaydı
 DET_BULUNDU .EQU FR_HANE+6
 DET_SURE    .EQU 250            ; 250 x 32 ms = 8 s
-DET_RAM     .EQU $0200          ; kayıt adresleri $02xx: LDA $0200,X ile
+DET_RAM     .EQU $0100          ; kayıt / metin adresleri X = adres - $0100 ile (mutlak, D'den bağımsız)
+DET_MYENI   .EQU FR_FU          ; 8 bayt: bu paketin metni (FR_FU, FR_KELIME, FR_D)
+DET_MESKI   .EQU FR_KALAN       ; 8 bayt: bulunan istasyonun eski metni (FR_KALAN, FR_T)
+DET_MVAR    .EQU FR_KAYIT       ; 1 = DET_MYENI'de metin var
 
 ; ---------------------------------------------------------------------------------------------
 ; AR_ISLE'den, yeni adres listeye girmeden önce (M = 1): DET_YENI'yi doldur.
 DET_HAZIRLA:
         .ASSUME M=1,X=0
         LDM   #0,DET_YENI+2             ; geçersiz
+        LDM   #0,DET_MVAR
         LDA   A,AR_DETAY
         BEQ   DH_SON
         LDM   #0,AR_DETAY
@@ -68,7 +74,23 @@ DC_A1:  LDA   A,AR_CER-1,X              ; bu adresin SSID baytı
         CMP   A,#'/'
         BEQ   DC_ZAMAN
         CMP   A,#'@'
+        BEQ   DC_ZAMAN
+        CMP   A,#'>'                    ; durum: metin hemen
+        BEQ   DC_METIN
+        LDY   #10                       ; mesaj ":ALICI    :metin"
+        CMP   A,#':'
+        BEQ   DC_ATLA
+        LDY   #8                        ; Mic-E: 8 bayt boylam / hız / simge, sonra yorum
+        CMP   A,#$60
+        BEQ   DC_ATLA
+        CMP   A,#$27
         BNE   DC_Y1
+DC_ATLA:
+        INX
+        DEY
+        BNE   DC_ATLA
+DC_METIN:
+        JMP   DET_METIN_AL              ; konum yok (DET_YENI+2 = 0), yalnız metin
 DC_ZAMAN:
         CLM
         TXA
@@ -94,13 +116,17 @@ DC_1:   LDA   A,AR_CER+4,X              ; "DDMM.mmN"
         INX
         INX
         JSR   DC_IKI                    ; MM
-        BCS   DC_Y1
+        BCC   UZ_119
+        JMP   DC_Y1
+UZ_119:
         STA   A,FR_T+1
         INX
         INX
         INX                             ; '.'
         JSR   DC_IKI                    ; mm
-        BCS   DC_Y1
+        BCC   UZ_127
+        JMP   DC_Y1
+UZ_127:
         STA   A,FR_T+2
         INX
         INX
@@ -171,7 +197,9 @@ DC_3:   INX
         BNE   DC_YOK
         SEB   #$80,DET_YENI+5
 DC_4:   SEB   #$80,DET_YENI+2           ; geçerli
-        RTS
+        INX                             ; yarımküre, simge kodu: sonra yorum
+        INX
+        JMP   DET_METIN_AL
 DC_YOK3:
         PLA
         PLA
@@ -265,6 +293,8 @@ DC_DEGER:
 DET_KAYDIR:
         .ASSUME M=1,X=0
         PHX
+        LDA   A,AR_T
+        PHA                             ; metinler için yeniden
         LDA   A,AR_T                    ; eski kayıt
         JSR   DET_X
         LDY   #0
@@ -314,9 +344,151 @@ DK_YENI:
         INY
         CPY   #6
         BNE   DK_YENI
-DK_SON: PLX
+DK_SON: PLA
+        STA   A,AR_T
+        JSR   MET_KAYDIR
+        PLX
         RTS
         ; (AR_T burada 0'a iner; AR_LISTEYE kaydırmayı X'le yapar, AR_T'yi yeniden kullanmaz)
+
+; Metinler de aynı kayar (M = 1). Başa: bu paketin metni; yoksa bulunan istasyonun eskisi;
+; yoksa boş (ilk bayt 0).
+MET_KAYDIR:
+        .ASSUME M=1,X=0
+        LDA   A,AR_T                    ; eski metin
+        JSR   MET_X
+        LDY   #0
+MK_1:   LDA   A,DET_RAM,X
+        STA   A,DET_MESKI,Y
+        INX
+        INY
+        CPY   #8
+        BNE   MK_1
+MK_KAYDIR:
+        LDA   A,AR_T
+        BEQ   MK_BAS
+        JSR   MET_X
+        TXY
+        DEC   AR_T
+        LDA   A,AR_T
+        JSR   MET_X
+        LDA   A,#8
+        STA   A,FR_DP                   ; sayaç (DET_MYENI ve DET_MESKI dışında)
+MK_2:   LDA   A,DET_RAM,X
+        STA   A,DET_RAM,Y
+        INX
+        INY
+        DEC   FR_DP
+        BNE   MK_2
+        BRA   MK_KAYDIR
+MK_BAS: LDA   A,#0
+        JSR   MET_X
+        LDY   #0
+        LDA   A,DET_MVAR
+        BNE   MK_YENI
+        LDA   A,DET_BULUNDU
+        BNE   MK_ESKI
+        LDM   #0,DET_RAM,X              ; boş
+        RTS
+MK_ESKI:
+        LDA   A,DET_MESKI,Y
+        STA   A,DET_RAM,X
+        INX
+        INY
+        CPY   #8
+        BNE   MK_ESKI
+        RTS
+MK_YENI:
+        LDA   A,DET_MYENI,Y
+        STA   A,DET_RAM,X
+        INX
+        INY
+        CPY   #8
+        BNE   MK_YENI
+        RTS
+
+; AR_CER[X..] metni -> DET_MYENI (8 karakter, boşlukla doldurulur; M = 1). Baştaki boşluklar
+; (ve gösterilemeyen karakterler) atlanır; küçük harf büyür; LCD'de olmayan karakter boşluk. En az bir karakter: DET_MVAR = 1.
+DET_METIN_AL:
+        .ASSUME M=1,X=0
+        LDY   #0
+DMA_BOS:
+        TXA
+        CMP   A,AR_Y_N
+        BCS   DMA_DOLDUR
+        LDA   A,AR_CER,X                ; baştaki gösterilemeyenler de (Mic-E üretici işareti ...)
+        JSR   DMA_HARF
+        CMP   A,#' '
+        BNE   DMA_K
+        INX
+        BRA   DMA_BOS
+DMA_K:  TXA
+        CMP   A,AR_Y_N
+        BCS   DMA_DOLDUR
+        LDA   A,AR_CER,X
+        JSR   DMA_HARF
+        STA   A,DET_MYENI,Y
+        LDM   #1,DET_MVAR
+        INX
+        INY
+        CPY   #8
+        BNE   DMA_K
+        RTS
+DMA_DOLDUR:
+        CPY   #8
+        BEQ   DMA_SON
+        LDA   A,#' '
+        STA   A,DET_MYENI,Y
+        INY
+        BRA   DMA_DOLDUR
+DMA_SON:
+        RTS
+
+; A: a-z -> A-Z; A-Z 0-9 boşluk - / _ kalır; diğerleri boşluk (M = 1)
+DMA_HARF:
+        .ASSUME M=1,X=0
+        CMP   A,#'a'
+        BCC   DH_1
+        CMP   A,#'z'+1
+        BCS   DH_BOSLUK
+        SEC
+        SBC   A,#$20
+        RTS
+DH_1:   CMP   A,#'A'
+        BCC   DH_2
+        CMP   A,#'Z'+1
+        BCC   DH_TAMAM
+        CMP   A,#'_'
+        BEQ   DH_TAMAM
+        BRA   DH_BOSLUK
+DH_2:   CMP   A,#'0'
+        BCC   DH_3
+        CMP   A,#'9'+1
+        BCC   DH_TAMAM
+        BRA   DH_BOSLUK
+DH_3:   CMP   A,#'-'
+        BEQ   DH_TAMAM
+        CMP   A,#'/'
+        BEQ   DH_TAMAM
+DH_BOSLUK:
+        LDA   A,#' '
+DH_TAMAM:
+        RTS
+
+; A = sıra 0..7 -> X = metin adresi - $0100 (M = 1)
+MET_X:
+        .ASSUME M=1,X=0
+        CLM
+        AND   A,#$0007
+        ASL   A
+        TAX
+        LDA   A,>MET_TABLO,X
+        TAX
+        SEM
+        RTS
+MET_TABLO:
+        .WORD $02AB-DET_RAM, $02B3-DET_RAM, $02BB-DET_RAM, $02C3-DET_RAM
+        .WORD $0285-DET_RAM, $0264-DET_RAM, $0538-DET_RAM, $0598-DET_RAM
 
 ; A = kayıt sırası 0..7 -> X = kayıt adresi - $0200 (M = 1)
 DET_X:
@@ -330,8 +502,8 @@ DET_X:
         SEM
         RTS
 DET_TABLO:
-        .WORD $02AB-DET_RAM, $02B1-DET_RAM, $02B7-DET_RAM, $02BD-DET_RAM, $02C3-DET_RAM, $02C9-DET_RAM
-        .WORD $0285-DET_RAM, $028B-DET_RAM
+        .WORD $02CB-DET_RAM, $028D-DET_RAM, $0123-DET_RAM, $0129-DET_RAM
+        .WORD $03C8-DET_RAM, $03CE-DET_RAM, $026D-DET_RAM, $03A2-DET_RAM
 
 ; ---------------------------------------------------------------------------------------------
 ; AR_TUS'tan 's' (M = 1): görünen istasyonun sonraki sayfası. C = 1 (ekran yazıldı), M = 0.
@@ -346,7 +518,7 @@ DT_APRSJ:
 DT_0:
         LDA   A,AR_SAYFA
         INC   A
-        CMP   A,#3
+        CMP   A,#4
         BCC   DT_1
         LDA   A,#0
 DT_1:   STA   A,AR_SAYFA
@@ -369,7 +541,30 @@ DT_2:   STA   A,AR_T
         JSR   AR_CAGRI_YAZ
         JMP   DT_SURE
 DT_KONUM:
-        LDA   A,AR_T
+        LDA   A,AR_SAYFA
+        CMP   A,#3
+        BNE   DT_K1
+        LDA   A,AR_T                    ; sayfa 3: mesaj metni
+        JSR   MET_X
+        LDA   A,DET_RAM,X
+        BEQ   DT_MYOK
+        LDY   #0
+DT_M1:  LDA   A,DET_RAM,X
+        STA   A,LCD,Y
+        INX
+        INY
+        CPY   #8
+        BNE   DT_M1
+        JMP   DT_SURE
+DT_MYOK:
+        LDX   #0
+DT_M2:  LDA   A,>DET_MYOK_METIN,X
+        STA   A,LCD,X
+        INX
+        CPX   #8
+        BNE   DT_M2
+        JMP   DT_SURE
+DT_K1:  LDA   A,AR_T
         JSR   DET_X
         LDA   A,DET_RAM+2,X
         BMI   DT_3
@@ -489,3 +684,5 @@ DT_IKI_YAZ:
 
 DET_YOK_METIN:
         .TEXT8 "KONUM -"
+DET_MYOK_METIN:
+        .TEXT8 "MESAJ -"
