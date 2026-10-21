@@ -293,6 +293,21 @@ Ayrıca `aprs_seri.inc` APRS menüsündeyken `F_007809`'u susturur. Seri port ar
 
 Not: S sürümünün opsiyon fonksiyonu (0x010630) trunk (0x334 bit 4) ve ses yayın (0x335 bit 4) bitlerini açılışta zaten siliyordu; bu iki mod tabanımızda hiç çalışmıyordu, RAM'leri boş sayılabilir. Seri programlama protokolü (yükleme sayfası, T4000) değişmedi. `test_ozel.js` seçenekleri açık bir B tipi telsizde bu fonksiyonlara hiç girilmediğini denetler.
 
+### Boşalan RAM (AT V0-21)
+
+`disasm/sim/ram_bos.js` açılıştan sonra hiç okunmayan / yazılmayan baytları ölçer (A ve B tipi kart, menüler, tarama, VFO, APRS, seri protokol). Ölçülen her boş adres için koddan kimin dokunduğuna bakıldı (çağrı grafiği, dominatör ağacı). Yalnız kapatılan özelliklerin kodunun dokunduğu ve ölçümde hiç erişilmeyen bloklar:
+
+| Adres | Bayt | Eski sahibi |
+|---|---|---|
+| 0x02AB–0x02D1 | 39 | seçmeli çağrı alma: periyot tamponu (TB1 kesmesinin RX dalı, 0x023E bit 4; artık açılmıyor) |
+| 0x0285–0x0292 | 14 | veri mesajı modülü (F_014AB3) |
+| 0x0264–0x026B, 0x026D–0x0272 | 8 + 6 | seçmeli çağrı hane tamponu |
+| 0x03C8–0x03D4 | 13 | trunk |
+| 0x03A2–0x03A7, 0x03AB–0x03B0, 0x0399–0x039C | 6 + 6 + 4 | trunk |
+| 0x0123–0x0131 | 15 | büyük olasılıkla veri mesajı (F_01501B); daha az kesin |
+
+Toplam ~110 bayt (ek olarak `OZEL_RAM` çevresinde ~20 bayt). Diğer erişilmeyen bloklar (0x00AE–0x00FF, 0x0141–0x017E, 0x045A–0x04B8) canlı kodun (seri protokol, açılış) dizilerinin devamı olabilir; kullanılmamalı.
+
 ## Seçmeli çağrının kaldırılması
 
 

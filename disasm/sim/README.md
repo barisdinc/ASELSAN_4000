@@ -30,6 +30,7 @@ Orijinal makine kodunu (ya da yeni derlenen bir HEX'i) tarayıcıda, K3 kontrol 
 | `selftest.js` | Orijinal firmware ile regresyon testi (`make test-sim`) |
 | `test_ozel.js` | Özel firmware örneklerinin testi (`make test-ozel`): tuş senaryoları, orijinalle karşılaştırma, seri yükleyiciyle yazma |
 | `ram_kullanim.js` | Firmware'in yazdığı RAM adreslerini ölçer (örnekler için boş RAM aramak) |
+| `ram_bos.js` | Açılıştan sonra hiç erişilmeyen RAM baytları (yeni özelliklere yer; `ozel_firmware/README.md` "Boşalan RAM") |
 | `run_node.js`, `run.sh` | Komut satırından başsız çalıştırma ve iz alma (`./run.sh ../../YA4000S.HEX 4 "2.5 p4 7f" TRACE=1`) |
 | `afsk.js` | 1200 baud AFSK / AX.25: firmware'den bağımsız çözücü (TA1 örneklerinden) ve kodlayıcı (P66 sıfır-geçiş çıkışı; RF ve ses sekmesindeki **APRS paketi** girişi, `test_ozel.js`) |
 | `mkfirmware.py`, `mkee.js` | `firmware.js` ve varsayılan EEPROM görüntüsü üretimi |
