@@ -65,6 +65,9 @@ progress { width: 100%; height: 10px; accent-color: var(--accent); }
 .checks { display: grid; gap: 6px; margin: 12px 0; font-size: 13px; }
 .checks label { display: flex; gap: 8px; align-items: flex-start; }
 .errs { margin: 8px 0 0; padding-left: 18px; font-size: 13px; }
+.notlar { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--line); font-size: 13px; }
+.notlar h3 { margin: 0 0 6px; font-size: 14px; }
+.notlar details { margin-top: 8px; } .notlar summary { cursor: pointer; color: var(--accent); }
 button.danger { background: var(--bad); color: #fff; border-color: var(--bad); }
 .locked { opacity: .55; }
 #wrPhase { font-weight: 600; font-size: 13px; }
@@ -96,7 +99,7 @@ main { position: relative; z-index: 1; }
 <div class="arka" aria-hidden="true"><svg class="sanat on" viewBox="0 0 560 400"><defs><pattern id="izgara" width="15" height="11" patternUnits="userSpaceOnUse"><ellipse cx="7.5" cy="5.5" rx="5" ry="2.6"/></pattern><pattern id="delik" width="10" height="10" patternUnits="userSpaceOnUse"><circle cx="5" cy="5" r="2"/></pattern></defs><g transform="translate(0 0) scale(1)"><rect x="20" y="20" width="520" height="150" rx="14"/><rect x="34" y="32" width="492" height="126" rx="10"/><rect x="6" y="62" width="16" height="44" rx="3"/><line x1="10" y1="70" x2="10" y2="98"/><circle cx="96" cy="90" r="40"/><circle cx="96" cy="90" r="31"/><path d="M96 90 L124 90" stroke-width="6" stroke-linecap="round"/><circle cx="126" cy="142" r="5"/><circle cx="143" cy="142" r="5"/><rect x="166" y="50" width="226" height="84" rx="7"/><rect x="177" y="61" width="204" height="62" rx="3"/><text x="279" y="104" text-anchor="middle" class="lcd">yATOLYE</text><circle cx="420" cy="48" r="11.5"/><text x="420" y="52" text-anchor="middle" class="key">1</text><circle cx="449" cy="48" r="11.5"/><text x="449" y="52" text-anchor="middle" class="key">2</text><circle cx="478" cy="48" r="11.5"/><text x="478" y="52" text-anchor="middle" class="key">3</text><rect x="496" y="37" width="22" height="22" rx="5"/><text x="507" y="52" text-anchor="middle" class="key">M</text><circle cx="420" cy="77" r="11.5"/><text x="420" y="81" text-anchor="middle" class="key">4</text><circle cx="449" cy="77" r="11.5"/><text x="449" y="81" text-anchor="middle" class="key">5</text><circle cx="478" cy="77" r="11.5"/><text x="478" y="81" text-anchor="middle" class="key">6</text><rect x="496" y="66" width="22" height="22" rx="5"/><text x="507" y="81" text-anchor="middle" class="key">S</text><circle cx="420" cy="106" r="11.5"/><text x="420" y="110" text-anchor="middle" class="key">7</text><circle cx="449" cy="106" r="11.5"/><text x="449" y="110" text-anchor="middle" class="key">8</text><circle cx="478" cy="106" r="11.5"/><text x="478" y="110" text-anchor="middle" class="key">9</text><rect x="496" y="95" width="22" height="22" rx="5"/><text x="507" y="110" text-anchor="middle" class="key">K</text><circle cx="420" cy="135" r="11.5"/><text x="420" y="139" text-anchor="middle" class="key">*</text><circle cx="449" cy="135" r="11.5"/><text x="449" y="139" text-anchor="middle" class="key">0</text><circle cx="478" cy="135" r="11.5"/><text x="478" y="139" text-anchor="middle" class="key">#</text><rect x="496" y="124" width="22" height="22" rx="5"/><text x="507" y="139" text-anchor="middle" class="key">•</text><path d="M60 170 v8 M500 170 v8"/><rect x="20" y="178" width="520" height="200" rx="12"/><rect x="100" y="192" width="425" height="140" rx="6" fill="url(#izgara)"/><circle cx="58" cy="262" r="8"/><circle cx="58" cy="262" r="2.5"/><line x1="20" y1="344" x2="540" y2="344"/><text x="40" y="368" class="marka">ASELSAN</text><text x="520" y="366" text-anchor="end" class="kucuk">SABİT MERKEZ TELSİZİ 4031</text><rect x="60" y="378" width="40" height="9" rx="2"/><rect x="460" y="378" width="40" height="9" rx="2"/></g></svg><svg class="sanat yan" viewBox="0 0 640 560"><g transform="translate(0 0) scale(1)"><rect x="30" y="46" width="7" height="100" rx="2"/><rect x="42" y="50" width="7" height="92" rx="2"/><rect x="54" y="46" width="7" height="100" rx="2"/><rect x="66" y="50" width="7" height="92" rx="2"/><rect x="78" y="46" width="7" height="100" rx="2"/><rect x="90" y="50" width="7" height="92" rx="2"/><rect x="102" y="46" width="7" height="100" rx="2"/><rect x="114" y="50" width="7" height="92" rx="2"/><rect x="126" y="46" width="7" height="100" rx="2"/><rect x="138" y="50" width="7" height="92" rx="2"/><rect x="150" y="46" width="7" height="100" rx="2"/><path d="M24 52 h140 M24 146 h140"/><path d="M160 40 h300 q14 0 14 14 v112 q0 14 -14 14 h-300 z"/><rect x="182" y="62" width="8" height="26" rx="4"/><rect x="201" y="62" width="8" height="26" rx="4"/><rect x="220" y="62" width="8" height="26" rx="4"/><rect x="239" y="62" width="8" height="26" rx="4"/><rect x="258" y="62" width="8" height="26" rx="4"/><rect x="277" y="62" width="8" height="26" rx="4"/><rect x="296" y="62" width="8" height="26" rx="4"/><rect x="315" y="62" width="8" height="26" rx="4"/><rect x="334" y="62" width="8" height="26" rx="4"/><rect x="353" y="62" width="8" height="26" rx="4"/><rect x="372" y="62" width="8" height="26" rx="4"/><rect x="391" y="62" width="8" height="26" rx="4"/><rect x="410" y="62" width="8" height="26" rx="4"/><rect x="429" y="62" width="8" height="26" rx="4"/><rect x="191" y="98" width="8" height="26" rx="4"/><rect x="210" y="98" width="8" height="26" rx="4"/><rect x="229" y="98" width="8" height="26" rx="4"/><rect x="248" y="98" width="8" height="26" rx="4"/><rect x="267" y="98" width="8" height="26" rx="4"/><rect x="286" y="98" width="8" height="26" rx="4"/><rect x="305" y="98" width="8" height="26" rx="4"/><rect x="324" y="98" width="8" height="26" rx="4"/><rect x="343" y="98" width="8" height="26" rx="4"/><rect x="362" y="98" width="8" height="26" rx="4"/><rect x="381" y="98" width="8" height="26" rx="4"/><rect x="400" y="98" width="8" height="26" rx="4"/><rect x="419" y="98" width="8" height="26" rx="4"/><rect x="438" y="98" width="8" height="26" rx="4"/><rect x="182" y="134" width="8" height="26" rx="4"/><rect x="201" y="134" width="8" height="26" rx="4"/><rect x="220" y="134" width="8" height="26" rx="4"/><rect x="239" y="134" width="8" height="26" rx="4"/><rect x="258" y="134" width="8" height="26" rx="4"/><rect x="277" y="134" width="8" height="26" rx="4"/><rect x="296" y="134" width="8" height="26" rx="4"/><rect x="315" y="134" width="8" height="26" rx="4"/><rect x="334" y="134" width="8" height="26" rx="4"/><rect x="353" y="134" width="8" height="26" rx="4"/><rect x="372" y="134" width="8" height="26" rx="4"/><rect x="391" y="134" width="8" height="26" rx="4"/><rect x="410" y="134" width="8" height="26" rx="4"/><rect x="429" y="134" width="8" height="26" rx="4"/><path d="M474 30 h36 q16 0 16 16 v128 q0 16 -16 16 h-36 z"/><rect x="526" y="58" width="22" height="34" rx="5"/><path d="M530 64 v22 M536 64 v22 M542 64 v22"/><circle cx="500" cy="54" r="5"/><rect x="488" y="120" width="24" height="30" rx="3"/><path d="M150 180 l-22 52 h300 l-22 -52"/><path d="M160 232 v10 M400 232 v10"/><circle cx="246" cy="206" r="6"/><circle cx="336" cy="206" r="6"/><path d="M500 150 C 500 200, 470 230, 440 250 a 13 13 0 1 1 -22 8 a 13 13 0 1 1 -22 8 a 13 13 0 1 1 -22 8 a 13 13 0 1 1 -22 8 a 13 13 0 1 1 -22 8 a 13 13 0 1 1 -22 8 a 13 13 0 1 1 -22 8 a 13 13 0 1 1 -22 8 a 13 13 0 1 1 -22 8 a 13 13 0 1 1 -22 8 a 13 13 0 1 1 -22 8 a 13 13 0 1 1 -22 8 a 13 13 0 1 1 -22 8 a 13 13 0 1 1 -22 8 a 13 13 0 1 1 -22 8 a 13 13 0 1 1 -22 8 C 48 398, 58 458, 108 468" fill="none"/><g transform="translate(108 468) rotate(-18)"><rect x="0" y="-38" width="150" height="86" rx="34"/><rect x="18" y="-26" width="96" height="62" rx="24" fill="url(#delik)"/><rect x="38" y="44" width="60" height="16" rx="6"/><text x="68" y="57" text-anchor="middle" class="kucuk">ASELSAN</text><rect x="150" y="-12" width="14" height="30" rx="5"/></g></g></svg><svg class="sanat hop" viewBox="0 0 280 190"><g transform="translate(0 0) scale(1)"><rect x="20" y="10" width="230" height="160" rx="18"/><rect x="34" y="24" width="202" height="132" rx="10"/><circle cx="53" cy="44" r="7"/><circle cx="76" cy="44" r="7"/><circle cx="99" cy="44" r="7"/><circle cx="122" cy="44" r="7"/><circle cx="145" cy="44" r="7"/><circle cx="168" cy="44" r="7"/><circle cx="191" cy="44" r="7"/><circle cx="214" cy="44" r="7"/><circle cx="53" cy="67" r="7"/><circle cx="76" cy="67" r="7"/><circle cx="99" cy="67" r="7"/><circle cx="122" cy="67" r="7"/><circle cx="145" cy="67" r="7"/><circle cx="168" cy="67" r="7"/><circle cx="191" cy="67" r="7"/><circle cx="214" cy="67" r="7"/><circle cx="53" cy="90" r="7"/><circle cx="76" cy="90" r="7"/><circle cx="99" cy="90" r="7"/><circle cx="122" cy="90" r="7"/><circle cx="145" cy="90" r="7"/><circle cx="168" cy="90" r="7"/><circle cx="191" cy="90" r="7"/><circle cx="214" cy="90" r="7"/><circle cx="53" cy="113" r="7"/><circle cx="76" cy="113" r="7"/><circle cx="99" cy="113" r="7"/><circle cx="122" cy="113" r="7"/><circle cx="145" cy="113" r="7"/><circle cx="168" cy="113" r="7"/><circle cx="191" cy="113" r="7"/><circle cx="214" cy="113" r="7"/><circle cx="53" cy="136" r="7"/><circle cx="76" cy="136" r="7"/><circle cx="99" cy="136" r="7"/><circle cx="122" cy="136" r="7"/><circle cx="145" cy="136" r="7"/><circle cx="168" cy="136" r="7"/><circle cx="191" cy="136" r="7"/><circle cx="214" cy="136" r="7"/><path d="M8 70 h12 M250 70 h12"/><path d="M8 70 v96 h254 v-96"/><path d="M40 166 v14 M230 166 v14"/></g></svg></div>
 <header>
   <h1>ASELSAN 4000 · Seri Yedekleme ve Yükleme</h1>
-  <nav><a href="./">Simülatör</a><a href="https://github.com/barisdinc/ASELSAN_4000">GitHub</a><button id="themeBtn" title="Açık / koyu tema">◐</button></nav>
+  <nav><a href="./">Simülatör</a><a href="surumler.html">Sürümler</a><a href="https://github.com/barisdinc/ASELSAN_4000">GitHub</a><button id="themeBtn" title="Açık / koyu tema">◐</button></nav>
 </header>
 <main>
   <div class="banner">1–4. adımlar telsizden yalnızca <b>okur</b>. Telsize yalnızca 5. adım (firmware yükleme) ve 6. adım (EEPROM geri yükleme) yazar; 5. ve 6. adım bu oturumda EEPROM yedeği alınmadan açılmaz (flash yedeği isteğe bağlı).</div>
@@ -217,6 +220,7 @@ main { position: relative; z-index: 1; }
 <script src="updater.js"></script>
 <script src="seri_istemci.js"></script>
 <script src="firmware.js"></script>
+<script src="surum_notlari.js"></script>
 <script>
 'use strict';
 const $ = id => document.getElementById(id);
@@ -566,6 +570,37 @@ addEventListener('drop', e => {
 });
 ['wrC1', 'wrC2', 'wrC3', 'wrRecover'].forEach(id => $(id).onchange = updateWrite);
 
+/* "Neler değişti": ozel_firmware/degisiklikler.json (surum_notlari.js). Telsiz bağlıysa ve onda da
+ * numaralı özel sürüm varsa yalnız aradaki sürümler gösterilir. */
+function notlarHtml(name, version) {
+  const SN = window.SurumNotlari; if (!SN) return '';
+  let not = SN.NOTLAR[name.replace(/^dosya: /, '')];
+  const sec = SN.surumNo(version), on = sec ? sec.on : 'AT';
+  /* a file opened from disk: find it by its version among the custom firmwares */
+  if (!not && sec) not = Object.values(SN.NOTLAR).find(x => (x.surumler || []).some(n => n.surum === sec.ad));
+  if (!not) return '';
+  let h = '<div class="notlar" id="wrNotlar"><h3>Neler değişti</h3><p class="note" style="margin:0">' + esc(not.ozet) +
+    (not.surumler ? ' <a href="surumler.html">Tüm sürüm notları ve özellikler →</a>' : '') + '</p>';
+  const liste = (not.surumler || []).filter(n => !sec || SN.notNo(n.surum) <= sec.no);
+  if (!liste.length) return h + '</div>';
+  const tel = header && SN.surumNo(header.version);
+  if (tel && sec && tel.on === sec.on) {
+    if (tel.no === sec.no) h += '<p class="ok">Telsizdeki sürümle aynı (' + esc(header.version) + '); yüklemek bir şey değiştirmez.</p>';
+    else if (tel.no < sec.no) {
+      const ara = liste.filter(n => SN.notNo(n.surum) > tel.no);
+      h += '<p>Telsizdeki <b>' + esc(header.version) + '</b> sürümünden bu yana:</p>' + ara.map(n => SN.surumHtml(n, on)).join('');
+    } else {
+      const giden = (not.surumler || []).filter(n => SN.notNo(n.surum) > sec.no && SN.notNo(n.surum) <= tel.no);
+      h += '<p class="warn">⚠ Telsizdeki <b>' + esc(header.version) + '</b> bu dosyadan yeni. Yüklerseniz ' +
+        (giden.length ? 'şu değişiklikler geri gider:</p>' + giden.map(n => SN.surumHtml(n, on)).join('') : 'telsizdeki sürümün değişiklikleri geri gider (notları bu sayfada yok).</p>');
+    }
+    return h + '</div>';
+  }
+  h += SN.surumHtml(liste[0], on);
+  if (liste.length > 1) h += '<details><summary>Önceki sürümler (' + (liste.length - 1) + ')</summary>' + liste.slice(1).map(n => SN.surumHtml(n, on)).join('') + '</details>';
+  return h + '</div>';
+}
+
 let lastSel = null;
 function loadImage(name, text) {
   lastSel = [name, text];
@@ -592,6 +627,7 @@ function loadImage(name, text) {
   } else {
     h += '</div><ul class="errs bad">' + r.errors.map(e => '<li>' + esc(e) + '</li>').join('') + '</ul>';
   }
+  if (r.ok) h += notlarHtml(name, r.header.version);
   $('wrInfo').innerHTML = h;
   $('wrC3Row').hidden = !(wr && wr.famWarn); $('wrC3').checked = false;
   updateWrite();

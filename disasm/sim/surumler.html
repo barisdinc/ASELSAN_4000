@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ASELSAN 4000 Sürümler</title>
+<style>
+:root {
+  --bg: #f3f2ee; --panel: #ffffff; --ink: #1d1f22; --muted: #6b6f76; --line: #dcdad3;
+  --accent: #2f6fdb; --accent-ink: #ffffff; --bad: #c8372d; --good: #23843b; --warn: #b7791f;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #17181b; --panel: #202227; --ink: #e6e6e3; --muted: #9a9ea6; --line: #33363d; --accent: #5b8ef0;
+  --good: #4cc26a; --bad: #ef6a5e; --warn: #e0a64a;
+} }
+:root[data-theme="dark"] {
+  --bg: #17181b; --panel: #202227; --ink: #e6e6e3; --muted: #9a9ea6; --line: #33363d; --accent: #5b8ef0;
+  --good: #4cc26a; --bad: #ef6a5e; --warn: #e0a64a;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+header { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; padding: 10px 16px; border-bottom: 1px solid var(--line); background: var(--panel); position: sticky; top: 0; z-index: 5; }
+header h1 { font-size: 16px; margin: 0; font-weight: 650; }
+header nav { margin-left: auto; display: flex; gap: 10px; align-items: center; }
+a { color: var(--accent); text-decoration: none; font-size: inherit; }
+header a { font-size: 13px; }
+button { font: inherit; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 4px 10px; cursor: pointer; }
+button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+main { max-width: 860px; margin: 0 auto; padding: 16px; display: grid; gap: 14px; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
+.card h2 { margin: 0 0 4px; font-size: 18px; }
+.card h3 { margin: 16px 0 4px; font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); font-weight: 650; }
+.note { color: var(--muted); font-size: 12.5px; }
+.ok { color: var(--good); } .bad { color: var(--bad); } .warn { color: var(--warn); }
+.filtre { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 6px 0 2px; font-size: 13px; }
+.orijinal dt { font-weight: 600; margin-top: 8px; } .orijinal dd { margin: 2px 0 0; }
+.gizli { display: none !important; }
+</style>
+</head>
+<body>
+<header>
+  <h1>ASELSAN 4000 · Sürümler ve özellikler</h1>
+  <nav><a href="./">Simülatör</a><a href="yukle.html">Seri yükleme</a><a href="https://github.com/barisdinc/ASELSAN_4000">GitHub</a><button id="themeBtn" title="Açık / koyu tema">◐</button></nav>
+</header>
+<main id="icerik"><p class="note">firmware.js yüklenemedi.</p></main>
+<script src="firmware.js"></script>
+<script src="surum_notlari.js"></script>
+<script>
+'use strict';
+const SN = window.SurumNotlari, esc = SN.esc, NOT = SN.NOTLAR, ZAMAN = window.FIRMWARE_TIME || {};
+let h = '';
+for (const [ad, not] of Object.entries(NOT)) {
+  if (!not.surumler) continue;
+  const on = (/^(\S\S) V/.exec(ZAMAN[ad] || '') || [, 'AT'])[1];
+  h += '<section class="card"><h2>' + esc(not.ad || ad) + '</h2><p class="note" style="margin:0">' + esc(ad) +
+    (ZAMAN[ad] ? ' · güncel: ' + esc(ZAMAN[ad]) : '') + ' · <a href="yukle.html">telsize yükle</a></p><p>' + esc(not.ozet) + '</p>' +
+    '<h3>Özellikler</h3>' + SN.ozellikHtml(not, on) +
+    '<h3>Sürüm geçmişi</h3><div class="filtre"><span class="note">Göster:</span>' +
+    '<button data-f="hepsi" aria-pressed="true">Hepsi</button><button data-f="yeni" aria-pressed="false">Yeni</button>' +
+    '<button data-f="duzeltme" aria-pressed="false">Düzeltme</button><button data-f="degisiklik" aria-pressed="false">Değişiklik</button>' +
+    '<label class="note"><input type="checkbox" data-geri checked> geri alınanlar</label></div>' +
+    not.surumler.map(n => SN.surumHtml(n, on)).join('') + '</section>';
+}
+const ori = Object.entries(NOT).filter(([, n]) => !n.surumler);
+if (ori.length) h += '<section class="card"><h2>ASELSAN orijinal firmware\'ler</h2><dl class="orijinal">' +
+  ori.map(([ad, n]) => '<dt>' + esc(ad) + '</dt><dd>' + esc(n.ozet) + '</dd>').join('') + '</dl></section>';
+if (h) document.getElementById('icerik').innerHTML = h;
+
+/* filter by change type / hide reverted versions */
+for (const kart of document.querySelectorAll('section.card')) {
+  const uygula = () => {
+    const f = kart.querySelector('[data-f][aria-pressed="true"]').dataset.f, geri = kart.querySelector('[data-geri]').checked;
+    for (const s of kart.querySelectorAll('.surumnot')) {
+      let gorunen = 0;
+      for (const li of s.querySelectorAll('li')) { const g = f === 'hepsi' || li.querySelector('.tur-' + f); li.classList.toggle('gizli', !g); gorunen += g ? 1 : 0; }
+      s.classList.toggle('gizli', !gorunen || (!geri && s.classList.contains('eski')));
+    }
+  };
+  for (const b of kart.querySelectorAll('[data-f]')) b.onclick = () => { kart.querySelectorAll('[data-f]').forEach(x => x.setAttribute('aria-pressed', x === b)); uygula(); };
+  const g = kart.querySelector('[data-geri]'); if (g) g.onchange = uygula;
+}
+if (location.hash) { const e = document.getElementById(location.hash.slice(1)); if (e) e.scrollIntoView(); }
+
+document.getElementById('themeBtn').onclick = () => {
+  const r = document.documentElement, cur = r.getAttribute('data-theme');
+  const dark = cur ? cur === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+  r.setAttribute('data-theme', dark ? 'light' : 'dark');
+};
+</script>
+</body>
+</html>

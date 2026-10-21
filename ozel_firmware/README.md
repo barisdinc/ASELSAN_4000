@@ -16,6 +16,7 @@ Orijinal YA4000S yazılımına eklenen özellikler. Her örnek önce simülatör
 `make -C disasm ozel` her `ornekler/*.asm` çıktısının ROM başlığını (0x010000) `surum.json`'a göre yazar (`tools/yama.py --surum`):
 
 - **Sürüm:** "AT V0-1"den başlar. Bir dosyanın içeriği son derlemeden farklıysa bir artar (V0-1 … V0-99, sonra V1-1). 10, 20, … 90 atlanır (V0-9'dan sonra V0-11): `F_00E0E1` sürüm baytını onlar hanesi + sıfır değilse birler hanesi olarak yazıyor, 10 ekranda "1" görünürdü. Kaynak değişmeden yeniden derlemek sürümü ve tarihi değiştirmez. Her dosyanın son sürümü, tarihi ve içerik imzası `surum.json`'daki `kayitlar`da durur. Bu dosyayı da commit edin.
+- **Neler değişti:** `degisiklikler.json`'a her yeni sürüm için kısa notlar yazılır (`surum`, `tarih`, `durum`: `gercek` / `sim`, `degisiklikler`; gerçek telsizde çalışmayıp geri alınan sürüm `geri_alindi`). Programlama sayfası (`yukle.html`) firmware seçilince bunları gösterir; telsiz bağlıysa yalnız telsizdeki sürümden bu yana gelenleri. `make -C disasm sim`, `surum.json`'daki güncel sürümün notu yoksa durur.
 - **Tarih:** O sürümün derlendiği gün.
 - **Metin:** `metin` alanı: "yATOLYE 2026 - 4000/4100 SERISI TELSIZ YAZILIMI (BarisDInc)". En çok 114 karakter, ASCII.
 
