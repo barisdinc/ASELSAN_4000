@@ -76,6 +76,14 @@ th, td { text-align: left; padding: 3px 8px; border-bottom: 1px solid var(--line
 th { color: var(--muted); font-weight: 600; }
 td.num { font-family: var(--mono); }
 .scroll { max-height: 260px; overflow: auto; margin-top: 10px; }
+.izle { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+.izle h3 { margin: 0 0 4px; font-size: 13px; display: flex; justify-content: space-between; gap: 8px; }
+.izle h3 .note { font-weight: 400; }
+.izle pre { margin: 0; height: 240px; overflow: auto; background: color-mix(in srgb, var(--bg) 70%, transparent); border: 1px solid var(--line);
+  border-radius: 6px; padding: 6px 8px; font-size: 12px; line-height: 1.4; white-space: pre-wrap; word-break: break-all; }
+.izle .zaman { color: var(--muted); }
+.izle .yok { color: var(--muted); }
+@media (max-width: 700px) { .izle { grid-template-columns: 1fr; } }
 #log { height: 160px; overflow: auto; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; white-space: pre-wrap; margin: 0; }
 label.mode { display: flex; gap: 6px; align-items: center; }
 /* arka plan: ASELSAN 4000/4100 çizimleri (kılavuz 7610-4000-0003'teki ön panel, yan görünüş ve kapak fotoğrafından) */
@@ -115,8 +123,26 @@ main { position: relative; z-index: 1; }
     <p class="note warn" id="noSerial" hidden>Bu tarayıcıda Web Serial yok. Gerçek telsiz için masaüstünde Chrome ya da Edge kullanın; simülatör modu her tarayıcıda çalışır.</p>
     <div class="row">
       <button class="primary" id="connectBtn">Bağlan</button>
+      <button id="dinleBtn" title="Portu açar, telsize hiçbir şey göndermez: APRS satırlarını izlemek için">Yalnız dinle</button>
       <button id="disconnectBtn" disabled>Bağlantıyı kes</button>
       <span class="status" id="status">Bağlı değil</span>
+    </div>
+  </section>
+
+  <section class="card" id="izCard">
+    <h2>Seri izleme</h2>
+    <p class="note" style="margin:0">Porttan giden ve gelen baytlar. <b>Yalnız dinle</b> portu 9600 8N1 açar ve telsize hiçbir şey göndermez: APRS menüsündeki telsizin yazdığı paket satırları burada görünür (AT V0-18 ve sonrası). <b>Bağlan</b> ile programlama protokolünün çerçeveleri de görünür.</p>
+    <div class="row" style="margin-top:8px">
+      <label class="note"><input type="radio" name="izBicim" value="ascii" checked> ASCII</label>
+      <label class="note"><input type="radio" name="izBicim" value="hex"> HEX</label>
+      <label class="note"><input type="checkbox" id="izZaman" checked> zaman</label>
+      <label class="note"><input type="checkbox" id="izKaydir" checked> son satıra kaydır</label>
+      <button id="izTemizle">Temizle</button>
+      <button id="izKaydet">Gelenleri kaydet (.txt)</button>
+    </div>
+    <div class="izle">
+      <div><h3>Giden (PC → telsiz) <span class="note" id="izTxSay">0 bayt</span></h3><pre id="izTx" class="mono"><span class="yok">—</span></pre></div>
+      <div><h3>Gelen (telsiz → PC) <span class="note" id="izRxSay">0 bayt</span></h3><pre id="izRx" class="mono"><span class="yok">—</span></pre></div>
     </div>
   </section>
 
@@ -247,10 +273,11 @@ function download(el, name, data, type, label) {
 }
 function refresh() {
   const on = !!client;
-  $('connectBtn').disabled = on || busy; $('disconnectBtn').disabled = !on || busy;
+  $('connectBtn').disabled = !!port || busy; $('dinleBtn').disabled = !!port || busy || (mode() === 'serial' && !S.WebSerialPort.supported());
+  $('disconnectBtn').disabled = !port || busy;
   $('eeBtn').disabled = !on || busy; $('flashBtn').disabled = !on || busy;
   $('erFileBtn').disabled = busy;
-  document.querySelectorAll('input[name=mode]').forEach(r => r.disabled = on || busy);
+  document.querySelectorAll('input[name=mode]').forEach(r => r.disabled = !!port || busy);
   $('simFw').disabled = on || busy;
   updateWrite(); updateEeWrite(); if (typeof wsState === 'function') wsState();
 }
@@ -326,22 +353,99 @@ async function run(fn) {
   finally { busy = false; refresh(); }
 }
 
-$('connectBtn').onclick = () => run(async () => {
+/* Seri izleme: portun write'ı ve onByte'ı sarılır; giden / gelen baytlar zaman damgasıyla tutulur */
+const IZ = { tx: [], rx: [], cizim: 0 };
+const IZ_EN_COK = 200000;
+function izle(p) {
+  const w = p.write.bind(p); let ob = null;
+  p.write = async bytes => { izEkle('tx', bytes); return w(bytes); };
+  Object.defineProperty(p, 'onByte', { configurable: true, get: () => b => { izEkle('rx', [b]); if (ob) ob(b); }, set: f => { ob = f; } });
+  return p;
+}
+function izEkle(yon, bytes) {
+  const a = IZ[yon], t = Date.now();
+  for (const b of bytes) a.push([t, b & 0xFF]);
+  if (a.length > IZ_EN_COK) a.splice(0, a.length - IZ_EN_COK);
+  if (!IZ.cizim) IZ.cizim = requestAnimationFrame(izCiz);
+}
+const izSaat = t => { const d = new Date(t), p = (n, k) => String(n).padStart(k || 2, '0'); return p(d.getHours()) + ':' + p(d.getMinutes()) + ':' + p(d.getSeconds()) + '.' + p(d.getMilliseconds(), 3); };
+const UTF8 = new TextDecoder('utf-8');
+/* ASCII: satır sonuna (LF) ya da 0,5 s'lik boşluğa kadar bir satır; UTF-8 çözülür, kontrol baytları '·'.
+ * HEX: 30 ms içindeki baytlar bir satır (bir çerçeve), en çok 32 bayt. */
+function izMetin(a, hex, zaman) {
+  const satirlar = []; let cur = [], t0 = 0, son = 0;
+  const bitir = () => {
+    if (!cur.length) return;
+    let m;
+    if (hex) m = cur.map(b => b.toString(16).toUpperCase().padStart(2, '0')).join(' ');
+    else m = UTF8.decode(Uint8Array.from(cur.filter(b => b !== 0x0D && b !== 0x0A))).replace(/[\x00-\x1F\x7F]/g, '·');
+    satirlar.push((zaman ? '<span class="zaman">' + izSaat(t0) + '</span>  ' : '') + esc(m));
+    cur = [];
+  };
+  for (const [t, b] of a) {
+    if (cur.length && (hex ? (t - son > 30 || cur.length >= 32) : t - son > 500)) bitir();
+    if (!cur.length) t0 = t;
+    cur.push(b); son = t;
+    if (!hex && b === 0x0A) bitir();
+  }
+  bitir();
+  return satirlar.length ? satirlar.slice(-2000).join('\n') : '<span class="yok">—</span>';
+}
+function izCiz() {
+  IZ.cizim = 0;
+  const hex = document.querySelector('input[name=izBicim]:checked').value === 'hex', z = $('izZaman').checked;
+  for (const [yon, el, say] of [['tx', 'izTx', 'izTxSay'], ['rx', 'izRx', 'izRxSay']]) {
+    const pre = $(el);
+    pre.innerHTML = izMetin(IZ[yon], hex, z);
+    $(say).textContent = IZ[yon].length + ' bayt';
+    if ($('izKaydir').checked) pre.scrollTop = pre.scrollHeight;
+  }
+}
+document.querySelectorAll('input[name=izBicim]').forEach(r => r.onchange = izCiz);
+$('izZaman').onchange = izCiz;
+$('izTemizle').onclick = () => { IZ.tx.length = 0; IZ.rx.length = 0; izCiz(); };
+$('izKaydet').onclick = () => {
+  const hex = document.querySelector('input[name=izBicim]:checked').value === 'hex';
+  const t = izMetin(IZ.rx, hex, $('izZaman').checked).replace(/<[^>]+>/g, '').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&amp;/g, '&');
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([t + '\n'], { type: 'text/plain' }));
+  a.download = 'seri_gelen_' + stamp() + (hex ? '_hex' : '') + '.txt'; a.click();
+};
+
+/* portu aç (gerçek ya da simülatör), izlemeye bağla */
+async function portAc() {
   if (mode() === 'sim') {
     const name = $('simFw').value;
     setStatus('Simülatör açılıyor…');
     const b = new B.Board(B.parseHex(FW[name]));
     b.eeprom.mem.set(B.defaultEeprom());
+    const sp = izle(new S.SimPort(b, B.FCLK));            // açılış çerçevesi de izlemede görünsün
     const bootSec = b.rom[0xE0E1] === 0x5C ? 8 : 2.5;     // firmware with the 5 s yATOLYE screen boots longer
     for (let t = 0; t < bootSec; t += 0.25) { b.run(B.FCLK * 0.25); await new Promise(r => setTimeout(r, 0)); }
-    port = new S.SimPort(b, B.FCLK);
+    port = sp;
     log('simülatör: ' + name + ' (varsayılan EEPROM)');
   } else {
-    port = new S.WebSerialPort();
+    const p = new S.WebSerialPort();
     setStatus('Port seçin…');
-    await port.open(9600);
+    await p.open(9600);
+    port = izle(p);
     log('seri port açıldı (9600 8N1)');
   }
+}
+
+/* Yalnız dinle: protokol yok, telsize bayt gitmez (simülatörde zaman ilerletilir) */
+$('dinleBtn').onclick = () => run(async () => {
+  await portAc();
+  setStatus('Dinleniyor (telsize bir şey gönderilmiyor)', 'ok');
+  log('yalnız dinle: gelen baytlar "Seri izleme"de');
+  if (port instanceof S.SimPort) {
+    const p = port;
+    (async () => { while (port === p) { await p.sleep(100); await new Promise(r => setTimeout(r, 0)); } })();
+  }
+  $('izCard').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+});
+
+$('connectBtn').onclick = () => run(async () => {
+  await portAc();
   setStatus('Telsize bağlanılıyor…');
   const c = new S.RadioClient(port, { log });
   try { await c.connect(); } catch (e) { await port.close(); port = null; throw e; }
@@ -767,6 +871,31 @@ updateEeWrite();
 
 refresh();
 
+/* yukle.html#otomatik-test-izle: Yalnız dinle -> açılış çerçevesi gelir, telsize bayt gitmez; ASCII'de
+ * UTF-8 APRS satırı; Bağlan -> protokol çerçeveleri iki yönde */
+if (location.hash === '#otomatik-test-izle') (async () => {
+  document.querySelector('input[value=sim]').checked = true; onMode();
+  if (FW['YA4000S_FREKANS_YATOLYE.HEX']) $('simFw').value = 'YA4000S_FREKANS_YATOLYE.HEX';
+  const until = c => new Promise(r => { const t = setInterval(() => { if (c()) { clearInterval(t); r(); } }, 50); });
+  const hata = [];
+  $('dinleBtn').click(); await until(() => port && !busy);
+  await until(() => IZ.rx.length >= 11);
+  document.querySelector('input[value=hex]').checked = true; izCiz();
+  if (!/16 10 02 01 01 01 80 10 03 00 00/.test($('izRx').textContent)) hata.push('açılış çerçevesi: ' + $('izRx').textContent);
+  if (IZ.tx.length) hata.push('dinlerken ' + IZ.tx.length + ' bayt gitti');
+  if (!client && $('eeBtn').disabled !== true) hata.push('dinlerken EEPROM düğmesi açık');
+  const satir = 'TA7W-7>APRS,WIDE1-1*:!4050.63N/03109.39E>Düzce 73\r\n';
+  for (const b of new TextEncoder().encode(satir)) port.onByte(b);
+  document.querySelector('input[value=ascii]').checked = true; izCiz();
+  if (!$('izRx').textContent.includes('TA7W-7>APRS,WIDE1-1*:!4050.63N/03109.39E>Düzce 73')) hata.push('ASCII: ' + $('izRx').textContent.slice(-120));
+  $('disconnectBtn').click(); await until(() => !port && !busy);
+  $('izTemizle').click();
+  $('connectBtn').click(); await until(() => client && !busy);
+  document.querySelector('input[value=hex]').checked = true; izCiz();
+  if (!/16 10 02 01 10 03 00 00/.test($('izTx').textContent)) hata.push('giden bağlan çerçevesi yok: ' + $('izTx').textContent.slice(0, 120));
+  if (!/16 10 02 02/.test($('izRx').textContent)) hata.push('gelen ACK yok');
+  document.body.dataset.test = hata.length ? 'hata ' + hata.join(' / ') : 'bitti';
+})();
 /* headless check: yukle.html#otomatik-test runs the whole flow on the simulator and marks the page */
 if (location.hash === '#otomatik-test-aile') (async () => {
   document.querySelector('input[value=sim]').checked = true; onMode();
