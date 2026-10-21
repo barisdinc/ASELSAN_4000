@@ -237,6 +237,19 @@ Bölümdeki bir alan geçersizse (sayfa geçersiz değeri zaten yazmaz) ekranda 
 - Hoparlör APRS'te kapalı (yukarıdaki `APRS_SUS_KARAR`), çözücü çalışır: firmware seçmeli çağrıyı da hoparlör böyle kapalıyken çözüyor.
 - Gerçek cihazda bilinmeyen: P66'ya giden sesin seviyesi / süzgeci. Paketler hiç görünmezse susturmayı açıp (monitör) deneyin.
 
+**Seri port çıkışı (`ornekler/aprs_seri.inc`, AT V0-18).** APRS menüsündeyken sağlaması tutan her paket UART0'a (programlama kablosu; firmware'in hızı, normalde 9600 8N1) TNC2 metni olarak yazılır:
+
+```
+TA7W-7>APRS,WIDE1-1*,WIDE2-1:!4050.63N/03109.39E>hello
+```
+
+- Biçim APRS-IS / direwolf ile aynı: `gönderen>hedef,yol:bilgi` + CR LF. Yıldız yalnız tekrarlanmış (H biti) son tekrarlayıcıda. Bilgi alanındaki CR / LF boşluk olarak yazılır.
+- Kesme yalnız çözülen baytı tampona koyar (`AR_CER`, $0740, 160 bayt; gönderme tamponu `AP_CER` ile ortak). Uzun paketlerde bilgi alanının ilk ~144 baytı yazılır.
+- Metin ana döngüde firmware'in kendi gönderme kuyruğuyla (`F_007627`, 80 bayt) yazılır; kuyrukta yer yoksa beklenmez, sonraki turda sürer. Satır yazılırken gelen paket ekrana ve listeye düşer ama seri porta yazılmaz.
+- Telsiz gönderme yaparsa yarım kalan satır CR LF ile kapatılır.
+- Aynı kablo telsizin programlama protokolünü de taşır: yükleme sayfası bağlıyken APRS menüsünde durmayın.
+- Durum değişkenleri $04FA–$04FD.
+
 **Kapat-aç sonrası APRS'te kalma.** APRS menüsüne girince EEPROM 0x732'ye `A5`, menüden çıkınca (m, kanal anahtarı, ...) `00` yazılır; değer zaten aynıysa yazılmaz. Telsiz APRS'teyken kapatılırsa açılışta, normal ekran gelip alma başlayınca (menü 0, radyo durumu 2, bekleyen tuş yok) `APRS_KANCA` menü durumunu APRS başlığına alır ve 's' tuşunu bırakır; firmware'in tuş yolu kullanıcı seçmiş gibi `APRS_GIR`'i çağırır. Otomatik gönderim aralığı baştan sayılır. EEPROM yazması firmware'in kendi yordamıyla (`F_0073C6`) yapılır. RAM açılışta temizlenmediği için denetimin yapıldığı `$05F8` = `A55A` ile işaretlenir.
 
 **Simülatörde doğrulama** (`test_ozel.js`, `disasm/sim/afsk.js`): TA1'e yazılan örnekler firmware'den bağımsız bir çözücüden geçirilir (1200/2200 Hz enerjisi, bit saati, NRZI, bit doldurma, CRC). Bölüm yokken ve sağlaması bozukken ROM varsayılanlarıyla, ayrıca farklı ayarlarla (küçük harfli çağrı, UTF-8 yorum, iki haneli SSID, güney / batı, `\` tablosu, 43 baytlık yorum, boş yorum) paket bayt bayt çözülür ve sayfanın gösterdiği paketle karşılaştırılır; altı hatalı içerikte (7 karakterli çağrı, SSID 16, bozuk konum) hata ekranı çıkar ve paket gitmez. Örnekleme 9600 Hz.

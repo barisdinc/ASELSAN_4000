@@ -406,6 +406,23 @@ APRS_PTT:
         SEM
         JSR   AP_HAZIR
         BNE   AP_YOK
+        ; Paketi şimdi yeniden kur: AP_CER almada seri port tamponu (aprs_rx.inc AR_CER) olarak
+        ; kullanılıyor. Önce alma kapatılır ki kesme tampona yazmasın. EEPROM okuması bu
+        ; çerçeveyle (AP_F geçici olarak).
+        JSR   AR_KAPAT
+        CLM
+        LDA   A,AP_F
+        PHA
+        LDA   A,$03,S                   ; girişte konan çerçeve
+        STA   A,AP_F
+        JSR   AP_HAZIRLA                ; C = 1: EEPROM'daki ayar bozuk
+        PLX
+        STX   AP_F
+        BCC   AP_PTT_HAZIR
+        SEM
+        SEB   #F_AP_HATA,AP_DURUM
+        BRA   AP_YOK
+AP_PTT_HAZIR:
         CLM
         LDX   #0                        ; ekranda "APRS TX"
         JSR   AP_METIN_YAZ

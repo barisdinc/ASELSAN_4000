@@ -49,6 +49,7 @@ TITLES_TR:
         .TEXT8 ""
 
         .INCLUDE "frekans.inc"
+        .INCLUDE "aprs_seri.inc"        ; APRS alma: paketleri seri porta yaz
 
         .ORG $012400                    ; bank 1 boş alanı (açılış ekranı $012000'de)
         .INCLUDE "aprs.inc"

@@ -467,6 +467,9 @@ if (RING.includes('APRS')) {
   /* alma (aprs_rx.inc): P66'ya (TB1IN, sıfır-geçiş algılayıcısı) AFSK paket; ekranda gönderen */
   {
     const r = radio(aprs(AYAR)); boot(r, 2.5); keys(r, enter); r.run(FCLK * 0.3);
+    /* seri port (aprs_seri.inc): UART0'a giden baytlar */
+    let seri = []; const ub = r.uartByte.bind(r); r.uartByte = (n, v) => { if (n === 0) seri.push(v); return ub(n, v); };
+    const seriAl = () => { const t = String.fromCharCode(...seri); seri = []; return t; };
     const al = (text, o, bozuk) => {
       const fr = AFSK.encode(text); if (bozuk) fr[fr.length - 3] ^= 1;
       const e = AFSK.edges(fr, o), t = r.now;
@@ -484,7 +487,9 @@ if (RING.includes('APRS')) {
     check('APRS: taşıyıcı varken hoparlör çıkışı kapalı (FX806 $10 bit 7 = 0), kanalda açık; ses yolu aynı',
       a10 !== undefined && !(a10 & 0x80) && (fxReg(k, 0x10) & 0x80) && a11 === fxReg(k, 0x11) && a13 === fxReg(k, 0x13) && (a10 | 0x80) === fxReg(k, 0x10),
       'APRS $10=' + a10 + ' $11=' + a11 + ' $13=' + a13 + ' / kanal $10=' + fxReg(k, 0x10) + ' $11=' + fxReg(k, 0x11) + ' $13=' + fxReg(k, 0x13));
+    seriAl();
     const ilk = al('TA7W-7>APRS,WIDE1-1:!4050.63N/03109.39E>hello');
+    { const t = seriAl(); check('APRS alma: paket seri porta TNC2 satırı', t === 'TA7W-7>APRS,WIDE1-1:!4050.63N/03109.39E>hello\r\n', JSON.stringify(t)); }
     check('APRS alma: paket -> ekranda gönderen "TA7W-7"', ilk === 'TA7W-7  ', ilk);
     r.run(FCLK * 4.5);
     check('APRS alma: ~4 s sonra APRS ekranına dönüş', lcd(r) === 'APRS PTT', lcd(r));
@@ -497,7 +502,10 @@ if (RING.includes('APRS')) {
       ['baud -%0,3', 'TA2AD-4>APRS:!4050.63N/03109.39E>', { baud: 1196.4 }, 'TA2AD-4'],
       ['gürültü %10', 'TA2AE-5>APRS:!4050.63N/03109.39E>', { noise: 0.1, seed: 7 }, 'TA2AE-5']];
     for (const [ad, text, o, bek] of zor) { const g = al(text, o); check('APRS alma: ' + ad, g === bek.padEnd(8), g); }
+    { const t = seriAl(), bek = zor.map(z => z[1] + '\r\n').join('');
+      check('APRS alma: hepsi seri portta, sırayla (SSID, yol, yıldız, uzun metin)', t === bek, JSON.stringify(t)); }
     const bz = al('TA9ZZ>APRS:>bozuk', {}, true);
+    check('APRS alma: sağlaması bozuk paket seri porta yazılmaz', seriAl() === '', '');
     check('APRS alma: sağlaması bozuk paket gösterilmez', bz !== 'TA9ZZ   ' && r.ram[0x623] === 9 - 1, bz + ', liste ' + r.ram[0x623]);
     /* liste: en yeni başta, en çok 8; '*' eskiye, '#' yeniye */
     const liste = keys(r, '*********');
@@ -510,8 +518,17 @@ if (RING.includes('APRS')) {
     /* gönderme sonrası alma sürer */
     const f = paketGonder(r);
     check('APRS alma: PTT ile paket hâlâ gidiyor', f.length === 1 && f[0].fcsOk && f[0].text === PAKET, f.length + ' paket');
+    seriAl();
     const sonra = al('TA3BB-9>APRS:>after tx');
     check('APRS alma: gönderdikten sonra yine alıyor', sonra === 'TA3BB-9 ', sonra);
+    { const t = seriAl(); check('APRS alma: gönderdikten sonra seri porta da yazıyor', t === 'TA3BB-9>APRS:>after tx\r\n', JSON.stringify(t)); }
+    /* yalnız tekrarlayıcıların sonuncusunda yıldız; bilgi alanındaki CR boşluk; uzun paket kesilir */
+    al('YM7KA-12>APDR15,TA2DEF-3*,WIDE2*:=4100.00N/02900.00E-x');
+    { const t = seriAl(); check('APRS alma: yıldız yalnız son tekrarlayıcıda', t === 'YM7KA-12>APDR15,TA2DEF-3,WIDE2*:=4100.00N/02900.00E-x\r\n', JSON.stringify(t)); }
+    const uzun = 'TA4CC>APRS:>' + 'abcdefghij'.repeat(18);
+    al(uzun);
+    { const t = seriAl(), bek = uzun.slice(0, 'TA4CC>APRS:'.length + 160 - 16) + '\r\n';
+      check('APRS alma: uzun paket (196 bayt) tamponla sınırlı: bilgi alanının ilk 144 baytı', t === bek, t.length + ' ' + JSON.stringify(t.slice(-20))); }
     /* sürekli gürültü (susturma açık): bekçi köpeği yok, tuşlar çalışıyor */
     r.selIn.noise = true; r.inputs.P5 |= 0x80; const ev0 = r.events.length; r.run(FCLK * 3);
     const tus = keys(r, '#');

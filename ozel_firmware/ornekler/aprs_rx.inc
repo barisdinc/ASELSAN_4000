@@ -34,6 +34,15 @@
 ; alma ayarı yazılır, yalnız C-BUS $10 bit 7 (ses çıkışı) kapalı: firmware'in seçmeli çağrı / TKS
 ; beklerken yaptığı susturma. Çözücünün girişi (FX806 süzgeci -> P66) açık kalır.
 
+;
+; Seri port (AT V0-18): sağlaması tutan her paket UART0'a (firmware'in hızı, normalde 9600 8N1)
+; TNC2 metni olarak yazılır: "TA7W-7>APRS,WIDE1-1*,WIDE2-1:!4050.63N/03109.39E>..." + CR LF.
+; Kesme yalnızca çözülen baytı AR_CER'e koyar (en çok AR_CER_N; uzun paketin bilgi alanı kesilir).
+; Metin ana döngüde (AR_SERI) firmware'in gönderme kuyruğuyla (F_007627, 80 bayt) yazılır;
+; kuyrukta yer yoksa beklemez, bir sonraki turda sürer. Yazılırken gelen paket tampona alınmaz
+; (ekrana / listeye yine düşer). Gönderme başlarsa satır CR LF ile kapatılır (tampon AP_CER ile
+; ortak). Bilgi alanındaki CR / LF boşluk olarak yazılır.
+
 ; RAM: liste OZEL_RAM+$00..$37 (bu derlemede SAYI / HESAP / OYUN yok, boş), durum $05FC..$0627
 AR_LISTE    .EQU OZEL_RAM+$00   ; 8 x 7 bayt: AX.25 adresi (karakterler <<1, SSID baytı)
 AR_N_MAX    .EQU 8
@@ -57,6 +66,15 @@ AR_SEC      .EQU $0624          ; gösterilen liste öğesi (1..AR_LN), 0 = yeni
 AR_D        .EQU $0625          ; 2 bayt: geçici
 AR_T        .EQU $0627          ; geçici (bayt)
 AR_IT       .EQU $0628          ; 2 bayt: kesmenin geçicisi
+AR_CER      .EQU AP_CER         ; $0740: çözülen çerçeve (FCS hariç), gönderme tamponuyla ortak
+AR_CER_N    .EQU 160            ; $0740..$07DF (donanım yığını ~$0821'e iniyor)
+AR_Y_DURUM  .EQU $04FA          ; seri yazma: 0 boş, 1 gönderen, 2 hedef, 3 yol, 4 ':', 6 bilgi, 5 CR LF
+AR_Y_I      .EQU $04FB          ; AR_CER'de sıradaki bayt
+AR_Y_N      .EQU $04FC          ; yazılacak bayt sayısı (FCS hariç, en çok AR_CER_N)
+AR_Y_TAM    .EQU $04FD          ; 1 = bu çerçeve baştan beri tampona alınıyor
+F_SERI      .EQU $007627        ; Y = bayt: UART0 gönderme kuyruğuna (kuyruk $02E2, $0332 / $0333)
+SERI_OKU    .EQU $0332
+SERI_YAZ    .EQU $0333
 
 R_TB1MOD_OLC .EQU $4A           ; darbe genişliği ölçme, f16 (504 kHz)
 AR_BIT      .EQU 420            ; 504000 / 1200
@@ -188,7 +206,15 @@ RBA_5:  LDM   #0,AR_BITSAY
         LDA   A,AR_BAYT
         STA   A,AR_ADR,X
 RBA_6:  CLM
-        INX
+        CPX   #AR_CER_N                 ; seri port için tampona (yazılırken değil)
+        BCS   RBA_6B
+        SEM
+        LDA   A,AR_Y_DURUM
+        BNE   RBA_6A
+        LDA   A,AR_BAYT
+        STA   A,AR_CER,X
+RBA_6A: CLM
+RBA_6B: INX
         STX   AR_SAY
         CPX   #331
         BCC   RBA_7
@@ -224,6 +250,21 @@ AR_BAYRAK:
         CMP   A,#$F0B8
         BNE   RBY_YENI
         SEM
+        LDA   A,AR_Y_TAM                ; seri port: çerçevenin tamamı tampondaysa yazmaya başla
+        BEQ   RBY_Y0
+        LDA   A,AR_Y_DURUM
+        BNE   RBY_Y0
+        CLM
+        LDA   A,AR_SAY
+        SEC
+        SBC   A,#2                      ; FCS hariç
+        CMP   A,#AR_CER_N
+        BCC   RBY_Y1
+        LDA   A,#AR_CER_N
+RBY_Y1: SEM
+        STA   A,AR_Y_N
+        LDM   #1,AR_Y_DURUM
+RBY_Y0: .ASSUME M=1,X=0
         LDA   A,AR_YENI
         BNE   RBY_YENI                  ; öncekini ana döngü henüz almadı
         LDX   #0
@@ -235,7 +276,11 @@ RBY_1:  LDA   A,AR_ADR+7,X              ; gönderen
         LDM   #1,AR_YENI
 RBY_YENI:
         SEM
-        SEB   #$02,AR_DURUM
+        LDM   #0,AR_Y_TAM               ; yeni çerçeve: seri yazma boşsa tampona alınır
+        LDA   A,AR_Y_DURUM
+        BNE   RBY_2
+        INC   AR_Y_TAM
+RBY_2:  SEB   #$02,AR_DURUM
         LDM   #0,AR_BITSAY
         CLM
         LDM   #0,AR_SAY
@@ -292,6 +337,8 @@ AR_SIFIRLA:
         LDM   #0,AR_GOSTER
         LDM   #0,AR_LN
         LDM   #0,AR_SEC
+        LDM   #0,AR_Y_DURUM
+        LDM   #0,AR_Y_TAM
         RTS
 
 ; ---------------------------------------------------------------------------------------------
@@ -348,8 +395,10 @@ RIS_LCD: CLM
         JSRL  F_LCD
         CLM
         PLA
-RIS_SON: CLM
+RIS_SON: JSR   AR_SERI
+        CLM
         RTS
+
 
 ; Tuş (APRS_TUS'tan, M = 0): '*' / '#' ile listede gezin. C = 1: tuş işlendi (ekran yazıldı)
 AR_TUS:

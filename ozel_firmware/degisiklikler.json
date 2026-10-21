@@ -20,6 +20,11 @@
         "aciklama": "APRS menüsündeyken çözülen paketin gönderen çağrı işareti ~4 s ekranda. Son 8 istasyon listesi: * bir eskiye, # bir yeniye."
       },
       {
+        "baslik": "APRS alma: seri port çıkışı",
+        "surum": "0-18",
+        "aciklama": "Çözülen her paket UART0'a (programlama kablosu, 9600 8N1) TNC2 satırı olarak yazılır. 160 baytı aşan paketlerin bilgi alanı kesilir."
+      },
+      {
         "baslik": "APRS'te sessiz hoparlör",
         "surum": "0-7",
         "aciklama": "APRS menüsündeyken bip, uyarı ve hoparlör kapalı; alma çözücüsü çalışmaya devam eder."
@@ -46,6 +51,17 @@
       }
     ],
     "surumler": [
+      {
+        "surum": "0-18",
+        "tarih": "2026-10-21",
+        "durum": "sim",
+        "yeni": [
+          "APRS menüsündeyken havadan çözülen her geçerli paket seri porta (RS232, 9600 8N1) TNC2 metni olarak yazılır: \"TA7W-7>APRS,WIDE1-1*:!4050.63N/03109.39E>...\" + satır sonu. Bilgisayarda bir terminal programı ya da APRS yazılımı ile izlenebilir."
+        ],
+        "degisiklik": [
+          "APRS paketi menüye girerken değil, her gönderimden hemen önce EEPROM'dan kurulur (tampon almada seri port için kullanılıyor); gönderimden önce kısa bir EEPROM okuması eklenir."
+        ]
+      },
       {
         "surum": "0-17",
         "tarih": "2026-10-21",
