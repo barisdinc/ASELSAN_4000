@@ -71,6 +71,16 @@ progress { width: 100%; height: 10px; accent-color: var(--accent); }
 .notlar details { margin-top: 8px; } .notlar summary { cursor: pointer; color: var(--accent); }
 button.danger { background: var(--bad); color: #fff; border-color: var(--bad); }
 .locked { opacity: .55; }
+.risk { border: 3px solid var(--bad); border-radius: 10px; padding: 14px 18px; background: color-mix(in srgb, var(--bad) 9%, var(--panel)); color: var(--ink); }
+.risk h2 { margin: 0 0 8px; font-size: 22px; line-height: 1.2; color: var(--bad); letter-spacing: .02em; font-weight: 800; }
+.risk p, .risk li { margin: 6px 0; font-size: 15px; font-weight: 700; line-height: 1.4; }
+.risk ul { margin: 6px 0; padding-left: 22px; }
+.risk .kucuk { font-size: 12.5px; font-weight: 400; color: var(--muted); }
+.risk.ic { padding: 10px 14px; margin-bottom: 10px; }
+.risk.ic p { font-size: 14px; }
+.yedekuyari { margin-top: 8px; font-size: 14px; font-weight: 800; color: var(--bad); }
+.yedekuyari.tamam { color: var(--good); font-weight: 700; }
+.checks label.riskonay { font-weight: 800; color: var(--bad); }
 #wrPhase { font-weight: 600; font-size: 13px; }
 table { border-collapse: collapse; width: 100%; font-size: 12.5px; }
 th, td { text-align: left; padding: 3px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
@@ -115,7 +125,19 @@ main { position: relative; z-index: 1; }
   <nav><a href="./">Simülatör</a><a href="surumler.html">Sürümler</a><a href="https://github.com/barisdinc/ASELSAN_4000">GitHub</a><button id="themeBtn" title="Açık / koyu tema">◐</button></nav>
 </header>
 <main>
-  <div class="banner">1–4. adımlar telsizden yalnızca <b>okur</b>. Telsize yalnızca 5. adım (firmware yükleme) ve 6. adım (EEPROM geri yükleme) yazar; 5. ve 6. adım bu oturumda EEPROM yedeği alınmadan açılmaz (flash yedeği isteğe bağlı).</div>
+  <section class="risk" id="riskUyari" role="alert">
+    <h2>⚠ DİKKAT: BU İŞLEMLERİ KENDİ RİSKİNİZLE YAPIYORSUNUZ</h2>
+    <p>TELSİZE HERHANGİ BİR ŞEY YAZMADAN ÖNCE (5. VE 6. ADIM) TELSİZİN EEPROM YEDEĞİNİ ALIN VE BİLGİSAYARINIZA KAYDEDİN.</p>
+    <ul>
+      <li>3. ADIMDA "EEPROM YEDEĞİNİ İNDİR" BAĞLANTISINA TIKLAYIN; <span class="mono">aselsan_eeprom_….bin</span> DOSYASININ BİLGİSAYARINIZA (İNDİRİLENLER KLASÖRÜ) GERÇEKTEN KAYDEDİLDİĞİNİ KONTROL EDİN.</li>
+      <li>EEPROM YEDEĞİ TELSİZE ÖZELDİR: GÜÇ KALİBRASYONU, SERİ NUMARASI VE FABRİKA AYARLARI İÇİNDEDİR. KAYBOLURSA BAŞKA BİR TELSİZİN YEDEĞİYLE YERİNE KONAMAZ.</li>
+      <li>FİRMWARE YÜKLEME VE EEPROM YAZMA <u>GERİ DÖNÜLEMEYECEK SORUNLARA</u> YOL AÇABİLİR: TELSİZ AÇILMAYABİLİR, AYARLAR VE KALİBRASYON KAYBOLABİLİR, TELSİZ ANCAK HARİCİ PROGRAMLAYICIYLA KURTARILABİLİR.</li>
+      <li>BU SAYFA VE ÖZEL YAZILIMLAR HİÇBİR GARANTİ OLMADAN SUNULUR. TELSİZİNİZDE OLUŞABİLECEK HER TÜRLÜ ZARARIN SORUMLULUĞU SİZE AİTTİR.</li>
+    </ul>
+    <p class="kucuk">5. ve 6. adım, bu oturumda EEPROM yedeği okunup <b>.bin olarak indirilmeden</b> ve "kendi riskimle" kutusu işaretlenmeden açılmaz.</p>
+  </section>
+
+  <div class="banner">1–4. adımlar telsizden yalnızca <b>okur</b>. Telsize yalnızca 5. adım (firmware yükleme) ve 6. adım (EEPROM geri yükleme) yazar; 5. ve 6. adım bu oturumda EEPROM yedeği alınıp indirilmeden açılmaz (flash yedeği isteğe bağlı).</div>
 
   <section class="card">
     <h2>1 · Bağlantı</h2>
@@ -173,6 +195,7 @@ main { position: relative; z-index: 1; }
     <button id="eeBtn" disabled>EEPROM'u oku</button><span class="sayac" data-sayac="ee_yedek"></span>
     <div class="prog" id="eeProg"><progress id="eeBar" max="1" value="0"></progress><span class="note" id="eeTxt"></span></div>
     <div class="dl" id="eeDl"></div>
+    <div class="yedekuyari" id="eeKayit" hidden></div>
     <div id="eeSum"></div>
     <div class="ws" id="ws">
       <h3>Programlama</h3>
@@ -205,6 +228,7 @@ main { position: relative; z-index: 1; }
 
   <section class="card" id="wrCard">
     <h2>5 · Firmware yükleme</h2>
+    <div class="risk ic"><p>⚠ GERİ DÖNÜLEMEYECEK SORUNLAR OLUŞABİLİR. YÜKLEMEDEN ÖNCE EEPROM YEDEĞİNİN BİLGİSAYARINIZA KAYDEDİLDİĞİNDEN EMİN OLUN. BU İŞLEMİ KENDİ RİSKİNİZLE YAPIYORSUNUZ.</p></div>
     <div class="banner warn">Yükleme telsizin flash'ını <b>önce tamamen siler</b>, sonra yeni firmware'i yazar (≈ 5 dakika). Bu sürede telsizin gücü kesilirse telsiz açılmaz ve flash harici programlayıcıyla yazılmalıdır. Kablo koparsa ya da hata olursa <b>telsizi kapatmayın</b>: yükleyici telsizin RAM'inde çalışmaya devam eder; yeniden bağlanıp yüklemeyi tekrar başlatın.</div>
     <p class="note" style="margin-bottom:6px">Yüklenecek firmware: listeden seçin ya da kendi dosyanızı (<b>Dosya seç…</b> ya da sürükleyip bırakın) açın. Motorola S-record (.HEX, .S19, .S28) ve Intel HEX kabul edilir. Dosya hemen denetlenir; bağlanmadan da seçebilirsiniz.</p>
     <div class="row" id="wrDrop">
@@ -218,6 +242,7 @@ main { position: relative; z-index: 1; }
         <label><input type="checkbox" id="wrC1"> Telsizin gücü yükleme bitene kadar kesilmeyecek (sabit güç kaynağı ya da dolu akü).</label>
         <label><input type="checkbox" id="wrC2"> EEPROM yedeğini indirdim ve sakladım<span id="wrC2Flash"> (flash yedeği alınmadı: yükleme yarıda kalırsa telsizdeki eski firmware'e dönmek için elinizde bir HEX olmalı)</span>.</label>
         <label id="wrC3Row" class="warn" hidden><input type="checkbox" id="wrC3"> Bu dosya başka bir ürün ailesine ait; bu telsize uygun olduğundan eminim.</label>
+        <label class="riskonay"><input type="checkbox" id="wrC4"> GERİ DÖNÜLEMEYECEK SORUNLAR OLUŞABİLECEĞİNİ ANLADIM; BU İŞLEMİ KENDİ RİSKİMLE YAPIYORUM.</label>
       </div>
       <div class="row"><button class="danger" id="wrBtn" disabled>Yüklemeyi başlat</button><span class="sayac" data-sayac="flash_yaz"></span><span class="note" id="wrGate"></span></div>
     </div>
@@ -227,6 +252,7 @@ main { position: relative; z-index: 1; }
 
   <section class="card" id="erCard">
     <h2>6 · EEPROM geri yükleme</h2>
+    <div class="risk ic"><p>⚠ TELSİZİN EEPROM'U ÜZERİNE YAZILIR. YANLIŞ YA DA BAŞKA TELSİZE AİT BİR DOSYA KALİBRASYONU VE FABRİKA AYARLARINI GERİ DÖNÜLEMEZ BİÇİMDE BOZABİLİR. ŞU ANKİ EEPROM YEDEĞİNİN BİLGİSAYARINIZA KAYDEDİLDİĞİNDEN EMİN OLUN. KENDİ RİSKİNİZLE.</p></div>
     <p class="note" style="margin-bottom:6px">Daha önce indirdiğiniz EEPROM yedeğini (<span class="mono">.bin</span>, 2048 bayt) telsize geri yazar: kanallar, seçenekler, parola, kalibrasyon. Yalnızca telsizdekinden farklı olan 16 baytlık sayfalar yazılır, her sayfa geri okunarak doğrulanır, sonunda telsiz yeniden başlatılır (≈ 10–20 sn). Firmware'e dokunmaz.</p>
     <div class="row"><label class="row"><input type="file" id="erFile" accept=".bin,.BIN,.eep,.rom" hidden><button id="erFileBtn">Yedek dosyası seç…</button></label><span class="note">ya da .bin dosyasını sayfaya sürükleyip bırakın</span></div>
     <div id="erInfo"></div>
@@ -234,6 +260,7 @@ main { position: relative; z-index: 1; }
       <div class="checks">
         <label><input type="checkbox" id="erC1"> Telsizdeki şu anki EEPROM'un yedeğini (3. adım) indirdim ve sakladım.</label>
         <label id="erC2Row" class="warn" hidden><input type="checkbox" id="erC2"> Yukarıdaki uyarıları okudum; bu yedeği bu telsize yüklemek istiyorum.</label>
+        <label class="riskonay"><input type="checkbox" id="erC3"> GERİ DÖNÜLEMEYECEK SORUNLAR OLUŞABİLECEĞİNİ ANLADIM; BU İŞLEMİ KENDİ RİSKİMLE YAPIYORUM.</label>
       </div>
       <div class="row"><button class="danger" id="erBtn" disabled>EEPROM'u geri yükle</button><span class="sayac" data-sayac="ee_yaz"></span><span class="note" id="erGate"></span></div>
     </div>
@@ -272,6 +299,7 @@ const FW = window.FIRMWARE_HEX || {};
 const fwLabel = n => n + ((window.FIRMWARE_TIME || {})[n] ? '  ·  ' + window.FIRMWARE_TIME[n] : '');   // build time
 let port = null, client = null, busy = false, header = null;
 let eeDone = false, flashImg = null, wr = null;          // backups of this session, checked image to write
+let eeIndirildi = false;                                  // the .bin backup link of this session was clicked (saved to the computer)
 let eeData = null, er = null;                             // the radio's EEPROM as read now, checked EEPROM file to restore
 const FW_ILK = Object.keys(FW)[0];                       // sayfada yalnız özel firmware var (orijinaller GitHub'da)
 const REF = FW_ILK ? B.parseHex(FW[FW_ILK]) : null;      // known loader block (özel firmware'de orijinalle aynı)
@@ -552,9 +580,17 @@ $('eeBtn').onclick = () => run(async () => {
   log('EEPROM okunuyor');
   const ee = await client.readEeprom(f => progress('eeBar', 'eeTxt', f, t0));
   log('EEPROM okundu (' + ee.length + ' bayt, ' + ((performance.now() - t0) / 1000).toFixed(1) + ' s)');
-  download($('eeDl'), 'aselsan_eeprom_' + stamp() + '.bin', ee, 'application/octet-stream', 'EEPROM yedeğini indir');
+  const binAd = 'aselsan_eeprom_' + stamp() + '.bin';
+  const binA = download($('eeDl'), binAd, ee, 'application/octet-stream', 'EEPROM yedeğini indir');
   download($('eeDl'), 'aselsan_' + stamp() + '.p40', P4000.toP40(ee), 'application/octet-stream', 'P4000 kütüğü olarak indir');
-  eeDone = true; eeData = ee;
+  eeDone = true; eeData = ee; eeIndirildi = false;
+  const kayit = $('eeKayit'); kayit.hidden = false; kayit.className = 'yedekuyari';
+  kayit.textContent = '⚠ YEDEK HENÜZ BİLGİSAYARINIZDA DEĞİL: "EEPROM YEDEĞİNİ İNDİR" BAĞLANTISINA TIKLAYIP .BIN DOSYASINI KAYDEDİN. 5. VE 6. ADIM ANCAK BUNDAN SONRA AÇILIR.';
+  binA.addEventListener('click', () => {
+    eeIndirildi = true; kayit.className = 'yedekuyari tamam';
+    kayit.textContent = '✓ ' + binAd + ' indirildi. Dosyanın bilgisayarınızda (İndirilenler klasörü) olduğunu kontrol edin ve güvenli bir yere kopyalayın.';
+    log('EEPROM yedeği indirildi: ' + binAd); updateWrite(); updateEeWrite();
+  });
   sayacOlay('ee_yedek', header && header.version);
   showEeprom(ee);
   if (er) loadEeFile(er.name, er.raw);
@@ -746,7 +782,7 @@ addEventListener('drop', e => {
   if (f.size === 2048 && !/\.(hex|s19|s28|s37|srec|mot|ihx|txt)$/i.test(f.name)) { openEeFile(f); $('erCard').scrollIntoView({ behavior: 'smooth' }); }
   else { loadFile(f); $('wrCard').scrollIntoView({ behavior: 'smooth' }); }
 });
-['wrC1', 'wrC2', 'wrC3', 'wrRecover'].forEach(id => $(id).onchange = updateWrite);
+['wrC1', 'wrC2', 'wrC3', 'wrC4', 'wrRecover'].forEach(id => $(id).onchange = updateWrite);
 
 /* "Neler değişti": ozel_firmware/degisiklikler.json (surum_notlari.js). Telsiz bağlıysa ve onda da
  * numaralı özel sürüm varsa yalnız aradaki sürümler gösterilir. */
@@ -813,24 +849,24 @@ function loadImage(name, text) {
 
 function updateWrite() {
   if (!$('wrBtn')) return;
-  const gate = !!client && ($('wrRecover').checked || eeDone);   // flash backup (4) is optional
+  const gate = !!client && ($('wrRecover').checked || eeDone && eeIndirildi);   // flash backup (4) is optional
   $('wrBody').classList.toggle('locked', !gate);
   ['wrSel', 'wrFileBtn'].forEach(id => $(id).disabled = busy);
-  ['wrC1', 'wrC2', 'wrC3'].forEach(id => $(id).disabled = !gate || busy);
+  ['wrC1', 'wrC2', 'wrC3', 'wrC4'].forEach(id => $(id).disabled = !gate || busy);
   $('wrRecover').disabled = busy;
   $('wrC2Flash').hidden = !!flashImg;
   $('wrGate').textContent = !client ? 'Yüklemek için: önce bağlanın (1) ve EEPROM yedeğini alın (3). Flash yedeği (4) isteğe bağlı.'
-    : !gate ? 'Önce EEPROM yedeğini alın (3. adım).'
+    : !gate ? (eeDone ? 'Önce EEPROM yedeğini İNDİRİP bilgisayarınıza kaydedin (3. adımdaki bağlantı).' : 'Önce EEPROM yedeğini alın (3. adım).')
     : !wr ? 'Geçerli bir firmware seçin (dosya denetimden geçmedi, sebebi yukarıda kırmızıyla yazıyor).'
-    : !($('wrC1').checked && $('wrC2').checked) ? 'Onay kutularını işaretleyin.'
+    : !($('wrC1').checked && $('wrC2').checked && $('wrC4').checked) ? 'Onay kutularını işaretleyin.'
     : wr.famWarn && !$('wrC3').checked ? 'Ürün ailesi uyarısını onaylayın.' : '';
-  $('wrBtn').disabled = !(gate && wr && $('wrC1').checked && $('wrC2').checked && (!wr.famWarn || $('wrC3').checked) && !busy);
+  $('wrBtn').disabled = !(gate && wr && $('wrC1').checked && $('wrC2').checked && $('wrC4').checked && (!wr.famWarn || $('wrC3').checked) && !busy);
 }
 
 function guard(e) { e.preventDefault(); e.returnValue = ''; }
 $('wrBtn').onclick = () => {
   if (!wr) return;
-  if (!confirm(wr.name + ' telsize yüklenecek.\n\nFlash önce tamamen silinir. Yükleme bitene kadar (≈ 5 dk) telsizin gücünü kesmeyin, kabloyu çıkarmayın, bu sayfayı kapatmayın.\n\nDevam edilsin mi?')) return;
+  if (!confirm('DİKKAT: GERİ DÖNÜLEMEYECEK SORUNLAR OLUŞABİLİR. BU İŞLEMİ KENDİ RİSKİNİZLE YAPIYORSUNUZ.\n\n' + wr.name + ' telsize yüklenecek.\n\nFlash önce tamamen silinir. Yükleme bitene kadar (≈ 5 dk) telsizin gücünü kesmeyin, kabloyu çıkarmayın, bu sayfayı kapatmayın.\n\nDevam edilsin mi?')) return;
   run(async () => {
     $('wrResult').innerHTML = ''; $('wrProg').classList.add('on');
     addEventListener('beforeunload', guard);
@@ -868,7 +904,7 @@ loadImage($('wrSel').value, FW[$('wrSel').value]);
 /* ---------------------------------------------------------------- EEPROM restore */
 $('erFileBtn').onclick = () => $('erFile').click();
 $('erFile').onchange = () => { openEeFile($('erFile').files[0]); $('erFile').value = ''; };
-['erC1', 'erC2'].forEach(id => $(id).onchange = updateEeWrite);
+['erC1', 'erC2', 'erC3'].forEach(id => $(id).onchange = updateEeWrite);
 async function openEeFile(f) {
   if (!f || busy) return;
   const raw = new Uint8Array(await f.arrayBuffer());
@@ -895,22 +931,23 @@ function loadEeFile(name, raw) {
 }
 function updateEeWrite() {
   if (!$('erBtn')) return;
-  const gate = !!client && !!eeData;
+  const gate = !!client && !!eeData && eeIndirildi;
   $('erBody').classList.toggle('locked', !gate);
-  ['erC1', 'erC2'].forEach(id => $(id).disabled = !gate || busy);
+  ['erC1', 'erC2', 'erC3'].forEach(id => $(id).disabled = !gate || busy);
   const warn = er && er.ok && er.warnings.length;
   $('erGate').textContent = !client ? 'Geri yüklemek için: önce bağlanın (1) ve telsizin EEPROM yedeğini alın (3).'
     : !eeData ? 'Önce telsizin şu anki EEPROM yedeğini alın (3. adım).'
+    : !eeIndirildi ? 'Önce EEPROM yedeğini İNDİRİP bilgisayarınıza kaydedin (3. adımdaki bağlantı).'
     : !er ? 'Yedek dosyasını seçin.'
     : !er.ok ? 'Dosya denetimden geçmedi (sebebi yukarıda kırmızıyla yazıyor).'
     : er.diff === 0 ? 'Dosya telsizdekiyle aynı.'
-    : !$('erC1').checked ? 'Onay kutusunu işaretleyin.'
+    : !($('erC1').checked && $('erC3').checked) ? 'Onay kutularını işaretleyin.'
     : warn && !$('erC2').checked ? 'Uyarıları onaylayın.' : '';
-  $('erBtn').disabled = !(gate && er && er.ok && er.diff !== 0 && $('erC1').checked && (!warn || $('erC2').checked) && !busy);
+  $('erBtn').disabled = !(gate && er && er.ok && er.diff !== 0 && $('erC1').checked && $('erC3').checked && (!warn || $('erC2').checked) && !busy);
 }
 $('erBtn').onclick = () => {
   if (!er || !er.ok) return;
-  if (!confirm(er.name + ' telsizin EEPROM\'una yazılacak (' + er.diff + ' bayt değişecek), ardından telsiz yeniden başlatılacak.\n\nDevam edilsin mi?')) return;
+  if (!confirm('DİKKAT: GERİ DÖNÜLEMEYECEK SORUNLAR OLUŞABİLİR. BU İŞLEMİ KENDİ RİSKİNİZLE YAPIYORSUNUZ.\n\n' + er.name + ' telsizin EEPROM\'una yazılacak (' + er.diff + ' bayt değişecek), ardından telsiz yeniden başlatılacak.\n\nDevam edilsin mi?')) return;
   run(async () => {
     $('erResult').innerHTML = ''; $('erProg').classList.add('on');
     addEventListener('beforeunload', guard);
@@ -1006,7 +1043,8 @@ if (location.hash === '#otomatik-test-aile') (async () => {
   im[0x10009] = 0x4B;                                       // aile harfi 'K'
   const t = S.toSrec(im);
   await loadFile(new File([t], 'baska_aile.HEX'));
-  $('wrC1').checked = $('wrC2').checked = true; updateWrite();
+  $('eeDl').querySelector('a').click();
+  $('wrC1').checked = $('wrC2').checked = $('wrC4').checked = true; updateWrite();
   const a = !$('wrC3Row').hidden && $('wrBtn').disabled && /aile/.test($('wrGate').textContent);
   $('wrC3').checked = true; updateWrite();
   const b = !$('wrBtn').disabled;
@@ -1025,7 +1063,8 @@ if (location.hash === '#otomatik-test-eeprom') (async () => {
   const refused = !er.ok && /donanım tipi/.test($('erInfo').textContent) && $('erBtn').disabled;
   await openEeFile(new File([f], 'yedek.bin'));
   window.confirm = () => true;
-  $('erC1').checked = true; updateEeWrite();
+  if (!eeIndirildi) $('eeDl').querySelector('a').click();
+  $('erC1').checked = $('erC3').checked = true; updateEeWrite();
   const enabled = !$('erBtn').disabled;
   $('erBtn').click(); await until(() => !busy);
   const mem = port.b.eeprom.mem, same = f.every((v, i) => v === mem[i]);
@@ -1045,7 +1084,8 @@ if (location.hash === '#otomatik-test-aprs') (async () => {
   const paket = $('wsP4').textContent.includes('TA7W-7>APIZCI,WIDE2-2:!3955.52N/03250.22E>');
   $('wsWrite').click();
   window.confirm = () => true;
-  $('erC1').checked = true; updateEeWrite();
+  if (!eeIndirildi) $('eeDl').querySelector('a').click();
+  $('erC1').checked = $('erC3').checked = true; updateEeWrite();
   $('erBtn').click(); await until(() => !busy);
   const a = P4000.aprsGet(port.b.eeprom.mem);
   const ok = paket && a.gecerli && a.cagri === 'TA7W-7' && a.yorum === 'Düzce 73!' && a.aralik === 120 && a.kod === '>' && /geri yüklendi/.test($('erResult').textContent);
@@ -1065,7 +1105,8 @@ if (location.hash === '#otomatik-test-p40') (async () => {
   const kept = ws.src === 'p40' && !$('wsWrite').disabled;
   $('wsWrite').click();
   window.confirm = () => true;
-  $('erC1').checked = true; updateEeWrite();
+  if (!eeIndirildi) $('eeDl').querySelector('a').click();
+  $('erC1').checked = $('erC3').checked = true; updateEeWrite();
   $('erBtn').click(); await until(() => !busy);
   const m = port.b.eeprom.mem, ok = P4000.channel(m, 2).name.trim() === 'P40 TEST' && m[0x591] === 0x5A && P4000.checkSums(m).every(x => x.ok);
   document.body.dataset.test = pre && kept && ok && /geri yüklendi/.test($('erResult').textContent) ? 'bitti'
@@ -1079,14 +1120,18 @@ if (location.hash === '#otomatik-test') (async () => {
   const preOk = !!wr && $('wrBtn').disabled && /bağlanın/.test($('wrGate').textContent);
   $('connectBtn').click(); await until(() => client && !busy);
   $('eeBtn').click(); await until(() => !busy);
-  // flash backup (4) is optional: writing opens after the EEPROM backup alone
-  const noFlashOk = !flashImg && !$('wrBody').classList.contains('locked') && !$('wrC2Flash').hidden;
+  // writing stays locked until the .bin backup is downloaded; flash backup (4) is optional
+  const kilitli = $('wrBody').classList.contains('locked') && /İNDİRİP/.test($('wrGate').textContent) && !$('eeKayit').hidden;
+  $('eeDl').querySelector('a').click();
+  const noFlashOk = kilitli && !flashImg && !$('wrBody').classList.contains('locked') && !$('wrC2Flash').hidden;
   window.confirm = () => true;
   const fileKept = $('wrSel').value === 'dosya: kendi_firmware.HEX' && wr && wr.name === 'kendi_firmware.HEX';
   $('wrC1').checked = $('wrC2').checked = true; updateWrite();
+  const riskGerekli = $('wrBtn').disabled;
+  $('wrC4').checked = true; updateWrite();
   $('wrBtn').click(); await until(() => !busy);
-  document.body.dataset.test = preOk && noFlashOk && fileKept && /Yükleme tamamlandı/.test($('wrResult').textContent) ? 'bitti'
-    : 'hata pre=' + preOk + ' noflash=' + noFlashOk + ' file=' + fileKept;
+  document.body.dataset.test = preOk && noFlashOk && riskGerekli && fileKept && /Yükleme tamamlandı/.test($('wrResult').textContent) ? 'bitti'
+    : 'hata pre=' + preOk + ' noflash=' + noFlashOk + ' risk=' + riskGerekli + ' file=' + fileKept;
 })();
 </script>
 </body>
