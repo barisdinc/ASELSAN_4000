@@ -67,6 +67,14 @@
     ],
     "surumler": [
       {
+        "surum": "0-28",
+        "tarih": "2026-10-22",
+        "durum": "sim",
+        "degisiklik": [
+          "APRS frekansı telsizin bandına göre: VHF telsizde 144,800 MHz, UHF telsizde 432,500 MHz (APRS ekranı ve arka plan tracker). Bant EEPROM'daki bant tabanından (0x58C) anlaşılır."
+        ]
+      },
+      {
         "surum": "0-27",
         "tarih": "2026-10-22",
         "durum": "sim",

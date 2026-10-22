@@ -556,7 +556,7 @@ function pageHtml(id, ee, ro, chPage) {
         rw('Yorum', inp('yorum', a.yorum, 44, ' maxlength="43"'), 'en çok 43 bayt; her karakter gider (Türkçe harfler UTF-8, 2 bayt). 0x704..0x72E')) +
         frame('Konum', rw('Enlem', inp('enlem', a.enlem, 10) + de(a.enlem), '3955.52N, 39 55.52 N ya da 39.92533. 0x6F0') +
           rw('Boylam', inp('boylam', a.boylam, 10) + de(a.boylam), '03250.22E, 32 50.22 E ya da 32.837. 0x6F8')) +
-        frame('Otomatik gönderim', rw('Aralık (s)', inp('aralik', a.aralik || '', 6), '0 ya da boş: kapalı; en az 10 s. APRS ekranında kanalın ilk boşluğunda; yalnız TR açıkken (DG, IG kapalı) normal kanalda da: süre dolunca 30 s boşlukta 144,800\'e geçip gönderir. 0x702') ) +
+        frame('Otomatik gönderim', rw('Aralık (s)', inp('aralik', a.aralik || '', 6), '0 ya da boş: kapalı; en az 10 s. APRS ekranında kanalın ilk boşluğunda; yalnız TR açıkken (DG, IG kapalı) normal kanalda da: süre dolunca 30 s boşlukta APRS frekansına (VHF 144,800 / UHF 432,500) geçip gönderir. 0x702') ) +
         (() => { const y = aprsAyarGet(ee), cb = (k, l, t) => rw(l, '<input type="checkbox" data-aprs-ayar="' + k + '"' + (y[k] ? ' checked' : '') + dis + '>', t);
           return frame('Çalışma (telsizde APRS TR / DG / IG)', cb('tr', 'Tracker (TR)', 'aralıkta otomatik konum paketi. 0x733 bit 0') +
             cb('dg', 'Digipeater (DG)', 'duyulan paketleri tekrarla (WIDE1-1, WIDEn-N). 0x733 bit 1') +

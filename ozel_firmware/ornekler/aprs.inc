@@ -648,11 +648,19 @@ AK_1:   LDA   A,SYN_KAYIT,X
         INX
         CPX   #13
         BNE   AK_1
-        LDX   #0                        ; haneler "1448000"
+        LDX   #0                        ; haneler: VHF "1448000", UHF "4325000"
+        LDY   #0
+        CLM
+        LDA   A,BAND_TABAN              ; 25 kHz birim: VHF 136 MHz = 5440, UHF 400 MHz = 16000
+        CMP   A,#$2000                  ; (204,8 MHz)
+        SEM
+        BCC   AK_2
+        LDX   #7
 AK_2:   LDA   A,>AP_HANELER,X
-        STA   A,FR_HANE,X
+        STA   A,FR_HANE,Y
         INX
-        CPX   #7
+        INY
+        CPY   #7
         BNE   AK_2
         LDM   #7,FR_NDIG
         CLM
@@ -703,7 +711,8 @@ AK_5:   LDA   A,SYN_KAYIT,X             ; kopya ($0363) ve karşılaştırma iç
         RTS
 
 AP_HANELER:
-        .BYTE "1448000"
+        .BYTE "1448000"                 ; VHF: 144,800 MHz
+        .BYTE "4325000"                 ; UHF: 432,500 MHz (+7)
 
 ; ---------------------------------------------------------------------------------------------
 ; Paketi EEPROM'daki APRS bölümünden (geçersizse ROM varsayılanlarından) kur: AP_CER / AP_UZ

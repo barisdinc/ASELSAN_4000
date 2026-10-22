@@ -743,6 +743,19 @@ if (RING.includes('APRS TR*')) {
   const pk = AFSK.decode(log, FCLK).map(x => x.text);
   check('APRS ekranı: beacon kanalda sinyal varken beklenir, ilk boşlukta gider; DG açıkken APATAR', sinyalde === 0 && pk.length === 1 && /^TA7W-7>APATAR,/.test(pk[0]), sinyalde + ' / ' + pk.join(';'));
   keys(c, 'm');
+  /* UHF telsiz (bant tabanı 400 MHz): APRS frekansı 432,500 (ekranda da, arka planda da) */
+  const UHF = ee => { ee[0x58C] = 16000 >> 8; ee[0x58D] = 16000 & 255; B.eeSetChannel(ee, 1, 433e6, 433e6, { name: 'UHF' }); };
+  const u = radio(ee => { UHF(ee); P.aprsSet(ee, ayar); P.aprsAyarSet(ee, { tr: true, dg: false, ig: false }); }); boot(u, 2.5);
+  const uv = () => (u.radioState().vco / 1e6).toFixed(4), uf = new Set(), ulog = [], upush = u.pushAudio;
+  u.pushAudio = (buf, v) => { if (buf === u.audio.ta1) ulog.push(u.now, v); upush.call(u, buf, v); };
+  for (let i = 0; i < 600; i++) { u.run(FCLK * 0.1); uf.add(uv()); }
+  u.pushAudio = upush;
+  check('UHF: arka plan tracker 432,500\'de gönderir, kanala (433,000) döner', uf.has('432.5000') && !uf.has('144.8000') && AFSK.decode(ulog, FCLK).length === 1 && uv() === '388.0000',
+    [...uf].join(',') + ' / ' + uv());
+  for (let k = 0; k < 12 && lcd(u) !== 'APRS    '; k++) keys(u, 'm'); keys(u, 's'); u.run(FCLK * 0.5);
+  const rx = uv(); u.inputs.P4 = 0x7F; u.run(FCLK * 0.6); const tx = uv(); u.inputs.P4 = 0xFF; u.run(FCLK * 1.5);
+  check('UHF: APRS ekranında alma 432,500 (VCO 387,500), gönderme 432,500', rx === '387.5000' && tx === '432.5000' && lcd(u) === 'APRS OK ', rx + ' / ' + tx + ' / ' + lcd(u));
+  keys(u, 'm');
 }
 
 /* yalnız Türkçe (dil_kaldir.inc): EEPROM'da İngilizce (0x018 bit 7 = 0) seçili olsa da menüler Türkçe */

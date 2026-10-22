@@ -247,6 +247,8 @@ Bölümdeki bir alan geçersizse (sayfa geçersiz değeri zaten yazmaz) ekranda 
 
 Ayar EEPROM 0x733'te: `$A0` | bit 0 TR, bit 1 DG, bit 2 IG (APRS bölümünün sağlamasına girmez). Geçersizse TR ve IG açık, DG kapalı. Açılışta ve her `s`'de okunur; programlama sayfasının APRS sekmesindeki "Çalışma" çerçevesinden de değişir (`p4000.js` `aprsAyarGet` / `aprsAyarSet`). RAM: `AP_AYAR` $04ED, `AP_AYAR_B` $04EE. IG kapalıyken çerçeve yine tampona alınır (istasyon detayı için), yalnız seri porta yazılmaz.
 
+**APRS frekansı (AT V0-28).** VHF telsizde 144,800 MHz, UHF telsizde 432,500 MHz. `AP_KUR` bant tabanına (RAM `$0224`, EEPROM 0x58C kopyası; 25 kHz birim) bakar: 204,8 MHz'in altı VHF. APRS ekranı ve arka plan tracker aynı frekansı kullanır. Aşağıda 144,800 geçen yerler UHF'te 432,500'dür.
+
 **Arka planda tracker (`ornekler/aprs_arka.inc`, AT V0-27).** Yalnız APRS TR açıkken (DG ve IG kapalı) ve aralık ayarlıyken telsiz normal kanalında (ya da VFO frekansında) çalışır, orayı dinler ve oradan konuşur:
 1. Beacon süresi (EEPROM 0x702; açılışta okunur) sayılır.
 2. Süre dolunca kanal gözlenir: 30 s kesintisiz boşluk (susturma kapalı, normal ekran, alıyor) beklenir; sinyal, menü ya da konuşma sayacı sıfırlar.
