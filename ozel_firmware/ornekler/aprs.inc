@@ -390,8 +390,11 @@ AP_HAZIR:
         .ASSUME M=1,X=0
         LDA   A,MENU
         CMP   A,#ST_APRS_ON
+        BEQ   AHZ_1
+        LDA   A,ARKA_DURUM              ; arka plan tracker gönderiyor (aprs_arka.inc)
+        CMP   A,#3
         BNE   AHZ_SON
-        LDA   A,AP_DURUM
+AHZ_1:  LDA   A,AP_DURUM
         AND   A,#F_AP_KURULU|F_AP_HATA
         EOR   A,#F_AP_KURULU
 AHZ_SON:
@@ -547,7 +550,7 @@ AMY_1:  LDA   A,>AP_METIN,X
 AP_METIN:
         .TEXT8 "APRS TX"                ; 0
         .TEXT8 "APRS OK"                ; 8
-        .TEXT8 "APRS PTT"               ; 16
+        .TEXT8 "APRS AKT"               ; 16 (APRS aktif)
         .TEXT8 "ERROR"                  ; 24 + 16 * (hata - 1) İngilizce, +8 Türkçe
         .TEXT8 "HATA"
         .TEXT8 "CALL -"                 ; (LCD fontunda '?' yok)
@@ -720,11 +723,13 @@ AP_HAZIRLA:
         LDY   #0                        ; Y = çerçevede yazma yeri (kopyalarken; sonra X)
         LDX   #0
         SEM
+        BBC   #AYAR_DG,AP_AYAR,AHA_1    ; digipeater açıkken cihaz tipi APATAR
+        LDX   #7
 AHA_1:  LDA   A,>AP_HEDEF,X             ; hedef APIZCI (uzun adres yalnız X ile indekslenir)
         STA   A,AP_CER,Y
         INX
         INY
-        CPX   #7
+        CPY   #7
         BNE   AHA_1
         TYX
         JSR   AP_CAGRI_YAZ              ; kaynak
@@ -787,6 +792,7 @@ AHA_HATA:
 
 AP_HEDEF:                               ; "APIZCI", SSID 0, C biti (komut) = 1
         .BYTE 'A'*2,'P'*2,'I'*2,'Z'*2,'C'*2,'I'*2,$E0
+        .BYTE 'A'*2,'P'*2,'A'*2,'T'*2,'A'*2,'R'*2,$E0     ; APATAR: APRS DG açıkken (+7)
 AP_YOL:                                 ; WIDE1-1, WIDE2-1 (son adres), UI, PID yok, '!'
         .BYTE 'W'*2,'I'*2,'D'*2,'E'*2,'1'*2,' '*2,$62
         .BYTE 'W'*2,'I'*2,'D'*2,'E'*2,'2'*2,' '*2,$63
@@ -1235,7 +1241,15 @@ APRS_KANCA:
 AKN_0:  LDA   A,$0E,S                   ; APRS TR / DG / IG başlığında durum işareti
         JSR   AY_GOSTER
         SEM
-        BBC   #F_AP_KURULU,AP_DURUM,AKN_SON
+        LDA   A,ARKA_DURUM              ; arka plan tracker (aprs_arka.inc)
+        BNE   AKN_ARKA
+        BBS   #F_AP_KURULU,AP_DURUM,AKN_APRS
+AKN_ARKA:
+        CLM
+        LDA   A,$0E,S
+        JMP   ARKA_ISLE
+AKN_APRS:
+        .ASSUME M=1,X=0
         LDA   A,MENU
         CMP   A,#ST_APRS_ON
         BNE   AKN_CIKIS
@@ -1314,6 +1328,7 @@ AP_ACILIS_DENETLE:
         CLC                             ; oku
         JSR   AP_MOD_ERIS
         JSR   AY_YUKLE                  ; APRS TR / DG / IG (aprs_ayar.inc)
+        JSR   ARKA_YUKLE                ; aralık (aprs_arka.inc)
         PLD
         SEM
         LDA   A,AP_MOD_B
@@ -1434,6 +1449,7 @@ AOZ_2:  STA   A,AP_MS
         LDA   A,AP_SANIYE
         CMP   A,AP_ARALIK
         BCC   AOZ_SON
+        BBS   #$0020,$023E,AOZ_SON      ; kanalda sinyal: ilk boşluğu bekle
         SEB   #F_PTT_APRS,PTT_ISTEK     ; zamanı geldi: PTT isteği
         SEM
         LDM   #1,AP_OTO

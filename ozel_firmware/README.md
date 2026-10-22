@@ -247,6 +247,14 @@ Bölümdeki bir alan geçersizse (sayfa geçersiz değeri zaten yazmaz) ekranda 
 
 Ayar EEPROM 0x733'te: `$A0` | bit 0 TR, bit 1 DG, bit 2 IG (APRS bölümünün sağlamasına girmez). Geçersizse TR ve IG açık, DG kapalı. Açılışta ve her `s`'de okunur; programlama sayfasının APRS sekmesindeki "Çalışma" çerçevesinden de değişir (`p4000.js` `aprsAyarGet` / `aprsAyarSet`). RAM: `AP_AYAR` $04ED, `AP_AYAR_B` $04EE. IG kapalıyken çerçeve yine tampona alınır (istasyon detayı için), yalnız seri porta yazılmaz.
 
+**Arka planda tracker (`ornekler/aprs_arka.inc`, AT V0-27).** Yalnız APRS TR açıkken (DG ve IG kapalı) ve aralık ayarlıyken telsiz normal kanalında (ya da VFO frekansında) çalışır, orayı dinler ve oradan konuşur:
+1. Beacon süresi (EEPROM 0x702; açılışta okunur) sayılır.
+2. Süre dolunca kanal gözlenir: 30 s kesintisiz boşluk (susturma kapalı, normal ekran, alıyor) beklenir; sinyal, menü ya da konuşma sayacı sıfırlar.
+3. 144,800'e geçilir (APRS menüsündeki gibi `AP_KUR`: kayıt `AP_YEDEK`'e), ekranda `APRS TX`, paket `APRS_KARAR` / `APRS_PTT` ile gönderilir (`AP_HAZIR` arka plan durumunu da kabul eder).
+4. Kanala dönülür (kayıt hâlâ bizimkiyse), kanal adı / VFO frekansı ekrana gelir; süre baştan.
+
+VFO kancası bu sırada VFO modunu bitirmez. APRS ekranındayken (144,800) tracker beacon süresi dolunca kanalın ilk boşluğunda gönderir. DG açıkken kendi paketlerimizin hedefi (cihaz tipi) `APATAR`, değilken `APIZCI`. APRS ekranı `APRS AKT`. RAM: `ARKA_DURUM` $0131; sayaçlar APRS ekranınınkiler.
+
 **GPS (`ornekler/gps.inc`, AT V0-26).** Seri porta (programlama kablosu, 9600 8N1) bağlı bir GPS alıcısı ya da yükleme sayfasının "Seri izleme" bölümündeki GPS benzetimi `$GPRMC` (`$GNRMC` …) gönderirse:
 - APRS ekranındayken dakikada bir sonraki geçerli (durum `A`) RMC cümlesinin enlem / boylamı alınır (APRS biçiminde, `DDMM.mmN` / `DDDMM.mmE`); tracker ve PTT paketleri EEPROM'daki konum yerine bunu kullanır. Ekranda `APRS` yerine `GPS` (`GPS  OK`, `GPS  PTT`).
 - GPS konumu yokken her saniye denenir. Bir dakika içinde geçerli cümle gelmezse GPS konumu bırakılır, EEPROM konumuna dönülür.

@@ -68,6 +68,7 @@ TITLES_TR:
         .ORG $01E600                    ; bank 1 boş alanı ($01E4F4..$01FFFF; $011000 bölgesi doldu)
         .INCLUDE "aprs_detay.inc"       ; APRS alma: istasyonların konumu
         .INCLUDE "aprs_digi.inc"        ; APRS digipeater
+        .INCLUDE "aprs_arka.inc"        ; arka planda APRS tracker
 
         .ORG $012400                    ; bank 1 boş alanı (açılış ekranı $012000'de)
         .INCLUDE "aprs.inc"

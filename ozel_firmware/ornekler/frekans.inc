@@ -735,8 +735,12 @@ VFO_KANCA:
         CMP   A,#$14
         BNE   VK_ZA
         LDM   #$3F,MENU_SAYAC
-VK_ZA:  CLM
-        JSR   VFO_ETKIN
+VK_ZA:  SEM                             ; arka plan APRS tracker 144,800'deyken VFO'ya dokunma
+        LDA   A,ARKA_DURUM
+        CLM
+        BEQ   VK_ZA1
+        JMP   VK_SON
+VK_ZA1: JSR   VFO_ETKIN
         BEQ   VK_VFO
         JMP   VK_BITTI
 VK_VFO: SEM
