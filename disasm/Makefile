@@ -69,8 +69,8 @@ test-ozel: $(ORNEKLER)
 
 sim: ozel
 	$(PY) sim/mkfirmware.py --surum ../ozel_firmware/surum.json --notlar ../ozel_firmware/degisiklikler.json \
-	    ../YA4000S.HEX ../YA4000D.HEX ../YA4000E.HEX ../YA4000K.HEX \
-	    ../YA4000P.HEX ../YA4000R.HEX ../YA4000V.HEX ../YA4000Y.HEX \
+	    --kimlik ../YA4000S.HEX ../YA4000D.HEX ../YA4000E.HEX ../YA4000K.HEX \
+	    ../YA4000P.HEX ../YA4000R.HEX ../YA4000V.HEX ../YA4000Y.HEX -- \
 	    ../ozel_firmware/YA4000S_FREKANS_YATOLYE.HEX > sim/firmware.js
 	$(PY) tools/surum_notlari.py ../ozel_firmware/degisiklikler.json ../ozel_firmware/surum.json > ../ozel_firmware/SURUMLER.md
 

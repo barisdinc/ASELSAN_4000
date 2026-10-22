@@ -140,13 +140,3 @@ Orijinal YA4000S (AS V2-30) üzerine FREKANS (VFO) menüsü, APRS gönderme / al
 - Yeni: APRS menüsü: PTT'de ya da ayarlanan aralıkta 144,800 MHz'de konum paketi; ayarlar EEPROM'da (0x6E0).
 - Yeni: Seçmeli çağrı (Select-5) kaldırıldı.
 
-## ASELSAN orijinal firmware'ler
-
-- **YA4000S.HEX**: ASELSAN orijinal, STANDART VERSIYON (AS V2-30, 23.11.1999). Özel firmware'lerimizin tabanı; gerçek telsizden okunan flash ile aynı.
-- **YA4000D.HEX**: ASELSAN orijinal, DENIZ EL TELSIZI OPSIYONU. Standart sürümle aynı kod; yalnız açılıştaki opsiyon ayarı farklı.
-- **YA4000K.HEX**: ASELSAN orijinal, KONVANSIYONEL VERI OPSIYONU. Standart sürümle aynı kod; veri (sipariş / yazıcı) bölümü açık.
-- **YA4000P.HEX**: ASELSAN orijinal, DISPATCH-TELSIZ OPSIYONU. Standart sürümle aynı kod; yalnız açılıştaki opsiyon bayrağı farklı.
-- **YA4000R.HEX**: ASELSAN orijinal, KIRSAL ROLE TELSIZ OPSIYONU. Standart sürümle aynı kod; yalnız açılıştaki opsiyon bayrağı farklı.
-- **YA4000V.HEX**: ASELSAN orijinal, VOX DEVREDE TELSIZ OPSIYONU. Standart sürümle aynı kod; yalnız açılıştaki opsiyon bayrağı farklı.
-- **YA4000Y.HEX**: ASELSAN orijinal, KABLOSUZ SES YAYIN OPSIYONU. Standart sürümle aynı kod; yalnız açılıştaki opsiyon ayarı farklı.
-- **YA4000E.HEX**: ASELSAN orijinal "radio" derlemesi (AS V2-51, 12.04.2002). Ayrı kaynak: RAM yerleşimi farklı, sipariş / yazıcı modülü genişletilmiş, pil yönetimi ve taramada TKS beklemesi değişmiş. Özel firmware yamalarımız bu sürüme uymaz.

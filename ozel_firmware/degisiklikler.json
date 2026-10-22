@@ -300,37 +300,5 @@
         ]
       }
     ]
-  },
-  "YA4000S.HEX": {
-    "ad": "ASELSAN YA4000S",
-    "ozet": "ASELSAN orijinal, STANDART VERSIYON (AS V2-30, 23.11.1999). Özel firmware'lerimizin tabanı; gerçek telsizden okunan flash ile aynı."
-  },
-  "YA4000D.HEX": {
-    "ad": "ASELSAN YA4000D",
-    "ozet": "ASELSAN orijinal, DENIZ EL TELSIZI OPSIYONU. Standart sürümle aynı kod; yalnız açılıştaki opsiyon ayarı farklı."
-  },
-  "YA4000K.HEX": {
-    "ad": "ASELSAN YA4000K",
-    "ozet": "ASELSAN orijinal, KONVANSIYONEL VERI OPSIYONU. Standart sürümle aynı kod; veri (sipariş / yazıcı) bölümü açık."
-  },
-  "YA4000P.HEX": {
-    "ad": "ASELSAN YA4000P",
-    "ozet": "ASELSAN orijinal, DISPATCH-TELSIZ OPSIYONU. Standart sürümle aynı kod; yalnız açılıştaki opsiyon bayrağı farklı."
-  },
-  "YA4000R.HEX": {
-    "ad": "ASELSAN YA4000R",
-    "ozet": "ASELSAN orijinal, KIRSAL ROLE TELSIZ OPSIYONU. Standart sürümle aynı kod; yalnız açılıştaki opsiyon bayrağı farklı."
-  },
-  "YA4000V.HEX": {
-    "ad": "ASELSAN YA4000V",
-    "ozet": "ASELSAN orijinal, VOX DEVREDE TELSIZ OPSIYONU. Standart sürümle aynı kod; yalnız açılıştaki opsiyon bayrağı farklı."
-  },
-  "YA4000Y.HEX": {
-    "ad": "ASELSAN YA4000Y",
-    "ozet": "ASELSAN orijinal, KABLOSUZ SES YAYIN OPSIYONU. Standart sürümle aynı kod; yalnız açılıştaki opsiyon ayarı farklı."
-  },
-  "YA4000E.HEX": {
-    "ad": "ASELSAN YA4000E",
-    "ozet": "ASELSAN orijinal \"radio\" derlemesi (AS V2-51, 12.04.2002). Ayrı kaynak: RAM yerleşimi farklı, sipariş / yazıcı modülü genişletilmiş, pil yönetimi ve taramada TKS beklemesi değişmiş. Özel firmware yamalarımız bu sürüme uymaz."
   }
 }

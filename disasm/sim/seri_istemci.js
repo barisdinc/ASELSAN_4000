@@ -390,6 +390,14 @@ function identify(img, known, parseHex) {
   return out;
 }
 
+/* flash görüntüsünün parmak izi (FNV-1a 32, 0x2000..0x1FFFF): sayfada gömülü olmayan orijinal firmware'leri
+ * tanımak için (mkfirmware.py --kimlik -> window.FIRMWARE_KIMLIK) */
+function kimlik(img) {
+  let h = 0x811C9DC5;
+  for (let a = 0x2000; a < 0x20000; a++) { h ^= img[a] === undefined ? 0xFF : img[a]; h = Math.imul(h, 0x01000193) >>> 0; }
+  return h.toString(16).padStart(8, '0');
+}
+
 /* Motorola S2 records, 16 bytes per line, all-0xFF lines skipped (like the original files) */
 function toSrec(img, lo = 0x2000, hi = 0x20000, header = 'radio') {
   const rec = (t, addrLen, addr, data) => {
@@ -408,7 +416,7 @@ function toSrec(img, lo = 0x2000, hi = 0x20000, header = 'radio') {
   return lines.join('\r\n') + '\r\n';
 }
 
-const api = { WebSerialPort, SimPort, RadioClient, parseHeader, romSum, identify, toSrec, checkImage, checkEeprom, diffCount, LOADER_LO, LOADER_HI };
+const api = { WebSerialPort, SimPort, RadioClient, parseHeader, romSum, identify, kimlik, toSrec, checkImage, checkEeprom, diffCount, LOADER_LO, LOADER_HI };
 if (typeof module !== 'undefined' && module.exports) module.exports = api;
 else root.SeriIstemci = api;
 })(typeof window !== 'undefined' ? window : globalThis);

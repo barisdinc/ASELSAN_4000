@@ -36,8 +36,9 @@ async function full(path, expectName) {
   let bad = 0; for (let a = 0x2000; a < 0x20000; a++) if (img[a] !== b.rom[a]) bad++;
   check(expectName + ': flash yedeği aynı', bad === 0, bad + ' fark, ' + ((port.now() - ta) / 1000).toFixed(0) + ' s');
   check(expectName + ': ROM toplamı başlıktakiyle aynı', S.romSum(img) === h.romSum, S.romSum(img).toString(16));
-  const id = S.identify(img, window.FIRMWARE_HEX, parseHex);
-  check(expectName + ': tanındı', id[0].name === expectName && id[0].diff === 0 && id[0].extra === 0, id.slice(0, 3).map(x => x.name + ':' + x.diff + '/' + x.extra).join(' '));
+  const id = S.identify(img, window.FIRMWARE_HEX, parseHex), iz = S.kimlik(img);   // orijinaller yalnız parmak iziyle (firmware.js)
+  check(expectName + ': tanındı', (id[0].name === expectName && id[0].diff === 0 && id[0].extra === 0) || (window.FIRMWARE_KIMLIK || {})[expectName] === iz,
+    id.slice(0, 3).map(x => x.name + ':' + x.diff + '/' + x.extra).join(' ') + ' iz ' + iz);
   const orig = parseHex(readFile(path)), back = parseHex(S.toSrec(img));
   let d2 = 0; for (const [a, v] of orig) if (a >= 0x2000 && (back.has(a) ? back.get(a) : 0xFF) !== v) d2++;   // S-record 0xFF'leri atlar
   for (const [a, v] of back) if (!orig.has(a) && v !== 0xFF) d2++;

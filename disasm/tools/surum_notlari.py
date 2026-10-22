@@ -25,6 +25,7 @@ for ad, n in notlar.items():
         for key, baslik in TUR:
             o += [('- ~~%s: %s~~' if s.get('geri_alindi') else '- %s: %s') % (baslik, x) for x in s.get(key, [])]
         o.append('')
-o += ['## ASELSAN orijinal firmware\'ler', '']
-o += ['- **%s**: %s' % (ad, n['ozet']) for ad, n in notlar.items() if not ad.startswith('_') and 'surumler' not in n]
+ori = [(ad, n) for ad, n in notlar.items() if not ad.startswith('_') and 'surumler' not in n]
+if ori:
+    o += ['## ASELSAN orijinal firmware\'ler', ''] + ['- **%s**: %s' % (ad, n['ozet']) for ad, n in ori]
 print('\n'.join(o))
