@@ -163,6 +163,25 @@ Nasıl çalışıyor:
 
 Telsiz bu modlarda da çalışır: işleyici her tuşta bir kez çağrılır ve hemen döner, ana döngü (alma, kanal anahtarı, PTT) sürer. Firmware'in menü zaman aşımı burada da geçerli. Bir süre tuşa basılmazsa normal ekrana döner.
 
+## Güç ve monitör tuşları (`ornekler/tus_guc.inc`, AT V0-31)
+
+Cihazda panelde güç ve monitör düğmesi olmadığı için bu işleri tuş takımı üstlenir:
+
+| Tuş | Nerede | İş |
+|---|---|---|
+| `p` (daire) kısa | normal ekran, ayarlanmış FREKANS ekranı, APRS ekranı | Çıkış gücü yüksek ↔ düşük; ekranda ~1,5 s `YUKSEK G` / `ALCAK G`, sonra kanal adı / frekans / `APRS AKT` geri gelir |
+| `p` ~1 s basılı | normal ekran | Taramayı başlat / durdur (orijinal `p`). Tarama sürerken kısa `p` de durdurur |
+| `q` (üçgen) | normal ekran, FREKANS ekranı | Monitör: susturmayı devre dışı bırak / devreye al; ekranda `MONITOR*` / `MONITOR-` |
+
+Diğer menülerde `p` firmware'e aynen gider; `q` her yerde yutulur (orijinalde A tipi kartta `q` 0x0242 bit 4'ü kurup sonraki tuşları yutuyordu).
+
+- **Tuş kancası 0x005220:** tuş tarama yordamı kodu 0x0226'ya yazıp L_005220'den geçer; tuş bırakılınca da aynı yerden `0x0F` ile geçer (0x005202). `LDA A,$0226 / CMP A,#$3A` yerine `JMPL TUS_KANCA`. Basılı tutulan tuş ~0,5 s'de bir tekrar eder; `p` basılıyken gelen tekrarlar yutulur. Basma anı 32 ms sayacından (`$0457`) alınır; bırakınca süre kısaysa güç isteği kurulur.
+- **İşler `TUS_ISLE`'de:** `VFO_KANCA`'dan her turda çağrılır (firmware fonksiyonları ve LCD çizimi orada güvenli). Uzun basışta bekleyen tuş yoksa 0x0226'ya `p` bırakılır.
+- **Güç:** panel düğmesinin yaptığının aynısı (L_005B11, uzak komut `g`): 0x0240 bit 6 (kullanıcı seçti) ve 0x023C bit 4 (1 = yüksek). `F_00CEF3` güç indeksini bundan seçer; bit 6 yokken kanalın HPRF biti (`$037C` bit 7) geçerlidir, ilk basışta bit 4 buna eşitlenir. Güç farkı EEPROM'daki yüksek / düşük güç ayarına (0x015) ve kalibrasyona bağlı; simülatörde yalnız bayraklar doğrulandı.
+- **Monitör:** firmware'in `q` yolu (L_00549D): 0x0240 bit 1 + `F_004FF6(Y = 'q')`; durum 0x023A bit 13.
+- **Tarama bayrağı:** 0x0240 bit 10 (0x0241 bit 2; F_0048C1 kurar, 0x004A17 siler). 0x022A taramada 0'dan geçtiği için kullanılmadı.
+- **RAM:** `$0447`–`$0449`. Hiçbir kodun erişmediği, çalışırken dokunulmayan baytlar; 0x0445 ve 0x044A 16 bitlik değişkenler, bunlara değmez.
+
 ## APRS kullanımı
 
 Menüde FREKANS'tan sonra gelir (`m` ile **APRS** başlığına gelip `s`).

@@ -63,9 +63,27 @@
         "baslik": "Açılış ekranı ve sürüm",
         "surum": "0-1",
         "aciklama": "Açılışta 5 s yATOLYE, ardından AT V0-x sürüm numarası. Sürüm, tarih ve metin ROM başlığında; T4000 ve yükleme sayfası da gösterir."
+      },
+      {
+        "baslik": "Güç ve monitör tuşları",
+        "surum": "0-31",
+        "aciklama": "p kısa: güç yüksek / düşük (YUKSEK G / ALCAK G); p uzun (~1 s): tarama; q: monitör (MONITOR* / MONITOR-)."
       }
     ],
     "surumler": [
+      {
+        "surum": "0-31",
+        "tarih": "2026-10-22",
+        "durum": "sim",
+        "yeni": [
+          "Daire (p) tuşu güç: kısa basış çıkış gücünü yüksek / düşük yapar, ekranda ~1,5 s YUKSEK G / ALCAK G. Normal ekranda, ayarlanmış FREKANS ekranında ve APRS ekranında çalışır.",
+          "Tarama artık p tuşunu ~1 s basılı tutarak başlar / durur; tarama sürerken kısa p de durdurur.",
+          "Üçgen (q) tuşu monitör: susturmayı devre dışı bırakır / devreye alır, ekranda MONITOR* / MONITOR-."
+        ],
+        "duzeltme": [
+          "Menülerde q tuşu artık sonraki tuşları yutmuyor."
+        ]
+      },
       {
         "surum": "0-29",
         "tarih": "2026-10-22",

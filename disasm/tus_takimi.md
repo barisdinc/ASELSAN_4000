@@ -1,5 +1,7 @@
 # Tuş takımı ve panel düğmeleri — YA4000S (A tipi kart)
 
+> Özel firmware (AT V0-31'den) `p` ve `q`'yu değiştirir: `p` kısa = güç yüksek / düşük, `p` uzun = tarama, `q` = monitör. Ayrıntı: `../ozel_firmware/README.md`, "Güç ve monitör tuşları". Aşağısı orijinal firmware.
+
 Koddan çıkarıldı ve simülatörde denendi (`sim/`, `make test-sim`). "Doğrulandı" yazanlar simülatörde çalıştırıldı; diğerleri yalnızca koddan okundu.
 
 Tuşlar: `0–9 * #` ve işlev tuşları `m s p q` (ROM 0x31EC tablosu `*0#q 789p 456s 123m`). Tuş takımı EE[0x014] bit 3 ile açılır.

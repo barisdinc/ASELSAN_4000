@@ -1,0 +1,1013 @@
+<title>ASELSAN 4000 Kullanım Kılavuzu</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@500;600;700;800&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a field-manual page. Sticky contents rail on the left, one reading column on the right;
+   every function = numbered steps, then a storyboard strip of LCD frames drawn as real 14-segment glass.
+   Print: cover page, chapters start on new pages, light palette. */
+:root {
+  --paper: #eceee7;
+  --surface: #f8f9f4;
+  --ink: #1b211d;
+  --muted: #59645b;
+  --line: #cdd4c6;
+  --olive: #4b5d36;
+  --brass: #9b742a;
+  --brass-ink: #fff8e8;
+  --ptt: #a8352a;
+  --key: #3a403c;
+  --key-ink: #f1f3ee;
+  --case: #2a2f2c;
+  --case-hi: #3b423e;
+  --lcd-bg: #bccb9c;
+  --lcd-on: #17200e;
+  --lcd-off: rgba(23, 32, 14, .09);
+  --note-bg: #e3e8d6;
+  --warn-bg: #f4e3cf;
+  --warn-ink: #6d3b12;
+  --wire-rx: #2f6db5;
+  --wire-gnd: #1b211d;
+  --wire-pwr: #b03a2e;
+  --f-display: "Saira Condensed", "Arial Narrow", "Roboto Condensed", sans-serif;
+  --f-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #121613; --surface: #1a1f1b; --ink: #e1e6de; --muted: #9ba699; --line: #2d362e;
+    --olive: #a5bb84; --brass: #d2a552; --brass-ink: #2a1f08; --ptt: #e06a5c; --key: #4a514c; --key-ink: #f1f3ee;
+    --case: #0c0e0d; --case-hi: #262b28; --lcd-bg: #aebd8f; --lcd-on: #141b0c; --lcd-off: rgba(20, 27, 12, .1);
+    --note-bg: #20281d; --warn-bg: #2f2418; --warn-ink: #f0c08f;
+    --wire-rx: #6fa5e6; --wire-gnd: #e1e6de; --wire-pwr: #e87a6d;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #121613; --surface: #1a1f1b; --ink: #e1e6de; --muted: #9ba699; --line: #2d362e;
+  --olive: #a5bb84; --brass: #d2a552; --brass-ink: #2a1f08; --ptt: #e06a5c; --key: #4a514c; --key-ink: #f1f3ee;
+  --case: #0c0e0d; --case-hi: #262b28; --lcd-bg: #aebd8f; --lcd-on: #141b0c; --lcd-off: rgba(20, 27, 12, .1);
+  --note-bg: #20281d; --warn-bg: #2f2418; --warn-ink: #f0c08f;
+  --wire-rx: #6fa5e6; --wire-gnd: #e1e6de; --wire-pwr: #e87a6d;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--paper); color: var(--ink); font-family: var(--f-body); font-size: 16px; line-height: 1.6; }
+a { color: var(--olive); }
+a:focus-visible, button:focus-visible { outline: 2px solid var(--brass); outline-offset: 2px; }
+.wrap { max-width: 1180px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+
+/* ---------- logo ---------- */
+.logo { display: inline-flex; align-items: center; gap: 12px; color: var(--ink); text-decoration: none; }
+.logo .mark { width: 54px; height: 54px; flex: none; }
+.logo .word { display: grid; line-height: 1; }
+.logo .word b { font-family: var(--f-display); font-weight: 800; font-size: 34px; letter-spacing: .02em; }
+.logo .word b i { font-style: normal; color: var(--brass); }
+.logo .word span { font-family: var(--f-mono); font-size: 10.5px; letter-spacing: .26em; text-transform: uppercase; color: var(--muted); margin-top: 5px; }
+.yb { display: inline-flex; align-items: center; gap: 5px; vertical-align: middle; font: 600 11px/1 var(--f-mono); letter-spacing: .06em; color: var(--brass); border: 1.5px solid var(--brass); border-radius: 999px; padding: 3px 8px 3px 4px; white-space: nowrap; }
+.yb svg { width: 16px; height: 16px; }
+h2 .yb { margin-left: 10px; position: relative; top: -3px; }
+
+/* ---------- masthead ---------- */
+.mast { border-bottom: 1px solid var(--line); background: var(--surface); }
+.mast .wrap { padding-block: 32px 36px; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 40px; align-items: center; }
+.eyebrow { font-family: var(--f-mono); font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+h1 { font-family: var(--f-display); font-weight: 700; font-size: clamp(40px, 6vw, 62px); line-height: 1; margin: 18px 0 14px; letter-spacing: .01em; text-wrap: balance; }
+h1 small { display: block; font-size: .42em; font-weight: 500; color: var(--olive); letter-spacing: .04em; margin-top: 8px; }
+.lede { max-width: 60ch; margin: 0 0 18px; }
+.meta { display: flex; flex-wrap: wrap; gap: 8px 18px; font-family: var(--f-mono); font-size: 13px; color: var(--muted); align-items: center; }
+.ver { font: 600 13px/1 var(--f-mono); background: var(--ink); color: var(--paper); padding: 5px 9px; border-radius: 5px; letter-spacing: .06em; }
+
+/* ---------- radio front (vehicle set, wide) ---------- */
+.radio { width: 100%; max-width: 560px; background: linear-gradient(170deg, var(--case-hi), var(--case) 45%); border-radius: 18px; padding: 14px 16px 16px; color: #d8ddd5; box-shadow: 0 1px 0 rgba(255,255,255,.06) inset, 0 18px 40px -18px rgba(0,0,0,.45); position: relative; }
+.radio .brand { display: flex; justify-content: space-between; font-family: var(--f-display); font-weight: 600; letter-spacing: .28em; font-size: 13px; margin: 0 4px 10px; }
+.radio .brand span:last-child { letter-spacing: .1em; opacity: .7; }
+.radio .face { display: grid; grid-template-columns: 78px minmax(0, 1fr) 150px; gap: 14px; align-items: center; }
+.radio .left { display: grid; justify-items: center; gap: 10px; }
+.radio .knob { width: 60px; height: 60px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #5b625e, #1f2321 70%); box-shadow: 0 0 0 3px #151816, 0 3px 6px rgba(0,0,0,.4); position: relative; }
+.radio .knob::after { content: ""; position: absolute; left: 50%; top: 7px; width: 3px; height: 14px; margin-left: -1.5px; background: #e9ece6; border-radius: 2px; }
+.radio .leds { display: flex; gap: 12px; font-size: 9px; letter-spacing: .08em; text-align: center; }
+.radio .led { display: grid; justify-items: center; gap: 3px; }
+.radio .led i { width: 10px; height: 10px; border-radius: 50%; display: block; }
+.radio .led.r i { background: #d0463a; box-shadow: 0 0 6px #d0463a; }
+.radio .led.y i { background: #e6b43a; box-shadow: 0 0 6px #e6b43a; }
+.radio .glass { background: #0f1210; border-radius: 8px; padding: 8px; }
+.radio .pad { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; background: #1d211f; padding: 8px; border-radius: 10px; }
+.radio .pad b { display: grid; place-items: center; height: 27px; border-radius: 6px; background: #4a514c; font-family: var(--f-mono); font-weight: 500; font-size: 13px; color: #f1f3ee; }
+.radio .pad b.f { color: #ffffff; }
+.radio .pad b.f .kg { width: 16px; height: 16px; }
+.radio .mic { position: absolute; left: -10px; top: 50%; width: 12px; height: 46px; margin-top: -10px; border-radius: 4px 0 0 4px; background: #111; box-shadow: inset -2px 0 0 #333; }
+.cn { position: absolute; width: 20px; height: 20px; border-radius: 50%; background: var(--brass); color: var(--brass-ink); font: 600 11px/20px var(--f-mono); text-align: center; box-shadow: 0 0 0 2px var(--case); z-index: 2; }
+
+/* ---------- body grid ---------- */
+.body { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 48px; padding-block: 40px 40px; }
+nav.toc { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 20px); align-self: start; font-size: 14px; max-height: calc(100vh - 40px); overflow: auto; }
+nav.toc p { font-family: var(--f-mono); font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin: 0 0 10px; }
+nav.toc ol { list-style: none; margin: 0; padding: 0; counter-reset: t; display: grid; gap: 2px; }
+nav.toc li { counter-increment: t; }
+nav.toc a { display: grid; grid-template-columns: 26px 1fr; padding: 4px 8px 4px 0; text-decoration: none; color: var(--ink); border-radius: 6px; }
+nav.toc a::before { content: counter(t, decimal-leading-zero); font-family: var(--f-mono); font-size: 12px; color: var(--muted); padding-top: 2px; }
+nav.toc a:hover { color: var(--olive); }
+main { min-width: 0; }
+
+section.ch { padding-top: 12px; margin-bottom: 64px; scroll-margin-top: 20px; }
+.chhead { display: grid; grid-template-columns: auto 1fr; gap: 0 16px; align-items: baseline; border-bottom: 2px solid var(--ink); padding-bottom: 8px; margin-bottom: 20px; }
+.chno { font-family: var(--f-display); font-weight: 700; font-size: 44px; line-height: 1; color: var(--olive); }
+h2 { font-family: var(--f-display); font-weight: 700; font-size: 32px; line-height: 1.1; margin: 0; text-wrap: balance; }
+h3 { font-family: var(--f-display); font-weight: 600; font-size: 22px; margin: 36px 0 10px; letter-spacing: .01em; }
+h4 { font-family: var(--f-mono); font-weight: 500; font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin: 26px 0 10px; }
+p, li { max-width: 68ch; }
+.intro { font-size: 17px; }
+
+ol.steps { list-style: none; padding: 0; margin: 14px 0 6px; counter-reset: s; display: grid; gap: 10px; }
+ol.steps > li { counter-increment: s; display: grid; grid-template-columns: 30px minmax(0, 1fr); gap: 12px; align-items: start; }
+ol.steps > li::before { content: counter(s); width: 26px; height: 26px; border-radius: 50%; border: 1.5px solid var(--olive); color: var(--olive); font: 600 13px/23px var(--f-mono); text-align: center; margin-top: 1px; }
+
+kbd { display: inline-grid; grid-auto-flow: column; place-items: center; gap: 3px; min-width: 26px; height: 26px; padding: 0 7px; border-radius: 6px; background: var(--key); color: var(--key-ink); font: 500 14px/1 var(--f-mono); box-shadow: 0 2px 0 rgba(0,0,0,.35); vertical-align: 1px; margin: 0 1px; }
+kbd.f { padding: 0 5px; }
+kbd.f small { font: 600 10px/1 var(--f-mono); opacity: .85; }
+kbd.ptt { background: var(--ptt); color: #fff; font-family: var(--f-display); letter-spacing: .1em; padding: 0 10px; }
+.kg { width: 16px; height: 16px; display: block; }
+.kn { color: var(--muted); font-size: 12.5px; }
+.ico { display: inline-flex; align-items: center; gap: 4px; font: 500 13px/1 var(--f-mono); color: var(--ink); vertical-align: -3px; }
+.ico svg { width: 22px; height: 22px; }
+code { font-family: var(--f-mono); font-size: .9em; background: var(--note-bg); padding: 1px 5px; border-radius: 4px; }
+.lcdtxt { font-family: var(--f-mono); font-size: .92em; background: var(--lcd-bg); color: var(--lcd-on); padding: 1px 6px; border-radius: 3px; white-space: pre; }
+
+.lcd { display: block; background: var(--lcd-bg); border-radius: 5px; padding: 7px 8px 6px; box-shadow: inset 0 0 0 1px rgba(0,0,0,.18), inset 0 6px 10px -6px rgba(0,0,0,.25); position: relative; }
+.lcd svg { display: block; width: 100%; height: auto; }
+.lcd .ann { position: absolute; top: 2px; left: 8px; font: 700 8px/1 var(--f-mono); letter-spacing: .08em; color: var(--lcd-on); }
+.glass .lcd { padding: 12px 10px 10px; }
+
+.sb { display: grid; grid-template-columns: repeat(auto-fill, minmax(168px, 1fr)); gap: 26px 22px; margin: 18px 0 8px; padding: 22px 20px 20px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; counter-reset: fr; }
+.sb .fr { margin: 0; display: grid; grid-template-rows: auto auto 1fr; gap: 8px; position: relative; counter-increment: fr; min-width: 0; break-inside: avoid; }
+.sb .fr::after { content: ""; position: absolute; top: 58px; right: -18px; width: 14px; height: 14px; border-top: 2px solid var(--muted); border-right: 2px solid var(--muted); transform: rotate(45deg) scale(.7); opacity: .6; }
+.sb .fr:last-child::after { display: none; }
+.sb .act { min-height: 34px; display: flex; flex-wrap: wrap; gap: 4px; align-items: center; font-size: 13px; color: var(--muted); }
+.sb .act::before { content: counter(fr); font: 600 11px/1 var(--f-mono); color: var(--olive); border: 1.5px solid var(--olive); border-radius: 4px; padding: 3px 5px; margin-right: 4px; }
+.sb figcaption { font-size: 13.5px; line-height: 1.45; }
+.sb .tx .lcd { box-shadow: inset 0 0 0 1px rgba(0,0,0,.18), 0 0 0 3px var(--ptt); }
+.sbtitle { font-family: var(--f-display); font-weight: 600; font-size: 15px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin: 26px 0 -8px; }
+
+.ring { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px 30px; padding: 22px 20px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; margin: 16px 0; }
+.ring .it { position: relative; display: grid; gap: 6px; break-inside: avoid; }
+.ring .it::after { content: ""; position: absolute; right: -25px; top: 11px; width: 20px; height: 20px; border-radius: 5px; background: var(--key); }
+.ring .it::before { content: ""; position: absolute; right: -22px; top: 14px; width: 14px; height: 14px; background: var(--key-ink); -webkit-mask: var(--m-mask) center / contain no-repeat; mask: var(--m-mask) center / contain no-repeat; z-index: 1; }
+.ring .it small { font-size: 12.5px; color: var(--muted); line-height: 1.35; }
+
+.tbl { overflow-x: auto; margin: 14px 0; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: 14.5px; }
+th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-family: var(--f-mono); font-weight: 500; font-size: 11.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); background: var(--paper); }
+tr:last-child td { border-bottom: 0; }
+td:first-child { white-space: nowrap; }
+tr.hl td { background: var(--note-bg); font-weight: 600; }
+.note, .warn { border-radius: 10px; padding: 12px 16px; margin: 16px 0; font-size: 14.5px; max-width: 72ch; break-inside: avoid; }
+.note { background: var(--note-bg); }
+.warn { background: var(--warn-bg); color: var(--warn-ink); }
+.note b:first-child, .warn b:first-child { font-family: var(--f-mono); font-size: 11.5px; letter-spacing: .12em; text-transform: uppercase; margin-right: 6px; }
+pre.serial { font-family: var(--f-mono); font-size: 13px; background: var(--case); color: #cfe6b4; border-radius: 10px; padding: 14px 16px; overflow-x: auto; margin: 14px 0; }
+
+.legend { display: grid; grid-template-columns: minmax(0, 560px) minmax(0, 1fr); gap: 32px; align-items: start; margin-top: 10px; }
+.legend ol { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; counter-reset: c; }
+.legend li { counter-increment: c; display: grid; grid-template-columns: 26px 1fr; gap: 10px; }
+.legend li::before { content: counter(c); width: 20px; height: 20px; border-radius: 50%; background: var(--brass); color: var(--brass-ink); font: 600 11px/20px var(--f-mono); text-align: center; margin-top: 2px; }
+.stack { display: grid; gap: 22px; }
+
+/* wiring drawings */
+.wiring { margin: 18px 0; padding: 18px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; overflow-x: auto; break-inside: avoid; }
+.wiring svg { display: block; width: 100%; min-width: 560px; height: auto; }
+.wiring figcaption { font-size: 13.5px; color: var(--muted); margin-top: 10px; }
+.wiring text { font-family: var(--f-body); fill: var(--ink); }
+.wiring .mono { font-family: var(--f-mono); }
+.wiring .box { fill: var(--paper); stroke: var(--ink); stroke-width: 1.5; }
+.wiring .dev { fill: var(--case); }
+.wiring .devs { fill: #c3cabf; }
+.wiring .devt { fill: #e8ece4; font-family: var(--f-display); font-weight: 600; letter-spacing: .08em; }
+.wiring .pin { fill: var(--surface); stroke: var(--ink); stroke-width: 1.2; }
+.wiring .rx { stroke: var(--wire-rx); stroke-width: 3; fill: none; }
+.wiring .gnd { stroke: var(--wire-gnd); stroke-width: 3; fill: none; }
+.wiring .pwr { stroke: var(--wire-pwr); stroke-width: 3; fill: none; }
+.wiring .nc { fill: var(--muted); }
+.wiring .lbl-rx { fill: var(--wire-rx); font-weight: 600; }
+.wiring .lbl-pwr { fill: var(--wire-pwr); font-weight: 600; }
+
+.cheat { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 14px; }
+.cheat > div { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; break-inside: avoid; }
+.cheat h5 { font-family: var(--f-display); font-weight: 600; font-size: 17px; margin: 0 0 8px; }
+.cheat p { margin: 4px 0; font-size: 14px; display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+
+footer.foot { border-top: 1px solid var(--line); background: var(--surface); }
+footer.foot .wrap { padding-block: 28px 36px; display: flex; flex-wrap: wrap; gap: 16px 32px; align-items: center; justify-content: space-between; font-size: 13.5px; color: var(--muted); }
+
+.cover { display: none; }
+
+@media (max-width: 900px) {
+  .body { grid-template-columns: minmax(0, 1fr); gap: 24px; }
+  nav.toc { position: static; max-height: none; border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; background: var(--surface); }
+  nav.toc ol { grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); }
+  .mast .wrap { grid-template-columns: minmax(0, 1fr); }
+  .legend { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 560px) {
+  .radio .face { grid-template-columns: minmax(0, 1fr); justify-items: stretch; }
+  .radio .left { grid-template-columns: auto auto; justify-content: center; align-items: center; gap: 18px; }
+  .radio .mic { display: none; }
+}
+@media (max-width: 440px) {
+  .sb { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px 18px; padding: 16px 14px; }
+  .sb .fr::after { right: -15px; }
+  .ring { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  h2 { font-size: 27px; }
+  .logo .word b { font-size: 28px; }
+}
+@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+
+@page { size: A4; margin: 14mm 12mm 16mm; }
+@media print {
+  :root, :root[data-theme="dark"] {
+    --paper: #ffffff; --surface: #f7f8f3; --ink: #1b211d; --muted: #59645b; --line: #cdd4c6;
+    --olive: #4b5d36; --brass: #9b742a; --brass-ink: #fff8e8; --ptt: #a8352a; --key: #3a403c; --key-ink: #f1f3ee;
+    --note-bg: #eef1e6; --warn-bg: #f8eadb; --warn-ink: #6d3b12; --wire-rx: #2f6db5; --wire-gnd: #1b211d; --wire-pwr: #b03a2e;
+    color-scheme: light;
+  }
+  body { font-size: 11pt; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .cover { display: grid; height: 265mm; align-content: space-between; padding: 10mm 6mm; break-after: page; }
+  .cover .logo .mark { width: 120px; height: 120px; }
+  .cover .logo .word b { font-size: 72px; }
+  .cover .logo .word span { font-size: 14px; }
+  .cover h1 { font-size: 54px; margin-top: 30mm; }
+  .cover .cv { display: flex; gap: 12px; align-items: center; font-family: var(--f-mono); font-size: 13px; color: var(--muted); }
+  .cover .radio { margin-top: 10mm; }
+  .mast { display: none; }
+  .body { display: block; padding: 0; }
+  nav.toc { position: static; max-height: none; break-after: page; border: 0; padding: 0; background: none; font-size: 13pt; }
+  nav.toc ol { grid-template-columns: 1fr; gap: 6px; }
+  section.ch { break-before: page; margin-bottom: 0; }
+  .sb, .ring { break-inside: auto; }
+  h3, h4, .sbtitle { break-after: avoid; }
+  .wiring svg { min-width: 0; }
+  .legend .radio, .cover .radio { margin-left: 16px; }
+  a { color: inherit; text-decoration: none; }
+  footer.foot { break-before: avoid; background: none; }
+}
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="logo-mark" viewBox="0 0 64 64">
+    <rect x="1" y="1" width="62" height="62" rx="14" fill="#4b5d36"/>
+    <path d="M14 14 L30.5 36 M48 14 L22 52" stroke="#fff8e8" stroke-width="7" stroke-linecap="round" fill="none"/>
+    <path d="M44 7.5 a10 10 0 0 1 9.5 9.5 M42.6 1.8 a16 16 0 0 1 15.6 15.6" stroke="#d6a84c" stroke-width="3.2" stroke-linecap="round" fill="none"/>
+    <circle cx="48" cy="14" r="3.4" fill="#d6a84c"/>
+    <rect x="9" y="56" width="22" height="2.4" rx="1.2" fill="#d6a84c" opacity=".9"/>
+  </symbol>
+  <symbol id="i-wait" viewBox="0 0 24 24"><circle cx="12" cy="13" r="8.5" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M12 8.5V13l3 2" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M9.5 2.5h5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></symbol>
+  <symbol id="i-sig" viewBox="0 0 24 24"><path d="M12 13v8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="12" cy="11" r="2" fill="currentColor"/><path d="M8 7a5.5 5.5 0 0 0 0 8M16 7a5.5 5.5 0 0 1 0 8M5 4.5a9.5 9.5 0 0 0 0 13M19 4.5a9.5 9.5 0 0 1 0 13" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></symbol>
+  <symbol id="i-nosig" viewBox="0 0 24 24"><path d="M12 13v8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="12" cy="11" r="2" fill="currentColor"/><path d="M4 4l16 16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></symbol>
+  <symbol id="i-power" viewBox="0 0 24 24"><path d="M12 3v8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M7 6.5a7.5 7.5 0 1 0 10 0" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+  <symbol id="i-gps" viewBox="0 0 24 24"><path d="M12 21s-6.5-6.2-6.5-11a6.5 6.5 0 0 1 13 0C18.5 14.8 12 21 12 21z" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="12" cy="10" r="2.3" fill="currentColor"/></symbol>
+  <symbol id="i-cable" viewBox="0 0 24 24"><path d="M3 12h6M15 12h6M9 8h6v8H9z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></symbol>
+</svg>
+
+<!-- print-only cover -->
+<div class="cover">
+  <div class="logo"><svg class="mark"><use href="#logo-mark"/></svg><span class="word"><b><i>y</i>ATOLYE</b><span>telsiz yazılım atölyesi</span></span></div>
+  <div>
+    <h1>KULLANIM KILAVUZU<small>ASELSAN 4021 / 4025 araç telsizi · yATOLYE yazılımı</small></h1>
+    <div class="cv"><span class="ver">AT V0-31</span><span>22.10.2026</span></div>
+    <div class="radio" style="max-width:520px">[[RADYO_ON]]</div>
+  </div>
+  <div class="cv">Kanal · VFO · tarama · güç · monitör · APRS · GPS — github.com/barisdinc/ASELSAN_4000</div>
+</div>
+
+<header class="mast">
+  <div class="wrap">
+    <div>
+      <div class="logo"><svg class="mark"><use href="#logo-mark"/></svg><span class="word"><b><i>y</i>ATOLYE</b><span>telsiz yazılım atölyesi</span></span></div>
+      <h1>ASELSAN 4000 Kullanım Kılavuzu<small>Kanal, VFO, tarama, güç, monitör ve APRS — adım adım, ekran ekran</small></h1>
+      <p class="lede">Bu kılavuz 4021 / 4025 araç telsizinin günlük kullanımını ve yATOLYE yazılımıyla gelen yeni özellikleri anlatır. Her işlevde önce yapılacaklar sırayla yazılır, ardından her tuşa basıştan sonra ekranda ne göreceğinizi gösteren bir şerit gelir. Ekran görüntüleri yazılımın simülatörde, araç telsizi kartıyla çalıştırılmasından alınmıştır.</p>
+      <div class="meta"><span class="ver">AT V0-31</span><span>Tuşlar: [m] [s] [p] [q] [0]–[9] [*] [#]</span></div>
+    </div>
+    <div class="radio" aria-label="Telsizin ön paneli" style="width:440px;max-width:100%">[[RADYO_ON]]</div>
+  </div>
+</header>
+
+<div class="wrap body">
+  <nav class="toc" aria-label="İçindekiler">
+    <p>İçindekiler</p>
+    <ol>
+      <li><a href="#tanisma">Telsizi tanıyalım</a></li>
+      <li><a href="#acilis">Açılış</a></li>
+      <li><a href="#menu">Menü haritası</a></li>
+      <li><a href="#kanal">Hafıza kanalı çağırma</a></li>
+      <li><a href="#konusma">Konuşma, güç ve monitör</a></li>
+      <li><a href="#vfo">VFO: frekans ve ton</a></li>
+      <li><a href="#liste">Tarama listesi oluşturma</a></li>
+      <li><a href="#tarama">Taramayı başlatma ve durdurma</a></li>
+      <li><a href="#altmenu">Alt menü: ışık, uyarı, parola</a></li>
+      <li><a href="#aprs">APRS</a></li>
+      <li><a href="#gps">GPS bağlantısı</a></li>
+      <li><a href="#ozet">Hızlı başvuru kartı</a></li>
+      <li><a href="#notlar">Güvenlik ve notlar</a></li>
+    </ol>
+  </nav>
+
+  <main>
+
+<!-- 01 -->
+<section class="ch" id="tanisma">
+  <div class="chhead"><span class="chno">01</span><h2>Telsizi tanıyalım</h2></div>
+  <div class="legend">
+    <div class="stack">
+      <div class="radio" aria-label="Numaralı ön panel">[[RADYO_ON_NUMARALI]]</div>
+      <figure class="wiring" style="margin:0">
+        <svg viewBox="0 0 560 150" role="img" aria-label="Arka panel konnektörleri">
+          <rect x="6" y="20" width="548" height="104" rx="12" class="dev"/>
+          <text x="20" y="42" class="devt" font-size="12">ARKA PANEL</text>
+          <circle cx="78" cy="84" r="20" fill="#cfd5cb"/><circle cx="78" cy="84" r="6" fill="#2a2f2c"/>
+          <text x="78" y="140" text-anchor="middle" font-size="13">Anten</text>
+          <rect x="160" y="66" width="170" height="38" rx="8" fill="#cfd5cb"/>
+          <g fill="#2a2f2c">[[OPSIYON_PINLER]]</g>
+          <text x="245" y="140" text-anchor="middle" font-size="13">Opsiyon (15 pin)</text>
+          <rect x="372" y="70" width="54" height="30" rx="6" fill="#cfd5cb"/><circle cx="388" cy="85" r="5" fill="#2a2f2c"/><circle cx="410" cy="85" r="5" fill="#2a2f2c"/>
+          <text x="399" y="140" text-anchor="middle" font-size="13">Hoparlör</text>
+          <rect x="462" y="70" width="58" height="30" rx="6" fill="#cfd5cb"/><circle cx="478" cy="85" r="5.5" fill="#b03a2e"/><circle cx="504" cy="85" r="5.5" fill="#2a2f2c"/>
+          <text x="491" y="140" text-anchor="middle" font-size="13">Besleme 13,2 V</text>
+        </svg>
+      </figure>
+    </div>
+    <ol>
+      <li><div><b>Gösterge.</b> 8 karakterlik yazı alanı: kanal adı, menü başlıkları, frekans, APRS bilgileri. Yalnız büyük harf ve rakam gösterdiği için Türkçe karakterler <span class="lcdtxt">ISIK</span>, <span class="lcdtxt">CIKIS</span> gibi yazılır.</div></li>
+      <li><div><b>Kanal numarası (2 hane).</b> Hafıza kanalındayken kanal numarası; VFO'da almada <span class="lcdtxt">Ur</span> (VR), gönderirken <span class="lcdtxt">Ut</span> (VT).</div></li>
+      <li><div><b>Aç-kapa / ses düğmesi.</b> Telsizi açar, ses seviyesini ayarlar.</div></li>
+      <li><div><b>LED'ler.</b> Kırmızı: gönderirken yanar. Sarı: kanalda yayın varken yanar.</div></li>
+      <li><div><b>Tuş takımı.</b> Rakamlar ve <kbd>*</kbd> <kbd>#</kbd>: kanal numarası, frekans, ton ve parola girişi. Sağ sütunda dört işlev tuşu (aşağıdaki tablo).</div></li>
+      <li><div><b>Mikrofon konnektörü</b> (sol yan, 8 pin). Mikrofon ve <kbd class="ptt">PTT</kbd> buraya bağlanır. Programlama kablosu ve GPS de bu konnektörü kullanabilir (bkz. <a href="#gps">GPS bağlantısı</a>).</div></li>
+    </ol>
+  </div>
+
+  <h3>İşlev tuşları</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Tuş</th><th>Ne yapar</th><th>Ayrıntı</th></tr></thead>
+    <tbody>
+      <tr><td>[m] <span class="kn">Menü</span></td><td>Menüyü açar, sonraki öğeye / seçeneğe geçer</td><td>FREKANS ve APRS ekranından çıkar</td></tr>
+      <tr><td>[s] <span class="kn">Seç</span></td><td>Menü öğesine girer, seçeneği kaydeder, ayarı açar / kapatır</td><td>VFO girişinde girilen haneleri temizler</td></tr>
+      <tr class="hl"><td>[p] <span class="kn">Güç</span></td><td>Kısa: çıkış gücü yüksek / düşük</td><td>Uzun (~1 s): tarama başlat / durdur. <span class="yb"><svg><use href="#logo-mark"/></svg>yATOLYE</span></td></tr>
+      <tr class="hl"><td>[q] <span class="kn">Monitör</span></td><td>Susturmayı devre dışı bırakır / devreye alır</td><td>Zayıf sinyali dinlemek için. <span class="yb"><svg><use href="#logo-mark"/></svg>yATOLYE</span></td></tr>
+      <tr><td>[0]–[9]</td><td>Normal ekranda iki haneli kanal numarası</td><td>Menülerde frekans, ton, kanal, parola girişi</td></tr>
+      <tr><td>[*]</td><td>Girişte son haneyi siler</td><td>Giriş boşsa bir önceki adıma döner. APRS ekranında daha eski istasyon</td></tr>
+      <tr><td>[#]</td><td>VFO'da adımı onaylar</td><td>APRS ekranında daha yeni istasyon</td></tr>
+      <tr><td>[PTT]</td><td>Mikrofondaki bas-konuş</td><td>APRS ekranında önce konum paketi, sonra konuşma</td></tr>
+    </tbody>
+  </table></div>
+  <div class="note"><b>Zaman aşımı</b>Menüdeyken yaklaşık 4 saniye tuşa basmazsanız telsiz normal ekrana döner. FREKANS ve APRS ekranlarında bu süre yoktur; onlardan yalnız [m] ile çıkılır.</div>
+</section>
+
+<!-- 02 -->
+<section class="ch" id="acilis">
+  <div class="chhead"><span class="chno">02</span><h2>Açılış</h2></div>
+  <p class="intro">Aç-kapa düğmesini çevirince önce yATOLYE yazısı, ardından yazılım sürümü, sonra cihazın parça ve seri numaraları görünür. Son olarak son kullanılan kanal gelir.</p>
+  <div class="sb">
+    <figure class="fr"><div class="act"><span class="ico"><svg><use href="#i-power"/></svg> aç</span></div><span class="lcd" data-t="yATOLYE"></span><figcaption>5 saniye yATOLYE.</figcaption></figure>
+    <figure class="fr"><div class="act"><span class="ico"><svg><use href="#i-wait"/></svg> 1 s</span></div><span class="lcd" data-t="AT V0-31"></span><figcaption>Yüklü yazılımın sürümü.</figcaption></figure>
+    <figure class="fr"><div class="act"><span class="ico"><svg><use href="#i-wait"/></svg> 1 s</span></div><span class="lcd" data-t="PN935070"></span><figcaption>Parça numarası, ardından <span class="lcdtxt">SN</span> seri numarası.</figcaption></figure>
+    <figure class="fr"><div class="act"><span class="ico"><svg><use href="#i-wait"/></svg> 2 s</span></div><span class="lcd" data-t="KANAL 01" data-c="01"></span><figcaption>Hazır. Kanal adı ve numarası.</figcaption></figure>
+  </div>
+  <p>Telsiz APRS ekranındayken kapatıldıysa açılışın sonunda doğrudan APRS ekranına döner. Parola konduysa açılışta <span class="lcdtxt">PAROLA</span> yazar ve 4 haneli parola istenir.</p>
+</section>
+
+<!-- 03 -->
+<section class="ch" id="menu">
+  <div class="chhead"><span class="chno">03</span><h2>Menü haritası</h2></div>
+  <p class="intro">Tüm ayarlar tek bir halka menüde. [m] sıradaki öğeye geçer, [s] o öğeye girer ya da öğeyi açıp kapatır. Son öğeden sonra [m] normal ekrana döner.</p>
+  <div class="ring">
+    <div class="it"><span class="lcd" data-t="KANAL 01" data-c="01"></span><small>Normal ekran</small></div>
+    <div class="it"><span class="lcd" data-t="KNL TARA"></span><small>[s] taramayı başlat / durdur</small></div>
+    <div class="it"><span class="lcd" data-t="LISTE"></span><small>[s] tarama listesini düzenle</small></div>
+    <div class="it"><span class="lcd" data-t="FREKANS"></span><small>[s] VFO: frekans ve ton gir</small></div>
+    <div class="it"><span class="lcd" data-t="APRS"></span><small>[s] APRS ekranına geç</small></div>
+    <div class="it"><span class="lcd" data-t="APRS TR*"></span><small>[s] izleyici (tracker) aç / kapa</small></div>
+    <div class="it"><span class="lcd" data-t="APRS DG-"></span><small>[s] digipeater aç / kapa</small></div>
+    <div class="it"><span class="lcd" data-t="APRS IG*"></span><small>[s] IGate (seri port) aç / kapa</small></div>
+    <div class="it"><span class="lcd" data-t="ALT MENU"></span><small>[s] ışık, uyarı, parola</small></div>
+  </div>
+  <p>APRS TR / DG / IG satırlarının son karakteri ayarın durumunu gösterir: <span class="lcdtxt">*</span> açık, <span class="lcdtxt">-</span> kapalı. FREKANS, APRS ve APRS TR / DG / IG <span class="yb"><svg><use href="#logo-mark"/></svg>yATOLYE</span> yazılımının eklediği öğelerdir. <span class="lcdtxt">ALT MENU</span> yalnız programlama yazılımında <b>Alt Menü</b> seçeneği açıksa görünür.</p>
+</section>
+
+<!-- 04 -->
+<section class="ch" id="kanal">
+  <div class="chhead"><span class="chno">04</span><h2>Hafıza kanalı çağırma</h2></div>
+  <p class="intro">Programlanmış bir kanala geçmek için normal ekranda kanal numarasını <b>iki hane</b> olarak yazın.</p>
+  <ol class="steps">
+    <li><div>Normal ekranda olduğunuzdan emin olun (menüdeyseniz birkaç saniye bekleyin).</div></li>
+    <li><div>Kanal numarasını iki hane yazın: 5. kanal için [0] [5], 12. kanal için [1] [2].</div></li>
+    <li><div>İkinci haneden sonra telsiz o kanala geçer; ekranda kanalın adı ve numarası görünür.</div></li>
+  </ol>
+  <div class="sb">
+    <figure class="fr"><div class="act">normal ekran</div><span class="lcd" data-t="KANAL 01" data-c="01"></span><figcaption>1. kanaldasınız.</figcaption></figure>
+    <figure class="fr"><div class="act">[0]</div><span class="lcd" data-t="KANAL  0" data-c="01"></span><figcaption>İlk hane.</figcaption></figure>
+    <figure class="fr"><div class="act">[5]</div><span class="lcd" data-t="KANAL 05" data-c="05"></span><figcaption>İkinci hane: 5. kanal.</figcaption></figure>
+    <figure class="fr"><div class="act">[1][2]</div><span class="lcd" data-t="KANAL 12" data-c="12"></span><figcaption>Doğrudan 12. kanala.</figcaption></figure>
+  </div>
+  <div class="note"><b>İpucu</b>Ekrandaki yazı kanalın programlamada verilen adıdır. Örneklerdeki “KANAL 05” varsayılan addır; sizin telsizinizde “DARD-81” gibi bir ad görünebilir. Kanal anahtarlı el telsizi modellerinde kanal, anahtarın 1–15 konumlarıyla seçilir; 16. konumda tuş takımından girilir.</div>
+</section>
+
+<!-- 05 -->
+<section class="ch" id="konusma">
+  <div class="chhead"><span class="chno">05</span><h2>Konuşma, güç ve monitör</h2></div>
+
+  <h3>Konuşma</h3>
+  <ol class="steps">
+    <li><div>Mikrofondaki [PTT]'ye basılı tutun, konuşun, bırakın. Gönderirken kırmızı LED yanar.</div></li>
+    <li><div>PTT basılıyken rakam tuşları DTMF tonu gönderir.</div></li>
+  </ol>
+  <div class="sb">
+    <figure class="fr"><div class="act">dinleme</div><span class="lcd" data-t="KANAL 01" data-c="01"></span><figcaption>Kanalda bekliyorsunuz.</figcaption></figure>
+    <figure class="fr tx"><div class="act">[PTT] basılı</div><span class="lcd" data-t="KANAL 01" data-c="01" data-tx="1"></span><figcaption>Gönderiyorsunuz.</figcaption></figure>
+    <figure class="fr"><div class="act">[PTT] bırak</div><span class="lcd" data-t="KANAL 01" data-c="01"></span><figcaption>Almaya döndü.</figcaption></figure>
+  </div>
+
+  <h3>Çıkış gücü: yüksek / düşük <span class="yb"><svg><use href="#logo-mark"/></svg>yATOLYE</span></h3>
+  <p>Telsizde ayrı bir güç düğmesi yoktur; bu işi daire tuşu [p] yapar.</p>
+  <ol class="steps">
+    <li><div>[p]'ye <b>kısa</b> basın. Güç yüksekse düşüğe, düşükse yükseğe geçer.</div></li>
+    <li><div>Ekranda yaklaşık 1,5 saniye yeni güç yazar: <span class="lcdtxt">YUKSEK G</span> ya da <span class="lcdtxt">ALCAK G</span>. Sonra kanal adı (ya da VFO frekansı, APRS ekranı) geri gelir.</div></li>
+    <li><div>Bu tuş normal ekranda, VFO frekansı ayarlıyken FREKANS ekranında ve APRS ekranında çalışır.</div></li>
+  </ol>
+  <div class="sb">
+    <figure class="fr"><div class="act">normal ekran</div><span class="lcd" data-t="KANAL 01" data-c="01"></span><figcaption>Kanalın kendi gücüyle çalışıyor.</figcaption></figure>
+    <figure class="fr"><div class="act">[p]</div><span class="lcd" data-t="YUKSEK G" data-c="01"></span><figcaption>Yüksek güç.</figcaption></figure>
+    <figure class="fr"><div class="act"><span class="ico"><svg><use href="#i-wait"/></svg> 1,5 s</span></div><span class="lcd" data-t="KANAL 01" data-c="01"></span><figcaption>Kanal adı geri geldi.</figcaption></figure>
+    <figure class="fr"><div class="act">[p]</div><span class="lcd" data-t="ALCAK G" data-c="01"></span><figcaption>Düşük güç.</figcaption></figure>
+  </div>
+  <div class="note"><b>Bilmeniz gereken</b>İlk basışta telsiz o kanalın programlanmış gücünün tersine geçer. Yüksek ve düşük gücün kaç watt olduğu programlamadaki <b>Yüksek güç / Düşük güç</b> ayarına bağlıdır; ikisi aynı ayarlıysa çıkış değişmez. Seçtiğiniz güç telsiz kapanana kadar geçerlidir.</div>
+
+  <h3>Monitör <span class="yb"><svg><use href="#logo-mark"/></svg>yATOLYE</span></h3>
+  <p>Monitör susturmayı ve ton kodlu susturmayı (TKS) devre dışı bırakır; kanaldaki her şey, gürültü dahil, hoparlörden gelir. Zayıf bir istasyonu dinlemek ya da kanalın boş olup olmadığını anlamak için kullanılır.</p>
+  <ol class="steps">
+    <li><div>Üçgen tuşa [q] basın. Ekranda <span class="lcdtxt">MONITOR*</span> yazar, hoparlör açılır.</div></li>
+    <li><div>Kapatmak için tekrar [q]. Ekranda <span class="lcdtxt">MONITOR-</span> yazar, susturma yeniden devreye girer.</div></li>
+  </ol>
+  <div class="sb">
+    <figure class="fr"><div class="act">[q]</div><span class="lcd" data-t="MONITOR*" data-c="01"></span><figcaption>Susturma kapalı, hoparlör açık.</figcaption></figure>
+    <figure class="fr"><div class="act"><span class="ico"><svg><use href="#i-wait"/></svg> 1,5 s</span></div><span class="lcd" data-t="KANAL 01" data-c="01"></span><figcaption>Monitör açık kalır.</figcaption></figure>
+    <figure class="fr"><div class="act">[q]</div><span class="lcd" data-t="MONITOR-" data-c="01"></span><figcaption>Susturma yeniden devrede.</figcaption></figure>
+  </div>
+  <p>Monitör normal ekranda ve FREKANS ekranında çalışır. Menülerde [q] dikkate alınmaz. APRS ekranında hoparlör hep kapalı olduğundan monitör yoktur.</p>
+</section>
+
+<!-- 06 -->
+<section class="ch" id="vfo">
+  <div class="chhead"><span class="chno">06</span><h2>VFO: frekans ve ton girme <span class="yb"><svg><use href="#logo-mark"/></svg>yATOLYE</span></h2></div>
+  <p class="intro">FREKANS menüsü hafızada olmayan bir frekansa elle geçmenizi sağlar. Dört adım var: <b>alma frekansı</b>, <b>gönderme frekansı</b>, <b>alma tonu</b> (CTCSS) ve <b>gönderme tonu</b>. Her adım [#] ile onaylanır.</p>
+
+  <h3>Frekans nasıl yazılır?</h3>
+  <ul>
+    <li>Noktasız, MHz cinsinden yazın. <code>145600</code> = 145,600 MHz. En az 6 hane gerekir.</li>
+    <li>12,5 kHz adımlı frekanslar için 7 hane: <code>1455125</code> = 145,5125 MHz.</li>
+    <li>Ekranda 3. haneden sonraki boşluk ondalık noktadır: <span class="lcdtxt">145 600_</span>.</li>
+    <li>Frekans 2,5 kHz adımına uymalı ve telsizin bandı içinde olmalıdır.</li>
+  </ul>
+  <h3>Ton nasıl yazılır?</h3>
+  <ul>
+    <li>Hz cinsinden, en çok 4 hane. Son hane ondalıktır: <code>885</code> = 88,5 Hz, <code>2503</code> = 250,3 Hz.</li>
+    <li>600'den küçük sayılar tam Hz sayılır: <code>67</code> = 67,0 Hz, <code>100</code> = 100,0 Hz.</li>
+    <li><code>0</code> yazıp [#] = <b>ton yok</b>. Hiçbir şey yazmadan [#]: alma tonunda <b>değişmez</b>, gönderme tonunda <b>alma tonuyla aynı</b>.</li>
+    <li>67,0–254,1 Hz arasındaki 50 standart tondan en yakını seçilir.</li>
+  </ul>
+
+  <h3>Adım adım: röle ayarı</h3>
+  <p>Örnek: alma 145,600 MHz, gönderme 145,000 MHz (−600 kHz), almada ton yok, göndermede 88,5 Hz.</p>
+  <ol class="steps">
+    <li><div>[m] üç kez: <span class="lcdtxt">FREKANS</span>. Sonra [s].</div></li>
+    <li><div>Alma frekansını yazın: [1][4][5][6][0][0], sonra [#]. Ekranda <span class="lcdtxt">GONDERME</span> yazar.</div></li>
+    <li><div>Gönderme frekansını yazın: [1][4][5][0][0][0], sonra [#]. Ekranda <span class="lcdtxt">ALMA TON</span> yazar.</div></li>
+    <li><div>Alma tonu istemiyorsanız [0] [#]. Ekranda <span class="lcdtxt">GON TON</span> yazar.</div></li>
+    <li><div>Gönderme tonunu yazın: [8][8][5], sonra [#]. Onay sesi gelir, telsiz yeni frekansa geçer.</div></li>
+    <li><div>Normal ekrana dönmek için [m]. Telsiz VFO frekansında kalır.</div></li>
+  </ol>
+  <div class="sb">
+    <figure class="fr"><div class="act">[m][m][m]</div><span class="lcd" data-t="FREKANS"></span><figcaption>FREKANS menüsü.</figcaption></figure>
+    <figure class="fr"><div class="act">[s]</div><span class="lcd" data-t="___ ____"></span><figcaption>Alma frekansı bekleniyor.</figcaption></figure>
+    <figure class="fr"><div class="act">[1][4][5][6][0][0]</div><span class="lcd" data-t="145 600_"></span><figcaption>145,600 yazıldı.</figcaption></figure>
+    <figure class="fr"><div class="act">[#]</div><span class="lcd" data-t="GONDERME"></span><figcaption>Sırada gönderme.</figcaption></figure>
+    <figure class="fr"><div class="act">[1][4][5][0][0][0]</div><span class="lcd" data-t="145 000-"></span><figcaption>Çizgiler gönderme frekansı yazıldığını gösterir.</figcaption></figure>
+    <figure class="fr"><div class="act">[#]</div><span class="lcd" data-t="ALMA TON"></span><figcaption>Sırada alma tonu.</figcaption></figure>
+    <figure class="fr"><div class="act">[0]</div><span class="lcd" data-t="RT 0___"></span><figcaption>RT = alma tonu. 0 = ton yok.</figcaption></figure>
+    <figure class="fr"><div class="act">[#]</div><span class="lcd" data-t="GON TON"></span><figcaption>Sırada gönderme tonu.</figcaption></figure>
+    <figure class="fr"><div class="act">[8][8][5]</div><span class="lcd" data-t="TT 885_"></span><figcaption>TT = gönderme tonu, 88,5 Hz.</figcaption></figure>
+    <figure class="fr"><div class="act">[#]</div><span class="lcd" data-t="145 6000" data-c="Ur"></span><figcaption>Ayarlandı. Kanal hanelerinde VR.</figcaption></figure>
+    <figure class="fr tx"><div class="act">[PTT]</div><span class="lcd" data-t="145 0000" data-c="Ut" data-tx="1"></span><figcaption>Gönderirken gönderme frekansı ve VT.</figcaption></figure>
+    <figure class="fr"><div class="act">[PTT] bırak</div><span class="lcd" data-t="145 6000" data-c="Ur"></span><figcaption>Almaya döndü.</figcaption></figure>
+  </div>
+
+  <h3>Kısa yol: simpleks (aynı frekans)</h3>
+  <p>Gönderme adımında hiçbir şey yazmadan [#]'ye basarsanız gönderme frekansı alma frekansıyla aynı olur. Ton adımlarını da boş geçerseniz tonlar değişmez.</p>
+  <div class="sb">
+    <figure class="fr"><div class="act">[s] [1][4][5][5][0][0]</div><span class="lcd" data-t="145 500_"></span><figcaption>145,500 yazıldı.</figcaption></figure>
+    <figure class="fr"><div class="act">[#]</div><span class="lcd" data-t="GONDERME"></span><figcaption>Gönderme boş bırakılacak.</figcaption></figure>
+    <figure class="fr"><div class="act">[#]</div><span class="lcd" data-t="ALMA TON"></span><figcaption>Gönderme = alma.</figcaption></figure>
+    <figure class="fr"><div class="act">[#]</div><span class="lcd" data-t="GON TON"></span><figcaption>Alma tonu değişmedi.</figcaption></figure>
+    <figure class="fr"><div class="act">[#]</div><span class="lcd" data-t="145 5000" data-c="Ur"></span><figcaption>Hazır.</figcaption></figure>
+  </div>
+
+  <h3>Düzeltme ve hatalar</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Ne yapmak istiyorsunuz</th><th>Tuş</th></tr></thead>
+    <tbody>
+      <tr><td>Son haneyi silmek</td><td>[*]</td></tr>
+      <tr><td>Bu adımdaki girişi tamamen silmek</td><td>[s]</td></tr>
+      <tr><td>Bir önceki adıma dönmek</td><td>Giriş boşken [*] (4 → 3 → 2 → 1)</td></tr>
+      <tr><td>FREKANS'tan çıkmak</td><td>[m]</td></tr>
+      <tr><td>Hafıza kanalına dönmek</td><td>İki haneli kanal numarasını yazın</td></tr>
+    </tbody>
+  </table></div>
+  <div class="sb">
+    <figure class="fr"><div class="act">[1][4][5][6]</div><span class="lcd" data-t="145 6___"></span><figcaption>Yalnız 4 hane yazıldı.</figcaption></figure>
+    <figure class="fr"><div class="act">[#]</div><span class="lcd" data-t="HATA"></span><figcaption>6 haneden az: hata sesi.</figcaption></figure>
+    <figure class="fr"><div class="act">[0]</div><span class="lcd" data-t="145 60__"></span><figcaption>Sonraki tuş girişe döner; aynı adımda devam edin.</figcaption></figure>
+  </div>
+  <p><span class="lcdtxt">HATA</span> şu durumlarda çıkar: 6 haneden az giriş, 2,5 kHz adımına uymayan frekans, telsizin bandı dışında frekans, ya da standart tonlardan 1 Hz'den daha uzak bir ton.</p>
+  <div class="note"><b>Bilmeniz gereken</b>VFO frekansları kalıcı değildir. Başka bir kanala geçtiğinizde ya da telsizi kapattığınızda silinir.</div>
+</section>
+
+<!-- 07 -->
+<section class="ch" id="liste">
+  <div class="chhead"><span class="chno">07</span><h2>Tarama listesi oluşturma</h2></div>
+  <p class="intro">Tarama yalnız listedeki kanalları dolaşır. Listeyi LISTE menüsünde kanal kanal işaretlersiniz. En çok 99 kanallı bir liste kurulabilir. Her kanal için dört durum var:</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Ekranda</th><th>Anlamı</th></tr></thead>
+    <tbody>
+      <tr><td><span class="lcdtxt">KN 01 - </span></td><td>Kanal listede değil, taranmaz.</td></tr>
+      <tr><td><span class="lcdtxt">KN 01 + </span></td><td>Kanal listede, taranır.</td></tr>
+      <tr><td><span class="lcdtxt">KN 01 P1</span></td><td>1. öncelikli kanal: tarama sırasında araya girip sık sık bakılır.</td></tr>
+      <tr><td><span class="lcdtxt">KN 01 P2</span></td><td>2. öncelikli kanal.</td></tr>
+      <tr><td><span class="lcdtxt"> CIKIS  </span></td><td>Bu seçenekteyken [s] listeden çıkar.</td></tr>
+    </tbody>
+  </table></div>
+  <ol class="steps">
+    <li><div>Normal ekranda [m] iki kez: <span class="lcdtxt">LISTE</span>. Sonra [s]: ilk kanal ve şimdiki durumu görünür (<span class="lcdtxt">KN 01 -</span>).</div></li>
+    <li><div>[m] seçenekler arasında döner: <span class="lcdtxt">-</span> → <span class="lcdtxt">CIKIS</span> → <span class="lcdtxt">+</span> → <span class="lcdtxt">P1</span> → <span class="lcdtxt">P2</span> → <span class="lcdtxt">-</span>.</div></li>
+    <li><div>İstediğiniz durumdayken [s]: kaydedilir ve bir sonraki kanala geçilir.</div></li>
+    <li><div>Uzaktaki bir kanala atlamak için iki haneli numarasını yazın ([0][5]).</div></li>
+    <li><div>Bitince [m] ile <span class="lcdtxt">CIKIS</span>'a gelin ve [s].</div></li>
+  </ol>
+  <p class="sbtitle">Örnek: 1, 2 ve 5. kanalları listeye ekle</p>
+  <div class="sb">
+    <figure class="fr"><div class="act">[m][m]</div><span class="lcd" data-t="LISTE" data-c="01"></span><figcaption>LISTE menüsü.</figcaption></figure>
+    <figure class="fr"><div class="act">[s]</div><span class="lcd" data-t="KN 01 -" data-c="01"></span><figcaption>1. kanal listede değil.</figcaption></figure>
+    <figure class="fr"><div class="act">[m]</div><span class="lcd" data-t=" CIKIS" data-c="01"></span><figcaption>Sıradaki seçenek: çıkış.</figcaption></figure>
+    <figure class="fr"><div class="act">[m]</div><span class="lcd" data-t="KN 01 +" data-c="01"></span><figcaption>“+” = listeye ekle.</figcaption></figure>
+    <figure class="fr"><div class="act">[s]</div><span class="lcd" data-t="KN 02 -" data-c="01"></span><figcaption>Kaydedildi; 2. kanala geçti.</figcaption></figure>
+    <figure class="fr"><div class="act">[m][m][s]</div><span class="lcd" data-t="KN 03 -" data-c="01"></span><figcaption>2. kanal da eklendi.</figcaption></figure>
+    <figure class="fr"><div class="act">[0][5]</div><span class="lcd" data-t="KN 05 -" data-c="01"></span><figcaption>Doğrudan 5. kanala atlandı.</figcaption></figure>
+    <figure class="fr"><div class="act">[m][m][s]</div><span class="lcd" data-t="KN 06 -" data-c="01"></span><figcaption>5. kanal eklendi.</figcaption></figure>
+    <figure class="fr"><div class="act">[m]</div><span class="lcd" data-t=" CIKIS" data-c="01"></span><figcaption>Çıkış seçeneği.</figcaption></figure>
+    <figure class="fr"><div class="act">[s]</div><span class="lcd" data-t="KANAL 01" data-c="01"></span><figcaption>Liste kaydedildi.</figcaption></figure>
+  </div>
+  <p class="sbtitle">Öncelikli kanal atama</p>
+  <div class="sb">
+    <figure class="fr"><div class="act">[m][m][s]</div><span class="lcd" data-t="KN 01 +" data-c="01"></span><figcaption>1. kanal listede.</figcaption></figure>
+    <figure class="fr"><div class="act">[m]</div><span class="lcd" data-t="KN 01 P1" data-c="01"></span><figcaption>1. öncelik.</figcaption></figure>
+    <figure class="fr"><div class="act">[s]</div><span class="lcd" data-t="KN 02 +" data-c="01"></span><figcaption>Kaydedildi.</figcaption></figure>
+  </div>
+  <div class="note"><b>İpucu</b>Bir kanalı listeden çıkarmak için o kanala gelip <span class="lcdtxt">-</span> seçeneğinde [s]'ye basın. Liste telsizin hafızasına yazılır; kapatıp açınca kaybolmaz.</div>
+</section>
+
+<!-- 08 -->
+<section class="ch" id="tarama">
+  <div class="chhead"><span class="chno">08</span><h2>Taramayı başlatma ve durdurma</h2></div>
+  <p class="intro">Taramayı iki yoldan başlatabilirsiniz: daire tuşunu basılı tutarak ya da menüdeki KNL TARA öğesinden.</p>
+
+  <h3>Kısa yol: [p]'yi basılı tutun <span class="yb"><svg><use href="#logo-mark"/></svg>yATOLYE</span></h3>
+  <ol class="steps">
+    <li><div>Normal ekranda [p]'yi yaklaşık <b>1 saniye</b> basılı tutun. Ekranda <span class="lcdtxt"> TARAMA </span> yazar; telsiz listedeki kanalları sırayla dinler.</div></li>
+    <li><div>Bir kanalda sinyal olunca tarama orada durur: ekranda o kanalın adı ve numarası görünür, konuşma hoparlörden gelir.</div></li>
+    <li><div>Sinyal kesilince tarama kendiliğinden devam eder.</div></li>
+    <li><div>Durdurmak için [p]'ye kısa basın (ya da yine basılı tutun). Tarama sürerken kısa basış gücü değiştirmez, yalnız taramayı durdurur.</div></li>
+  </ol>
+  <div class="sb">
+    <figure class="fr"><div class="act">[P]</div><span class="lcd" data-t=" TARAMA" data-c="01"></span><figcaption>~1 s basılı tutun: tarama başladı.</figcaption></figure>
+    <figure class="fr"><div class="act"><span class="ico"><svg><use href="#i-sig"/></svg> sinyal</span></div><span class="lcd" data-t="KANAL 03" data-c="03"></span><figcaption>3. kanalda konuşma var: durdu, dinliyorsunuz.</figcaption></figure>
+    <figure class="fr"><div class="act"><span class="ico"><svg><use href="#i-nosig"/></svg> sustu</span></div><span class="lcd" data-t=" TARAMA" data-c="01"></span><figcaption>Konuşma bitti, tarama sürüyor.</figcaption></figure>
+    <figure class="fr"><div class="act">[p]</div><span class="lcd" data-t="KANAL 01" data-c="01"></span><figcaption>Kısa basış: tarama durdu.</figcaption></figure>
+  </div>
+
+  <h3>Menüden: KNL TARA</h3>
+  <ol class="steps">
+    <li><div>Normal ekranda [m]: <span class="lcdtxt">KNL TARA</span>. [s]: tarama başlar.</div></li>
+    <li><div>Durdurmak için yine [m] ile <span class="lcdtxt">KNL TARA</span>'ya gelip [s].</div></li>
+  </ol>
+  <div class="sb">
+    <figure class="fr"><div class="act">[m]</div><span class="lcd" data-t="KNL TARA" data-c="01"></span><figcaption>Menünün ilk öğesi.</figcaption></figure>
+    <figure class="fr"><div class="act">[s]</div><span class="lcd" data-t=" TARAMA" data-c="01"></span><figcaption>Tarama başladı.</figcaption></figure>
+    <figure class="fr"><div class="act">[m]</div><span class="lcd" data-t="KNL TARA" data-c="01"></span><figcaption>Taramadayken menü.</figcaption></figure>
+    <figure class="fr"><div class="act">[s]</div><span class="lcd" data-t="KANAL 01" data-c="01"></span><figcaption>Tarama durdu.</figcaption></figure>
+  </div>
+  <p class="sbtitle">Liste boşsa</p>
+  <div class="sb">
+    <figure class="fr"><div class="act">[P]</div><span class="lcd" data-t="LISTEYOK" data-c="01"></span><figcaption>Listede kanal yok. Önce <a href="#liste">listeyi oluşturun</a>.</figcaption></figure>
+  </div>
+  <div class="note"><b>Öncelikli kanallar</b>Listede <span class="lcdtxt">P1</span> ya da <span class="lcdtxt">P2</span> olarak işaretlenen kanallara tarama sırasında belirli aralıklarla ayrıca bakılır. Böylece önemli kanaldaki bir çağrıyı kaçırmazsınız.</div>
+</section>
+
+<!-- 09 -->
+<section class="ch" id="altmenu">
+  <div class="chhead"><span class="chno">09</span><h2>Alt menü: ışık, uyarı, parola</h2></div>
+  <p class="intro">Menüde <span class="lcdtxt">ALT MENU</span>'ye gelip [s]'ye basın ([m] sekiz kez). Alt menüde [m] öğeler arasında gezer, [s] öğeyi açar ya da ayarı değiştirir. Yaklaşık 4 saniye tuşa basılmazsa normal ekrana dönülür. Seçilen ayarlar hafızaya yazılır.</p>
+  <div class="ring">
+    <div class="it"><span class="lcd" data-t="ISIK"></span><small>Işıklı uyarılar ve aydınlatma</small></div>
+    <div class="it"><span class="lcd" data-t="UYARI"></span><small>Tuş ve uyarı sesleri</small></div>
+    <div class="it"><span class="lcd" data-t="PAROLA"></span><small>Açılış parolası</small></div>
+  </div>
+
+  <h3>Işık</h3>
+  <div class="sb">
+    <figure class="fr"><div class="act">[m]×8</div><span class="lcd" data-t="ALT MENU" data-c="01"></span><figcaption>Alt menü başlığı.</figcaption></figure>
+    <figure class="fr"><div class="act">[s]</div><span class="lcd" data-t="ISIK" data-c="01"></span><figcaption>İlk öğe: ışık.</figcaption></figure>
+    <figure class="fr"><div class="act">[s]</div><span class="lcd" data-t="ISIK  *" data-c="01"></span><figcaption>Aydınlatma açık.</figcaption></figure>
+    <figure class="fr"><div class="act">[s]</div><span class="lcd" data-t="ISIK  -" data-c="01"></span><figcaption>Aydınlatma kapalı.</figcaption></figure>
+  </div>
+
+  <h3>Uyarı sesleri</h3>
+  <p>Tuş bipleri ve hata / onay seslerini açar ya da kapatır.</p>
+  <div class="sb">
+    <figure class="fr"><div class="act">[s] [m]</div><span class="lcd" data-t="UYARI" data-c="01"></span><figcaption>Alt menüde ikinci öğe.</figcaption></figure>
+    <figure class="fr"><div class="act">[s]</div><span class="lcd" data-t="UYARI *" data-c="01"></span><figcaption>Sesler açık.</figcaption></figure>
+    <figure class="fr"><div class="act">[s]</div><span class="lcd" data-t="UYARI -" data-c="01"></span><figcaption>Sesler kapalı.</figcaption></figure>
+  </div>
+
+  <h3>Parola</h3>
+  <ol class="steps">
+    <li><div>Alt menüde <span class="lcdtxt">PAROLA</span>'ya gelin, [s]: <span class="lcdtxt">YP</span> (yeni parola).</div></li>
+    <li><div>4 haneli parolayı yazın, [s] ile kaydedin.</div></li>
+    <li><div>Artık telsiz her açılışta <span class="lcdtxt">PAROLA</span> yazıp 4 hane ve [s] ister. Yanlışsa tekrar sorar.</div></li>
+    <li><div>Parolayı kaldırmak için eski parolayı girin; yeni parola istenince 5 kez [0] yazın.</div></li>
+  </ol>
+  <div class="sb">
+    <figure class="fr"><div class="act">[m][m]</div><span class="lcd" data-t="PAROLA" data-c="01"></span><figcaption>Üçüncü öğe.</figcaption></figure>
+    <figure class="fr"><div class="act">[s]</div><span class="lcd" data-t="YP" data-c="01"></span><figcaption>Yeni parolayı yazın.</figcaption></figure>
+    <figure class="fr"><div class="act">[4][7][1][1]</div><span class="lcd" data-t="YP  4711" data-c="01"></span><figcaption>Haneler sağdan kayarak yazılır.</figcaption></figure>
+    <figure class="fr"><div class="act">[s]</div><span class="lcd" data-t="KANAL 01" data-c="01"></span><figcaption>Kaydedildi.</figcaption></figure>
+  </div>
+  <div class="warn"><b>Dikkat</b>Parolayı unutursanız telsizi açamazsınız. Parolayı koymadan önce not edin.</div>
+  <p>El telsizi modellerinde alt menüde ayrıca <span class="lcdtxt">GOSTERGE</span> (ekranı ters / normal) bulunur.</p>
+</section>
+
+<!-- 10 -->
+<section class="ch" id="aprs">
+  <div class="chhead"><span class="chno">10</span><h2>APRS <span class="yb"><svg><use href="#logo-mark"/></svg>yATOLYE</span></h2></div>
+  <p class="intro">APRS, amatör telsizcilerin konumlarını ve kısa mesajlarını 1200 baud paketlerle yayınladığı sistemdir. Bu yazılımla telsiz kendi konumunu gönderir, çevredeki istasyonları dinler ve listeler, istenirse paketleri tekrarlar (digipeater) ya da bilgisayara aktarır (IGate).</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Telsiz tipi</th><th>APRS frekansı</th></tr></thead>
+    <tbody><tr><td>VHF (4021)</td><td><b>144,800 MHz</b></td></tr><tr><td>UHF (4025)</td><td><b>432,500 MHz</b></td></tr></tbody>
+  </table></div>
+  <p>Telsiz bandına göre frekansı kendisi seçer. Aşağıda “APRS frekansı” bu frekans demektir.</p>
+
+  <h3>Hazırlık: çağrı işareti ve konum</h3>
+  <p>APRS bilgileri programlama sayfasında (3. adım, <b>APRS</b> sekmesi) girilir ve telsize yazılır:</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Alan</th><th>Örnek</th><th>Not</th></tr></thead>
+    <tbody>
+      <tr><td>Çağrı işareti</td><td><code>TA7W-7</code></td><td>1–6 harf/rakam ve isteğe bağlı SSID (-0 … -15)</td></tr>
+      <tr><td>Simge</td><td><code>/</code> <code>&gt;</code> (araç)</td><td>Haritada görünecek simge</td></tr>
+      <tr><td>Enlem / boylam</td><td><code>40.84383</code> <code>31.15650</code></td><td>Ondalık derece ya da derece-dakika</td></tr>
+      <tr><td>Gönderim aralığı</td><td><code>600</code> s</td><td>Otomatik konum paketi için. En az 10 s, 0 = kapalı</td></tr>
+      <tr><td>Yorum</td><td><code>Düzce</code></td><td>Paketin sonuna eklenen kısa metin</td></tr>
+      <tr><td>Çalışma</td><td>TR · DG · IG</td><td>Menüdeki üç ayarın başlangıç değeri</td></tr>
+    </tbody>
+  </table></div>
+  <p>Bilgiler girilmemişse telsiz varsayılan <code>TC19MK-10</code> çağrı işaretiyle Anıtkabir konumunu gönderir. Kendi çağrı işaretinizi girmeden göndermeyin.</p>
+
+  <h3>APRS ekranına girme ve konum gönderme</h3>
+  <ol class="steps">
+    <li><div>[m] dört kez: <span class="lcdtxt">APRS</span>. [s]: telsiz APRS frekansına geçer, ekranda <span class="lcdtxt">APRS AKT</span>.</div></li>
+    <li><div>Bu ekranda hoparlör ve tuş sesleri kapalıdır. Telsiz paketleri sessizce dinler.</div></li>
+    <li><div>Konumunuzu hemen göndermek için [PTT]'ye kısaca basın: <span class="lcdtxt">APRS TX</span>, gidince <span class="lcdtxt">APRS OK</span>. PTT'yi basılı tutarsanız paketten sonra APRS frekansında konuşmaya devam edersiniz.</div></li>
+    <li><div>APRS TR açıksa ve aralık ayarlıysa telsiz konumunu kendiliğinden, aralık dolduktan sonraki ilk boşlukta gönderir.</div></li>
+    <li><div>Gönderme gücünü [p] ile değiştirebilirsiniz (<span class="lcdtxt">YUKSEK G</span> / <span class="lcdtxt">ALCAK G</span>).</div></li>
+    <li><div>Çıkmak için [m]. Telsiz önceki kanalına ya da VFO frekansına döner.</div></li>
+  </ol>
+  <div class="sb">
+    <figure class="fr"><div class="act">[m]×4</div><span class="lcd" data-t="APRS" data-c="01"></span><figcaption>APRS menüsü.</figcaption></figure>
+    <figure class="fr"><div class="act">[s]</div><span class="lcd" data-t="APRS AKT" data-c="01"></span><figcaption>APRS frekansında, dinliyor.</figcaption></figure>
+    <figure class="fr tx"><div class="act">[PTT]</div><span class="lcd" data-t="APRS TX" data-c="01" data-tx="1"></span><figcaption>Konum paketi gidiyor (~0,75 s).</figcaption></figure>
+    <figure class="fr"><div class="act"><span class="ico"><svg><use href="#i-wait"/></svg></span></div><span class="lcd" data-t="APRS OK" data-c="01"></span><figcaption>Paket gönderildi.</figcaption></figure>
+    <figure class="fr"><div class="act">[m]</div><span class="lcd" data-t="KANAL 01" data-c="01"></span><figcaption>Eski kanala döndü.</figcaption></figure>
+  </div>
+  <div class="note"><b>Kapat-aç</b>Telsiz APRS ekranındayken kapatılırsa bir sonraki açılışta kendiliğinden APRS ekranına döner. Kontakla açılıp kapanan bir araç telsizi böylece izleyici olarak çalışmayı sürdürür.</div>
+
+  <h3>Duyulan istasyonlar</h3>
+  <p>APRS ekranındayken çözülen her paketin gönderen çağrı işareti yaklaşık 4 saniye ekranda kalır. Son duyulan <b>8 istasyon</b> bir listede tutulur; en yeni başta. Aynı istasyon yeniden duyulursa başa geçer, son konumu ve son mesajı güncellenir.</p>
+  <div class="sb">
+    <figure class="fr"><div class="act">APRS ekranı</div><span class="lcd" data-t="APRS AKT" data-c="01"></span><figcaption>Dinliyor.</figcaption></figure>
+    <figure class="fr"><div class="act"><span class="ico"><svg><use href="#i-sig"/></svg> paket</span></div><span class="lcd" data-t="TA1ABC-9" data-c="01"></span><figcaption>TA1ABC-9 duyuldu, listeye girdi.</figcaption></figure>
+    <figure class="fr"><div class="act"><span class="ico"><svg><use href="#i-wait"/></svg> 4 s</span></div><span class="lcd" data-t="APRS AKT" data-c="01"></span><figcaption>APRS ekranına döndü.</figcaption></figure>
+  </div>
+
+  <h4>Listede gezinme ve istasyon ayrıntısı</h4>
+  <ol class="steps">
+    <li><div>[*] bir eski istasyona, [#] bir yeni istasyona geçer. En yeniden sonra [#] APRS ekranına döner.</div></li>
+    <li><div>Bir istasyon ekrandayken [s] sayfaları çevirir: <b>çağrı işareti</b> → <b>enlem</b> → <b>boylam</b> → <b>mesaj</b> → çağrı işareti.</div></li>
+    <li><div>Sayfa 8 saniye kalır, sonra APRS ekranına dönülür.</div></li>
+  </ol>
+  <div class="sb">
+    <figure class="fr"><div class="act">[*]</div><span class="lcd" data-t="TA1ABC-9" data-c="01"></span><figcaption>Listedeki istasyon.</figcaption></figure>
+    <figure class="fr"><div class="act">[s]</div><span class="lcd" data-t="4050 63N" data-c="01"></span><figcaption>Enlem 40° 50,63′ K (boşluk = nokta).</figcaption></figure>
+    <figure class="fr"><div class="act">[s]</div><span class="lcd" data-t="3109 39E" data-c="01"></span><figcaption>Boylam 31° 09,39′ D.</figcaption></figure>
+    <figure class="fr"><div class="act">[s]</div><span class="lcd" data-t="MERHABA" data-c="01"></span><figcaption>Mesajın ilk 8 harfi.</figcaption></figure>
+    <figure class="fr"><div class="act">[s]</div><span class="lcd" data-t="TA1ABC-9" data-c="01"></span><figcaption>Başa döndü.</figcaption></figure>
+    <figure class="fr"><div class="act">[#]</div><span class="lcd" data-t="APRS AKT" data-c="01"></span><figcaption>APRS ekranı.</figcaption></figure>
+  </div>
+  <div class="tbl"><table>
+    <thead><tr><th>Ekranda</th><th>Anlamı</th></tr></thead>
+    <tbody>
+      <tr><td><span class="lcdtxt">BOS     </span></td><td>Henüz istasyon duyulmadı ([*]'ye basınca).</td></tr>
+      <tr><td><span class="lcdtxt">KONUM - </span></td><td>Bu istasyondan konum bilgisi gelmedi.</td></tr>
+      <tr><td><span class="lcdtxt">MESAJ - </span></td><td>Pakette mesaj ya da yorum yok.</td></tr>
+      <tr><td><span class="lcdtxt">TB1ABC15</span></td><td>6 harfli çağrı + iki haneli SSID'de tire yazılmaz (TB1ABC-15).</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>APRS TR · DG · IG ayarları</h3>
+  <p>Menüde APRS'ten sonra üç ayar gelir. [s] ayarı açar / kapatır ve menüde kalırsınız. Ayarlar telsizin hafızasına yazılır.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Ayar</th><th>Açıkken</th><th>Varsayılan</th></tr></thead>
+    <tbody>
+      <tr><td><span class="lcdtxt">APRS TR</span> izleyici</td><td>Ayarlı aralıkta otomatik konum paketi. DG ve IG kapalıysa normal kanalda da çalışır (aşağıda).</td><td>Açık</td></tr>
+      <tr><td><span class="lcdtxt">APRS DG</span> digipeater</td><td>Duyulan paketleri tekrarlar. Kendi paketlerinizde cihaz tipi APATAR olur.</td><td>Kapalı</td></tr>
+      <tr><td><span class="lcdtxt">APRS IG</span> IGate</td><td>Duyulan paketler seri porta metin olarak yazılır.</td><td>Açık</td></tr>
+    </tbody>
+  </table></div>
+  <div class="sb">
+    <figure class="fr"><div class="act">[m]×5</div><span class="lcd" data-t="APRS TR*" data-c="01"></span><figcaption>İzleyici açık.</figcaption></figure>
+    <figure class="fr"><div class="act">[s]</div><span class="lcd" data-t="APRS TR-" data-c="01"></span><figcaption>Kapatıldı.</figcaption></figure>
+    <figure class="fr"><div class="act">[m]</div><span class="lcd" data-t="APRS DG-" data-c="01"></span><figcaption>Digipeater kapalı.</figcaption></figure>
+    <figure class="fr"><div class="act">[s]</div><span class="lcd" data-t="APRS DG*" data-c="01"></span><figcaption>Digipeater açıldı.</figcaption></figure>
+    <figure class="fr"><div class="act">[m]</div><span class="lcd" data-t="APRS IG*" data-c="01"></span><figcaption>IGate açık.</figcaption></figure>
+    <figure class="fr"><div class="act">[s]</div><span class="lcd" data-t="APRS IG-" data-c="01"></span><figcaption>IGate kapatıldı.</figcaption></figure>
+  </div>
+
+  <h3>Arka planda izleyici (kanalda kalarak konum gönderme)</h3>
+  <p>Yalnız <b>APRS TR açık, DG ve IG kapalı</b> ve gönderim aralığı ayarlıysa telsiz APRS ekranına geçmeden normal kanalınızda çalışır. Kanalınızı dinler, orada konuşursunuz; konum paketi zamanı gelince kısa bir süre APRS frekansına gidip döner:</p>
+  <ol class="steps">
+    <li><div>Gönderim aralığı sayılır. Bu sırada telsizi normal kullanırsınız.</div></li>
+    <li><div>Aralık dolunca telsiz kanalı gözler ve <b>30 saniye kesintisiz boşluk</b> bekler. Kanalda konuşma olursa, menüye girerseniz ya da PTT'ye basarsanız 30 saniye baştan sayılır.</div></li>
+    <li><div>Boşluk bulunca APRS frekansına geçer, ekranda <span class="lcdtxt">APRS TX</span> yazar, paketi gönderir.</div></li>
+    <li><div>Hemen eski kanalına ya da VFO frekansına döner. Aralık yeniden sayılır.</div></li>
+  </ol>
+  <div class="sb">
+    <figure class="fr"><div class="act"><span class="ico"><svg><use href="#i-wait"/></svg> aralık</span></div><span class="lcd" data-t="KANAL 01" data-c="01"></span><figcaption>Kanalda normal kullanım; süre sayılıyor.</figcaption></figure>
+    <figure class="fr"><div class="act"><span class="ico"><svg><use href="#i-sig"/></svg> konuşma</span></div><span class="lcd" data-t="KANAL 01" data-c="01"></span><figcaption>Süre doldu ama kanal dolu: bekliyor.</figcaption></figure>
+    <figure class="fr"><div class="act"><span class="ico"><svg><use href="#i-nosig"/></svg> 30 s boş</span></div><span class="lcd" data-t="KANAL 01" data-c="01"></span><figcaption>30 saniye sessizlik oldu.</figcaption></figure>
+    <figure class="fr tx"><div class="act">APRS frekansına</div><span class="lcd" data-t="APRS TX" data-c="01" data-tx="1"></span><figcaption>Konum paketi gidiyor.</figcaption></figure>
+    <figure class="fr"><div class="act">geri dönüş</div><span class="lcd" data-t="KANAL 01" data-c="01"></span><figcaption>Kanalınıza döndü.</figcaption></figure>
+  </div>
+
+  <h3>Digipeater (APRS DG)</h3>
+  <p>DG açıkken APRS ekranında duyulan paketler, yollarındaki WIDE adımı bir azaltılarak ve sizin çağrı işaretiniz eklenerek yeniden gönderilir.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Gelen yol</th><th>Telsizin gönderdiği yol</th></tr></thead>
+    <tbody>
+      <tr><td><code>WIDE1-1</code></td><td><code>TA7W-7*</code></td></tr>
+      <tr><td><code>WIDE2-2</code></td><td><code>TA7W-7*,WIDE2-1</code></td></tr>
+      <tr><td><code>WIDE2-1</code></td><td><code>TA7W-7,WIDE2*</code></td></tr>
+      <tr><td><code>TA7W-7</code> (doğrudan size)</td><td><code>TA7W-7*</code></td></tr>
+    </tbody>
+  </table></div>
+  <p>Tekrarlanmayanlar: kendi paketiniz, zaten sizden geçmiş paket, başka yollar (WIDE3-3 gibi), dolu yol ve son 30 saniyede tekrarlanmış aynı paket.</p>
+  <div class="warn"><b>Lisans</b>Digipeater kendiliğinden gönderme yapan bir verici istasyonudur. Yalnız amatör telsiz lisansıyla ve izinli APRS frekansında çalıştırın. İlk denemeleri yapay yükle (dummy load) yapın.</div>
+
+  <h3>IGate: paketleri bilgisayara aktarma (APRS IG)</h3>
+  <p>IG açıkken APRS ekranında duyulan her paket seri porttan (9600 baud, 8N1) bir satır metin olarak gelir. Biçim APRS-IS ve Direwolf ile aynıdır.</p>
+  <pre class="serial">TA1ABC-9&gt;APRS,WIDE1-1,WIDE2-1:!4050.63N/03109.39E&gt;Merhaba Duzce
+TB2XYZ&gt;APRS,TA7W-7*,WIDE2-1:&gt;Selam</pre>
+
+  <h3>GPS ile konum</h3>
+  <p>Seri porta NMEA çıkışlı bir GPS bağlarsanız (bağlantı: <a href="#gps">sonraki bölüm</a>) telsiz konumunu GPS'ten alır:</p>
+  <ol class="steps">
+    <li><div>GPS'i bağlayın ve APRS ekranına girin.</div></li>
+    <li><div>Geçerli konum gelince ekranda <span class="lcdtxt">APRS</span> yerine <span class="lcdtxt">GPS </span> yazar. Konum dakikada bir güncellenir.</div></li>
+    <li><div>GPS bir dakika boyunca geçerli konum vermezse telsiz programlanmış konuma döner.</div></li>
+  </ol>
+  <div class="sb">
+    <figure class="fr"><div class="act">[s]</div><span class="lcd" data-t="APRS AKT" data-c="01"></span><figcaption>GPS henüz konum vermedi.</figcaption></figure>
+    <figure class="fr"><div class="act"><span class="ico"><svg><use href="#i-gps"/></svg> fix</span></div><span class="lcd" data-t="GPS  AKT" data-c="01"></span><figcaption>Konum GPS'ten alınıyor.</figcaption></figure>
+    <figure class="fr tx"><div class="act">[PTT]</div><span class="lcd" data-t="GPS  TX" data-c="01" data-tx="1"></span><figcaption>Paket GPS konumuyla gidiyor.</figcaption></figure>
+  </div>
+</section>
+
+<!-- 11 -->
+<section class="ch" id="gps">
+  <div class="chhead"><span class="chno">11</span><h2>GPS bağlantısı <span class="yb"><svg><use href="#logo-mark"/></svg>yATOLYE</span></h2></div>
+  <p class="intro">Telsiz GPS'i yalnız <b>dinler</b>. Bu yüzden tek bir veri teli yeter: <b>GPS'in TX (veri çıkışı) ucu → telsizin RX (veri girişi) ucu</b>, artı ortak toprak. Telsizin TX ucu bağlanmaz.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Ayar</th><th>Değer</th></tr></thead>
+    <tbody>
+      <tr><td>Hız</td><td>9600 baud, 8 veri biti, eşliksiz, 1 dur biti (8N1). Çoğu GPS modülünün varsayılanı budur.</td></tr>
+      <tr><td>Cümle</td><td><code>$GPRMC</code> ya da <code>$GNRMC</code> (diğer cümleler yok sayılır)</td></tr>
+      <tr><td>Kablolar</td><td>GPS TX → telsiz RX, GPS GND → telsiz toprak. GPS RX ve telsiz TX boş kalır.</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Telsizdeki iki giriş noktası</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Konnektör</th><th>Pin</th><th>Tanım</th><th>GPS için</th></tr></thead>
+    <tbody>
+      <tr class="hl"><td>Mikrofon (ön, sol yan)</td><td>7</td><td>Rx Veri (RS232, telsize giriş)</td><td>GPS TX buraya</td></tr>
+      <tr class="hl"><td></td><td>8</td><td>Mikrofon toprak</td><td>GPS GND buraya</td></tr>
+      <tr><td></td><td>6</td><td>Tx Veri (telsizden çıkış)</td><td>bağlanmaz</td></tr>
+      <tr><td></td><td>3</td><td>Regüleli 10 V</td><td>GPS'i beslemek için kullanmayın</td></tr>
+      <tr class="hl"><td>Opsiyon (arka, 15 pin)</td><td>15</td><td>Veri girişi (RS232, telsize giriş)</td><td>GPS TX buraya</td></tr>
+      <tr class="hl"><td></td><td>1</td><td>Toprak</td><td>GPS GND buraya</td></tr>
+      <tr><td></td><td>7</td><td>Çıkış (RS232 Tx Veri)</td><td>bağlanmaz</td></tr>
+      <tr><td></td><td>2</td><td>Anahtarlanmış 13,2 V (en çok 1 A)</td><td>5 V regülatör üzerinden GPS beslemesi</td></tr>
+    </tbody>
+  </table></div>
+  <p>Pin numaraları ASELSAN bakım kılavuzundaki konnektör tablolarındandır; konnektörün üzerinde de yazılıdır. Çizimlerdeki pin sırası fiziksel yerleşimi değil, numarayı gösterir.</p>
+
+  <div class="warn"><b>TTL GPS</b>Telsizin veri girişi RS232 içindir ve sinyali ters çevirir. Bu yüzden 3,3 V / 5 V TTL çıkışlı modüller (NEO-6M, NEO-M8N, ATGM336H gibi) <b>doğrudan bağlanırsa veri ters gelir ve çalışmaz</b>. Araya bir ters çevirici ya da TTL→RS232 dönüştürücü (MAX3232 modülü) koyun (B çizimi). RS232 çıkışlı GPS alıcıları (eski “puck” tipi GPS'ler) ise doğrudan bağlanır (A çizimi).</div>
+
+  <figure class="wiring">
+    <svg viewBox="0 0 760 250" role="img" aria-label="A: RS232 çıkışlı GPS mikrofon konnektörüne">
+      <text x="10" y="22" font-size="15" font-weight="600">A · RS232 çıkışlı GPS → mikrofon konnektörü (ön panel)</text>
+      <rect x="20" y="50" width="190" height="150" rx="12" class="dev"/>
+      <text x="115" y="78" text-anchor="middle" class="devt" font-size="14">GPS (RS232)</text>
+      <g class="mono" font-size="12">
+        <rect x="160" y="96" width="50" height="22" class="pin"/><text x="185" y="111" text-anchor="middle">TX</text>
+        <rect x="160" y="126" width="50" height="22" class="pin"/><text x="185" y="141" text-anchor="middle">RX</text>
+        <rect x="160" y="156" width="50" height="22" class="pin"/><text x="185" y="171" text-anchor="middle">GND</text>
+      </g>
+      <rect x="40" y="96" width="100" height="22" rx="4" fill="#4a514c"/><text x="90" y="111" text-anchor="middle" class="devs" font-size="11">+5…12 V besleme</text>
+      <path d="M210 107 H420 V87 H540" class="rx"/>
+      <path d="M210 167 H420 V187 H540" class="gnd"/>
+      <text x="300" y="100" class="lbl-rx" font-size="13">veri (GPS → telsiz)</text>
+      <text x="300" y="160" font-size="13" font-weight="600">ortak toprak</text>
+      <circle cx="222" cy="137" r="3" class="nc"/><text x="232" y="141" font-size="11" class="nc" fill="currentColor">boş</text>
+      <rect x="540" y="40" width="200" height="180" rx="12" class="box"/>
+      <text x="640" y="62" text-anchor="middle" font-size="13" font-weight="600">Mikrofon konnektörü</text>
+      <g class="mono" font-size="12">
+        <rect x="540" y="76" width="44" height="22" class="pin"/><text x="562" y="91" text-anchor="middle">7</text><text x="594" y="91">Rx Veri</text>
+        <rect x="540" y="176" width="44" height="22" class="pin"/><text x="562" y="191" text-anchor="middle">8</text><text x="594" y="191">Toprak</text>
+        <rect x="540" y="106" width="44" height="22" class="pin" opacity=".5"/><text x="562" y="121" text-anchor="middle" opacity=".6">6</text><text x="594" y="121" opacity=".6">Tx Veri (boş)</text>
+        <rect x="540" y="136" width="44" height="22" class="pin" opacity=".5"/><text x="562" y="151" text-anchor="middle" opacity=".6">2</text><text x="594" y="151" opacity=".6">PTT (mikrofon)</text>
+      </g>
+    </svg>
+    <figcaption>Mikrofonu ve GPS'i aynı anda kullanmak için konnektöre bir “Y” ara kablo yapın: mikrofonun tüm pinleri aynen geçer, yalnız pin 7 ve 8'e GPS eklenir.</figcaption>
+  </figure>
+
+  <figure class="wiring">
+    <svg viewBox="0 0 760 290" role="img" aria-label="B: TTL GPS ters çevirici üzerinden">
+      <text x="10" y="22" font-size="15" font-weight="600">B · TTL GPS modülü → ters çevirici → telsiz</text>
+      <rect x="20" y="50" width="170" height="170" rx="12" class="dev"/>
+      <text x="105" y="78" text-anchor="middle" class="devt" font-size="14">GPS (TTL)</text>
+      <g class="mono" font-size="12">
+        <rect x="140" y="96" width="50" height="22" class="pin"/><text x="165" y="111" text-anchor="middle">VCC</text>
+        <rect x="140" y="126" width="50" height="22" class="pin"/><text x="165" y="141" text-anchor="middle">TX</text>
+        <rect x="140" y="156" width="50" height="22" class="pin"/><text x="165" y="171" text-anchor="middle">RX</text>
+        <rect x="140" y="186" width="50" height="22" class="pin"/><text x="165" y="201" text-anchor="middle">GND</text>
+      </g>
+      <!-- 5 V rail -->
+      <path d="M190 107 H230 V60 H420" class="pwr"/>
+      <text x="236" y="54" class="lbl-pwr" font-size="12">+5 V</text>
+      <!-- inverter: NPN -->
+      <path d="M190 137 H262" class="rx"/>
+      <rect x="262" y="128" width="46" height="18" rx="3" class="box"/><text x="285" y="141" text-anchor="middle" class="mono" font-size="11">10 kΩ</text>
+      <path d="M308 137 H344" class="rx"/>
+      <circle cx="366" cy="150" r="26" class="box"/>
+      <path d="M352 134 V166 M352 144 L374 128 M352 156 L374 172" stroke="currentColor" stroke-width="2" fill="none" style="color:var(--ink)"/>
+      <path d="M344 137 H352" class="rx"/>
+      <text x="366" y="196" text-anchor="middle" class="mono" font-size="11">BC547</text>
+      <path d="M374 172 V230" class="gnd"/>
+      <!-- pull-up -->
+      <path d="M420 60 V80" class="pwr"/>
+      <rect x="411" y="80" width="18" height="40" rx="3" class="box"/><text x="436" y="104" class="mono" font-size="11">4,7 kΩ</text>
+      <path d="M420 120 V128 H374" class="rx"/>
+      <path d="M420 128 H500 V97 H556" class="rx"/>
+      <text x="470" y="90" class="lbl-rx" font-size="12">çevrilmiş veri</text>
+      <!-- ground -->
+      <path d="M190 197 H230 V230 H500 V207 H556" class="gnd"/>
+      <text x="300" y="248" font-size="12" font-weight="600">ortak toprak</text>
+      <circle cx="202" cy="167" r="3" class="nc"/><text x="210" y="171" font-size="11" fill="currentColor" class="nc">boş</text>
+      <rect x="556" y="44" width="190" height="196" rx="12" class="box"/>
+      <text x="651" y="66" text-anchor="middle" font-size="13" font-weight="600">Telsiz</text>
+      <g class="mono" font-size="12">
+        <rect x="556" y="86" width="44" height="22" class="pin"/><text x="578" y="101" text-anchor="middle">RX</text><text x="608" y="96" font-size="11">mik. 7 ya da</text><text x="608" y="109" font-size="11">opsiyon 15</text>
+        <rect x="556" y="196" width="44" height="22" class="pin"/><text x="578" y="211" text-anchor="middle">GND</text><text x="608" y="206" font-size="11">mik. 8 ya da</text><text x="608" y="219" font-size="11">opsiyon 1</text>
+      </g>
+    </svg>
+    <figcaption>Bir NPN transistör (BC547 ya da benzeri) ve iki direnç yeter: GPS TX → 10 kΩ → baz; emetör toprağa; kollektör hem 4,7 kΩ ile +5 V'a hem de telsizin RX ucuna. Hazır çözüm isterseniz MAX3232 TTL→RS232 modülü kullanın: GPS TX → modülün TTL giriş ucu (T1IN), modülün RS232 çıkışı (T1OUT) → telsiz RX.</figcaption>
+  </figure>
+
+  <figure class="wiring">
+    <svg viewBox="0 0 760 250" role="img" aria-label="C: GPS arka opsiyon konnektörüne, besleme telsizden">
+      <text x="10" y="22" font-size="15" font-weight="600">C · Kalıcı araç kurulumu: arka opsiyon konnektörü</text>
+      <rect x="20" y="50" width="190" height="160" rx="12" class="dev"/>
+      <text x="115" y="78" text-anchor="middle" class="devt" font-size="14">GPS</text>
+      <text x="115" y="96" text-anchor="middle" class="devs" font-size="11">(RS232, ya da TTL + B çizimi)</text>
+      <g class="mono" font-size="12">
+        <rect x="160" y="110" width="50" height="22" class="pin"/><text x="185" y="125" text-anchor="middle">VCC</text>
+        <rect x="160" y="140" width="50" height="22" class="pin"/><text x="185" y="155" text-anchor="middle">TX</text>
+        <rect x="160" y="170" width="50" height="22" class="pin"/><text x="185" y="185" text-anchor="middle">GND</text>
+      </g>
+      <rect x="300" y="96" width="110" height="34" rx="6" class="box"/><text x="355" y="118" text-anchor="middle" font-size="12" font-weight="600">5 V regülatör</text>
+      <path d="M210 121 H260 V113 H300" class="pwr"/>
+      <path d="M410 113 H470 V75 H556" class="pwr"/>
+      <text x="478" y="68" class="lbl-pwr" font-size="12">13,2 V</text>
+      <path d="M210 151 H470 V125 H556" class="rx"/>
+      <text x="300" y="165" class="lbl-rx" font-size="12">veri (GPS → telsiz)</text>
+      <path d="M210 181 H470 V175 H556" class="gnd"/>
+      <path d="M355 130 V181" class="gnd"/>
+      <text x="300" y="200" font-size="12" font-weight="600">ortak toprak</text>
+      <rect x="556" y="44" width="190" height="160" rx="12" class="box"/>
+      <text x="651" y="62" text-anchor="middle" font-size="13" font-weight="600">Opsiyon konnektörü</text>
+      <g class="mono" font-size="12">
+        <rect x="556" y="64" width="44" height="22" class="pin"/><text x="578" y="79" text-anchor="middle">2</text><text x="608" y="79">SW 13,2 V</text>
+        <rect x="556" y="114" width="44" height="22" class="pin"/><text x="578" y="129" text-anchor="middle">15</text><text x="608" y="129">Veri girişi</text>
+        <rect x="556" y="164" width="44" height="22" class="pin"/><text x="578" y="179" text-anchor="middle">1</text><text x="608" y="179">Toprak</text>
+      </g>
+    </svg>
+    <figcaption>Opsiyon konnektörünün 2. pini telsiz açıkken 13,2 V verir (en çok 1 A). GPS'i bundan bir 5 V regülatörle (7805 ya da küçük bir DC-DC modül) beslerseniz GPS telsizle birlikte açılıp kapanır. 13,2 V'u GPS'e doğrudan vermeyin.</figcaption>
+  </figure>
+
+  <div class="note"><b>Programlarken</b>Programlama kablosu da aynı seri girişi kullanır. Telsizi programlamadan önce GPS'i ayırın ve APRS ekranından çıkın. Masada denemek için yükleme sayfasının <b>Seri izleme</b> bölümündeki haritadan bir nokta seçip <b>GÖNDER</b> ile GPS taklidi yapabilirsiniz.</div>
+</section>
+
+<!-- 12 -->
+<section class="ch" id="ozet">
+  <div class="chhead"><span class="chno">12</span><h2>Hızlı başvuru kartı</h2></div>
+  <div class="cheat">
+    <div><h5>Kanal</h5><p>[0][5] → 5. kanal</p><p>Normal ekranda iki hane</p></div>
+    <div><h5>Güç</h5><p>[p] kısa: yüksek / düşük</p><p><span class="lcdtxt">YUKSEK G</span> <span class="lcdtxt">ALCAK G</span></p></div>
+    <div><h5>Monitör</h5><p>[q] aç / kapa</p><p><span class="lcdtxt">MONITOR*</span> <span class="lcdtxt">MONITOR-</span></p></div>
+    <div><h5>Tarama</h5><p>[P] ~1 s: başlat / durdur</p><p>ya da [m] <span class="lcdtxt">KNL TARA</span> [s]</p></div>
+    <div><h5>Tarama listesi</h5><p>[m][m][s] → [m] seçenek → [s] kaydet</p><p><span class="lcdtxt">-</span> <span class="lcdtxt">CIKIS</span> <span class="lcdtxt">+</span> <span class="lcdtxt">P1</span> <span class="lcdtxt">P2</span></p></div>
+    <div><h5>VFO</h5><p>[m]×3 [s] alma [#] gönderme [#]</p><p>alma ton [#] gönderme ton [#]</p><p>[*] sil · [m] çık</p></div>
+    <div><h5>APRS</h5><p>[m]×4 [s] → <span class="lcdtxt">APRS AKT</span></p><p>[PTT] konum gönder</p><p>[*] eski · [#] yeni · [s] ayrıntı</p></div>
+    <div><h5>APRS ayarları</h5><p><span class="lcdtxt">APRS TR</span> izleyici</p><p><span class="lcdtxt">APRS DG</span> digipeater</p><p><span class="lcdtxt">APRS IG</span> seri port · [s] aç/kapa</p></div>
+    <div><h5>Alt menü</h5><p>[m]×8 [s] → <span class="lcdtxt">ISIK</span> [s] aç/kapa</p><p>[m] UYARI · PAROLA</p></div>
+    <div><h5>GPS</h5><p>GPS TX → mik. 7 / opsiyon 15</p><p>GND → mik. 8 / opsiyon 1 · 9600 8N1</p></div>
+  </div>
+</section>
+
+<!-- 13 -->
+<section class="ch" id="notlar">
+  <div class="chhead"><span class="chno">13</span><h2>Güvenlik ve notlar</h2></div>
+  <ul>
+    <li><b>Lisans ve frekans.</b> Yalnız kullanma izniniz olan frekanslarda gönderme yapın. APRS, digipeater ve VFO'da elle girilen amatör frekanslar için amatör telsiz lisansı gerekir.</li>
+    <li><b>Band dışı.</b> VFO telsizin donanım bandından biraz daha geniş bir aralığı kabul eder. Band dışında verici düzgün çalışmayabilir; ilk denemeleri yapay yükle ve band içinde bilinen bir frekansta yapın.</li>
+    <li><b>Kalıcı olmayanlar.</b> VFO frekansları, [p] ile seçilen güç ve duyulan APRS istasyonları listesi telsiz kapanınca silinir. Tarama listesi, alt menü ayarları, APRS TR/DG/IG ayarları ve parola hafızada kalır.</li>
+    <li><b>Bu yazılımda olmayanlar.</b> Seçmeli çağrı, trunk, veri mesajları, yazıcı menüsü ve servis terminali kaldırılmıştır. Kripto tuşunun yerini güç almıştır. Menüler yalnız Türkçedir.</li>
+    <li><b>Seri port.</b> Programlama, IGate çıkışı ve GPS girişi aynı seri hattı kullanır. Telsizi programlamadan önce APRS ekranından çıkın ve GPS'i ayırın.</li>
+  </ul>
+</section>
+
+  </main>
+</div>
+
+<footer class="foot">
+  <div class="wrap">
+    <div class="logo"><svg class="mark" style="width:40px;height:40px"><use href="#logo-mark"/></svg><span class="word"><b style="font-size:24px"><i>y</i>ATOLYE</b><span>telsiz yazılım atölyesi</span></span></div>
+    <div>Kullanım kılavuzu · yazılım <b>AT V0-31</b> · 22.10.2026<br>Kaynak ve güncel sürüm: github.com/barisdinc/ASELSAN_4000</div>
+  </div>
+</footer>
+
+<script>
+/* 14-segment glass: 8 alphanumeric cells + 2 small seven-segment digits bottom-right, ghost segments faintly visible */
+(function () {
+  const S = {
+    A: [1,1,9,1], B: [9,1,9,8], C: [9,8,9,15], D: [1,15,9,15], E: [1,8,1,15], F: [1,1,1,8],
+    G: [1,8,5,8], g: [5,8,9,8], H: [1,1,5,8], I: [5,1,5,8], J: [9,1,5,8], K: [5,8,1,15], L: [5,8,5,15], M: [5,8,9,15]
+  };
+  const ALL = 'ABCDEFGgHIJKLM';
+  const F14 = {
+    '0':'ABCDEFJK','1':'BCJ','2':'ABGgED','3':'ABgCDG','4':'FGgBC','5':'AFGgCD','6':'AFEDCGg','7':'ABC','8':'ABCDEFGg','9':'ABCDFGg',
+    A:'ABCEFGg',B:'ABCDILg',C:'ADEF',D:'ABCDIL',E:'ADEFG',F:'AEFG',G:'ACDEFg',H:'BCEFGg',I:'ADIL',J:'BCDE',K:'EFGJM',L:'DEF',
+    M:'BCEFHJ',N:'BCEFHM',O:'ABCDEF',P:'ABEFGg',Q:'ABCDEFM',R:'ABEFGgM',S:'AFGgCD',T:'AIL',U:'BCDEF',V:'EFKJ',W:'BCEFKM',
+    X:'HJKM',Y:'HJL',Z:'ADJK','-':'Gg','_':'D','*':'GgHIJKLM','+':'GgIL','/':'JK',y:'BCDFGg',' ':''
+  };
+  const F7 = { '0':'ABCDEF','1':'BC','2':'ABGgED','3':'ABGgCD','4':'FGgBC','5':'AFGgCD','6':'AFGgEDC','7':'ABC','8':'ABCDEFGg','9':'ABCDFGg',
+    '-':'Gg','U':'BCDEF','r':'EGg','t':'DEFGg',' ':'' };
+  const shrink = ([x1,y1,x2,y2], k) => { const dx = x2-x1, dy = y2-y1, l = Math.hypot(dx,dy), s = k / l; return [x1+dx*s, y1+dy*s, x2-dx*s, y2-dy*s]; };
+  function cell(ch, x, map, set) {
+    const on = map[ch] !== undefined ? map[ch] : map[ch.toUpperCase()] || '';
+    let o = '';
+    for (const n of set) {
+      const [a,b,c,d] = shrink(S[n], n === 'H' || n === 'J' || n === 'K' || n === 'M' ? 1.1 : .75);
+      o += '<line x1="' + (x+a).toFixed(2) + '" y1="' + b.toFixed(2) + '" x2="' + (x+c).toFixed(2) + '" y2="' + d.toFixed(2) + '" class="' + (on.includes(n) ? 'on' : 'off') + '"/>';
+    }
+    return o;
+  }
+  function render(el) {
+    const t = (el.dataset.t || '').padEnd(8).slice(0, 8), c = (el.dataset.c || '  ').padStart(2).slice(0, 2);
+    let o = '';
+    for (let i = 0; i < 8; i++) o += cell(t[i], i * 12.4, F14, ALL);
+    for (let i = 0; i < 2; i++) o += '<g class="ch" transform="translate(' + (101.5 + i * 7.4).toFixed(2) + ' 6.4) scale(.6)">' + cell(c[i], 0, F7, 'ABCDEFGg') + '</g>';
+    el.innerHTML = '<svg viewBox="-1.5 -1.5 118.5 19" role="img" aria-label="Ekran: ' + t.trim() + (c.trim() ? ' · ' + c : '') + '">' +
+      '<style>.on{stroke:var(--lcd-on)}.off{stroke:var(--lcd-off)}line{stroke-width:1.45;stroke-linecap:round}.ch line{stroke-width:2.2}</style>' + o + '</svg>' +
+      (el.dataset.tx ? '<span class="ann">● TX</span>' : '');
+  }
+  document.querySelectorAll('.lcd').forEach(render);
+})();
+</script>

@@ -11,6 +11,10 @@ Islemcinin degistirilmesine karar verildi. SMD ve cok bacakli olan islemci ile b
 Yapilacak islem hem herkesin yapabilecegi kadar basit olmaliydi hem de cok ugrastirmamaliydi. TRAC Golcuk Subesi Baskani UMUT OCAL'in (TA2AUP) hibe ettigi bir telsiz uzerinde fiziksel incelemeler yaparak basladik.  Ilk denemelerini Cem Karagoz'un (TA2GY) yaptigi eski islemcinin yerine lehimlenecek bir tasiyici kart ve uzerinde yeni islemci oldukca umut verici oldu.
 Islemci olarak MSP430 kullanmaya karar verdik simdilik. Aslinda yeni nesil islemcilerin kullanilmasi, hatta direk uzerinde bluetooth, WIFI olan birseyler kullanilmasi eminim ki cok daha akillica olurdu, ozellikle fiyatlarin bu denli yerlerde surundugu bir donemde. Ancak elimizde hurdadan alidigmiz 1000'den (bin) fazla MSP430 vardi ve bir yandan da bunlari da telsizler gibi yeniden hayata dondurmek istiyorduk.. Birsykilde hepsi milli servet.
 
+## Kullanım kılavuzu
+
+yATOLYE yazılımlı (AT V0-31) 4021 / 4025 araç telsizinin Türkçe kullanım kılavuzu: **[KULLANIM_KILAVUZU_AT_V0-31.pdf](kilavuz/KULLANIM_KILAVUZU_AT_V0-31.pdf)**. Kanal, VFO, tarama, güç, monitör, APRS ve GPS bağlantısı adım adım, ekran görüntüleriyle. Kaynağı `kilavuz/kaynak.html`; `python3 kilavuz/uret.py` HTML'i üretir, PDF Chrome'un yazdırmasıyla alınır (`kilavuz/README.md`).
+
 ## Web simülatörü
 
 Telsizi tarayıcıda çalıştıran simülatör: **https://barisdinc.github.io/ASELSAN_4000/**

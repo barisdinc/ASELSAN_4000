@@ -47,8 +47,8 @@ const AFTER_NUMBER = RING[RING.indexOf('NUMBER') + 1] || 'KANAL 01';
 function keys(b, seq) {
   const screens = [];
   for (const k of seq) {
-    const i = KP.indexOf(k);
-    b.keypad.press(i, true, b); b.run(FCLK * 0.15); b.keypad.press(i, false, b); b.run(FCLK * 0.5);
+    const i = KP.indexOf(k === 'P' ? 'p' : k);           // 'P' = p tuşunu ~1,3 s basılı tut (tus_guc.inc: tarama)
+    b.keypad.press(i, true, b); b.run(FCLK * (k === 'P' ? 1.3 : 0.15)); b.keypad.press(i, false, b); b.run(FCLK * 0.5);
     screens.push(lcd(b));
   }
   return screens;
@@ -101,7 +101,7 @@ if (origText) {
   const run = (r, seq) => { const b = new Board(r), ee = B.defaultEeprom(); ee[0x018] |= 0x20 | (TR ? 0x80 : 0); B.eeFixSums(ee); b.eeprom.mem.set(ee);
     b.font = V.buildFont(b.rom); boot(b, 2.5); return keys(b, seq).join('|'); };
   const extra = 'm'.repeat(RING.length);
-  for (const [so, sp] of [['ms05mmsms', 'ms05mmsms'], ['p', 'p'], ['mmsmsmmsm', 'm' + extra + 'msmsmmsm']]) {
+  for (const [so, sp] of [['ms05mmsms', 'ms05mmsms'], ['p', TR ? 'P' : 'p'], ['mmsmsmmsm', 'm' + extra + 'msmsmmsm']]) {
     let c = run(rom, sp); for (const t of RING) c = c.replace('|' + T(t).padEnd(8), '');
     const a = run(orig, so);
     check('orijinalle aynı: ' + so, a === c, a + '  /  ' + c);
@@ -614,7 +614,7 @@ if (RING.includes('APRS')) {
 if (RING.includes('FREQ')) {
   const b = radio(ee => { for (const n of [1, 2, 5]) ee[0x2E + (n - 1) * 13 + 4] = (ee[0x2E + (n - 1) * 13 + 4] & 0xC0) | 1; });
   boot(b, 2.5); const ev0 = b.events.length;
-  const g = keys(b, 'msmmsmms05mmsms' + 'p'); b.run(FCLK * 1);
+  const g = keys(b, 'msmmsmms05mmsms' + 'P'); b.run(FCLK * 1);
   const reset = b.events.slice(ev0).some(e => e[1] === 'RESET');
   check('tarama başlıyor, telsiz yeniden başlamıyor', g[g.length - 1] === T('  SCAN  ') && lcd(b) === T('  SCAN  ') && !reset, g.slice(-2).join('|') + ' ' + lcd(b) + (reset ? ' RESET' : ''));
   let ilk = 0; b.ramHook = (a, v) => { if (a === 0x20A && v > 1 && !ilk) ilk = v; };
@@ -622,6 +622,43 @@ if (RING.includes('FREQ')) {
   for (let i = 0; i < 100 && !ilk; i++) { b.ram[0x23E] |= 1; b.run(FCLK * 0.01); }   // 0x023E bit 0: TKS susturması (panelden)
   b.ramHook = null; b.inputs.P5 &= ~0x80;
   check('taramada TKS bekleme 67 Hz: 15 + 10 = 25 adım (800 ms)', ilk === 25, '0x020A = ' + ilk);
+}
+
+/* p / q tuşları (tus_guc.inc): p kısa = güç yüksek / düşük ("YUKSEK G" / "ALCAK G", ~1,5 s), p uzun = tarama,
+ * taramada kısa p durdurur; q = monitör ("MONITOR*" / "MONITOR-", 0x023A bit 13); menüde q yutulur, sonraki tuşlar çalışır;
+ * ayarlanmış VFO'da ve APRS ekranında da p güç */
+if (RING.includes('FREQ')) {
+  const b = radio(); boot(b, 2.5);
+  const guc = () => (b.ram[0x240] & 0x40 ? (b.ram[0x23C] & 0x10 ? 'Y' : 'A') : '-');
+  const g1 = keys(b, 'p'), y1 = guc(); b.run(FCLK * 2); const g1b = lcd(b);
+  const g2 = keys(b, 'p'), y2 = guc(); b.run(FCLK * 2);
+  check('p kısa: güç yüksek, sonra düşük; ekran geri döner', g1[0] === 'YUKSEK G' && y1 === 'Y' && g1b === 'KANAL 01' && g2[0] === 'ALCAK G ' && y2 === 'A' && lcd(b) === 'KANAL 01',
+    g1[0] + ' ' + y1 + ' ' + g1b + ' ' + g2[0] + ' ' + y2 + ' ' + lcd(b));
+  const q1 = keys(b, 'q'), m1 = b.ram[0x23B] >> 5 & 1, p46 = b.latch[0x0A] >> 6 & 1; b.run(FCLK * 2);
+  const q2 = keys(b, 'q'), m2 = b.ram[0x23B] >> 5 & 1; b.run(FCLK * 2);
+  check('q: monitör aç / kapa', q1[0] === 'MONITOR*' && m1 === 1 && p46 === 1 && q2[0] === 'MONITOR-' && m2 === 0 && lcd(b) === 'KANAL 01', q1[0] + ' ' + m1 + ' P46=' + p46 + ' ' + q2[0] + ' ' + m2);
+  const mq = keys(b, 'mqm'); keys(b, 'mmmmmmm'); b.run(FCLK * 5);
+  check('menüde q yutulur, m çalışmaya devam eder', mq.join('|') === 'LISTE   |LISTE   |FREKANS ' && guc() === 'A', mq.join('|'));
+  const c = radio(ee => { for (const n of [1, 2]) ee[0x2E + (n - 1) * 13] |= 0; }); boot(c, 2.5);
+  keys(c, 'msmmsmmsms');
+  const t1 = keys(c, 'P'), gc = c.ram[0x240] & 0x40; c.run(FCLK * 1);
+  const t2 = keys(c, 'p');
+  check('p uzun: tarama başlar (güç değişmez), kısa p taramayı durdurur', t1[0] === T('  SCAN  ') && !gc && t2[0] === 'KANAL 01' && !(c.ram[0x241] & 4), t1[0] + ' ' + gc + ' ' + t2[0]);
+  const v = keys(c, 'mms145500####'); const vp = keys(c, 'p'); c.run(FCLK * 2);
+  check('VFO ekranında p güç, sonra frekans geri gelir', v[v.length - 1] === '145 5000' && vp[0] === 'YUKSEK G' && lcd(c) === '145 5000', v[v.length - 1] + ' ' + vp[0] + ' ' + lcd(c));
+  keys(c, 'm'); for (let k = 0; k < 12 && lcd(c) !== 'APRS    '; k++) keys(c, 'm'); keys(c, 's');
+  const ap = keys(c, 'p'); c.run(FCLK * 2);
+  check('APRS ekranında p güç, sonra APRS AKT', ap[0] === 'ALCAK G ' && lcd(c) === 'APRS AKT', ap[0] + ' ' + lcd(c));
+  keys(c, 'm');
+  /* araç / sabit kartında orijinal p taramaya bağlı değil (tarama KNL TARA menüsünde): uzun p onu kullanır */
+  const d = radio(ee => { ee[0x58B] |= 2; for (const n of [1, 2]) ee[0x2E + (n - 1) * 13] |= 0; });
+  d.hwArac = true; d.inputs.P4 = 0xCF; d.panel.setExt(0xBF, d); boot(d, 2.6);
+  keys(d, 'mmsmmsmmsms'); d.run(FCLK * 5);
+  const a1 = keys(d, 'P'), at = d.ram[0x241] & 4; d.run(FCLK * 1);
+  const a2 = keys(d, 'p'), ad = d.ram[0x241] & 4; d.run(FCLK * 1);
+  const a3 = keys(d, 'p');
+  check('araç kartı: uzun p tarama (KNL TARA), kısa p durdurur, sonra güç', a1[0] === T('  SCAN  ') && at && !ad && d.ram[0x227] === 0 && a2[0] !== T('  SCAN  ') && a3[0] === 'YUKSEK G',
+    a1[0] + ' ' + at + ' ' + a2[0] + ' ' + ad + ' ' + a3[0]);
 }
 
 /* APRS TR / DG / IG (aprs_ayar.inc): menüde '*' / '-', s ile değişir, EEPROM 0x733, kapat-aç sonrası kalır;

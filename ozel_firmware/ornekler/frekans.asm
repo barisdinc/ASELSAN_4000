@@ -65,6 +65,7 @@ TITLES_TR:
 
         .INCLUDE "frekans.inc"
         .INCLUDE "aprs_seri.inc"        ; APRS alma: paketleri seri porta yaz
+        .INCLUDE "tus_guc.inc"          ; p güç (uzun: tarama), q monitör
         .ORG $01E600                    ; bank 1 boş alanı ($01E4F4..$01FFFF; $011000 bölgesi doldu)
         .INCLUDE "aprs_detay.inc"       ; APRS alma: istasyonların konumu
         .INCLUDE "aprs_digi.inc"        ; APRS digipeater
