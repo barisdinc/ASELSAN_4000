@@ -128,7 +128,7 @@ check('firmware sağlamaları = P4000 ilk dört blok', P.checkSums(def).slice(0,
   check('APRS: geçersiz değerler reddedilir',
     /6 harf/.test(red({ cagri: 'TC1881ATA-10' })) && /6 harf/.test(red({ cagri: 'TA7W-16' })) && /43 bayt/.test(red({ yorum: 'ş'.repeat(22) })) &&
     /en az 10/.test(red({ aralik: 5 })) && /Enlem/.test(red({ enlem: '95.0' })) && /Boylam/.test(red({ boylam: 'abc' })) && /Simge/.test(red({ kod: '' })));
-  check('APRS: paket metni', P.aprsPaket(t) === 'TA7W-7>APIZCI,WIDE1-1,WIDE2-1:!4050.63N/03109.39Eb' + String.fromCharCode(...P.utf8('Düzce küçük Harf, nokta.')), P.aprsPaket(t));
+  check('APRS: paket metni', P.aprsPaket(t) === 'TA7W-7>APIZCI,WIDE2-2:!4050.63N/03109.39Eb' + String.fromCharCode(...P.utf8('Düzce küçük Harf, nokta.')), P.aprsPaket(t));
   const p40 = P.fromP40(P.toP40(t), t).ee;
   check('APRS: .p40 okuma bölümü korur', P.aprsGecerli(p40) && P.aprsGet(p40).cagri === 'TA7W-7');
 }
