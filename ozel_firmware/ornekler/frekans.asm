@@ -18,7 +18,9 @@ ST_APRS_ON  .EQU $17
 MENU_NEXT:
         .COPY $003188, 2                ; durum 0, 1
         .BYTE ST_FREKANS                ; durum 2 (LIST) -> FREKANS
-        .COPY $00318B, N_OLD-3          ; durum 3..$13
+        .COPY $00318B, 8                ; durum 3..$0A
+        .BYTE $08                       ; $0B DISPLAY -> ALT MENU (PAROLA ve MSR RSSI yok)
+        .COPY $003194, N_OLD-12         ; durum $0C..$13
         .BYTE ST_APRS                   ; $14 FREKANS -> APRS
         .BYTE $00                       ; $15 etkin -> m = normal ekran
         .BYTE ST_APRS_TR                ; $16 APRS -> APRS TR
@@ -78,6 +80,7 @@ TITLES_TR:
         .INCLUDE "tarama_tks.inc"       ; taramada TKS bekleme süresi uzun (ASELSAN V2-51/V2-54)
         .INCLUDE "yazici_kaldir.inc"    ; YAZICI menüsü ve yazıcı çıkışı yok
         .INCLUDE "ozellik_kaldir.inc"   ; trunk, veri mesajı, ses yayın, # arama, servis kapalı
+        .INCLUDE "parola_rssi_kaldir.inc" ; PAROLA, servis kodu, RSSI göstergesi yok
 DIL_KOD     .EQU $012090        ; bank 1 boş alanı (tarama_tks $012080..$01208A)
         .INCLUDE "dil_kaldir.inc"       ; yalnız Türkçe
         .ORG $012100                    ; bank 1 boş alanı ($012090.. dil_kaldir)

@@ -57,7 +57,7 @@
       {
         "baslik": "Sadeleştirilmiş firmware",
         "surum": "0-1",
-        "aciklama": "Select-5 (CCIR / ZVEI / EEA) kodu ve '#' ile arama kaldırıldı; yer yeni özelliklere açıldı. Trunk, veri mesajı, ses yayın, yazıcı ve servis terminali de kapalı (V0-19 / V0-21). Yalnız Türkçe (V0-22)."
+        "aciklama": "Select-5 (CCIR / ZVEI / EEA) kodu ve '#' ile arama kaldırıldı; yer yeni özelliklere açıldı. Trunk, veri mesajı, ses yayın, yazıcı ve servis terminali de kapalı (V0-19 / V0-21). Yalnız Türkçe (V0-22). Parola, servis kodu ve RSSI göstergesi yok (V0-32)."
       },
       {
         "baslik": "Açılış ekranı ve sürüm",
@@ -71,6 +71,15 @@
       }
     ],
     "surumler": [
+      {
+        "surum": "0-32",
+        "tarih": "2026-10-22",
+        "durum": "sim",
+        "degisiklik": [
+          "ALT MENU'den PAROLA kaldırıldı. Telsizde daha önce parola konduysa açılışta sorulmaz ve silinir; parola yüzünden kilitli kalan telsiz bu sürümle açılır.",
+          "Gizli servis kodu (PAROLA ekranından girilen 25970 / 10992 / 00000) ve onunla açılan MSR RSSI kalibrasyonu kaldırıldı. Kalibre edilmiş telsizde de sinyal gücü (-115dBm gibi) artık kanal adının yerine gösterilmez."
+        ]
+      },
       {
         "surum": "0-31",
         "tarih": "2026-10-22",

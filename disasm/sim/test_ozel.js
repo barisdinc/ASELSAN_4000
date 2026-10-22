@@ -97,11 +97,12 @@ if (RING.includes('NUMBER')) {
 /* the other menus behave exactly as in the original firmware (same screens key by key) */
 if (origText) {
   const orig = parseHex(origText);
-  // [original keys, patched keys]: SUB MENU is one m further in the patched ring (after NUMBER)
+  // [original keys, patched keys]: SUB MENU is one m further in the patched ring (after NUMBER);
+  // stops at DISPLAY: PAROLA is removed in FREKANS (parola_rssi_kaldir.inc)
   const run = (r, seq) => { const b = new Board(r), ee = B.defaultEeprom(); ee[0x018] |= 0x20 | (TR ? 0x80 : 0); B.eeFixSums(ee); b.eeprom.mem.set(ee);
     b.font = V.buildFont(b.rom); boot(b, 2.5); return keys(b, seq).join('|'); };
   const extra = 'm'.repeat(RING.length);
-  for (const [so, sp] of [['ms05mmsms', 'ms05mmsms'], ['p', TR ? 'P' : 'p'], ['mmsmsmmsm', 'm' + extra + 'msmsmmsm']]) {
+  for (const [so, sp] of [['ms05mmsms', 'ms05mmsms'], ['p', TR ? 'P' : 'p'], ['mmsmsm', 'm' + extra + 'msmsm']]) {
     let c = run(rom, sp); for (const t of RING) c = c.replace('|' + T(t).padEnd(8), '');
     const a = run(orig, so);
     check('orijinalle aynı: ' + so, a === c, a + '  /  ' + c);
@@ -826,6 +827,30 @@ if (RING.includes('FREQ')) {
     'giren: ' + ([...hit].join(',') || 'yok') + ' | ' + halka.join('|'));
   check("'#' seçmeli çağrı araması açmıyor, 0xF8 seri portu 2400'e almıyor", !/^C /.test(diyez) && /^KANAL/.test(yildiz) && b.sfr[0x31] === 25,
     '# -> "' + diyez + '", * -> "' + yildiz + '", U0BRG ' + b.sfr[0x31]);
+}
+
+/* PAROLA, servis kodu ve RSSI göstergesi (parola_rssi_kaldir.inc): ALT MENU'de PAROLA / MSR RSSI yok (A ve
+ * B tipi kart); EEPROM'da kayıtlı parola açılışta sorulmaz ve silinir; kalibre edilmiş RSSI (EE 0x54B bit 6 +
+ * 0x571 tablosu) sinyalde "-115dBm" göstermez */
+if (RING.includes('FREQ')) {
+  const us = ee => { let t = 0; for (let a = 0x54B; a <= 0x551; a++) t += ee[a]; ee[0x552] = t >> 8 & 255; ee[0x553] = t & 255; };
+  const tus = (b, k) => { const i = KP.indexOf(k); b.keypad.press(i, true, b); b.run(FCLK * 0.15); b.keypad.press(i, false, b); b.run(FCLK * 0.6); return lcd(b); };
+  for (const arac of [false, true]) {
+    const b = radio(ee => { ee[0x018] |= 0x20; ee[0x014] |= 0x08; if (arac) ee[0x58B] |= 0x12; ee.fill(0xFF, 0x54D, 0x552); us(ee); });
+    if (arac) { b.hwArac = true; b.inputs.P4 = 0xCF; b.panel.setExt(0xBF, b); }
+    boot(b, 3);
+    const alt = [];
+    for (let k = 0; k < 10 && !/ALT MENU/.test(lcd(b)); k++) tus(b, 'm');
+    alt.push(tus(b, 's')); for (let k = 0; k < 4; k++) alt.push(tus(b, 'm'));
+    check('ALT MENU: PAROLA ve MSR RSSI yok (' + (arac ? 'B' : 'A') + ' tipi)',
+      alt.join('|') === (arac ? 'ISIK    |UYARI   |ALT MENU|KANAL 01|KNL TARA' : 'ISIK    |UYARI   |GOSTERGE|ALT MENU|KANAL 01'), alt.join('|'));
+  }
+  { const b = radio(ee => { ee.set([1, 2, 3, 4, 5], 0x54D); us(ee); }); boot(b, 3); b.run(FCLK);
+    check('kayıtlı parola açılışta sorulmuyor ve siliniyor', /^KANAL/.test(lcd(b)) && b.eeprom.mem.slice(0x54D, 0x552).every(x => x === 0xFF),
+      lcd(b) + ', EE 0x54D: ' + Array.from(b.eeprom.mem.slice(0x54D, 0x552)).map(x => x.toString(16)).join(' ')); }
+  { const b = radio(ee => { ee[0x54B] |= 0x40; ee.fill(0xFF, 0x54D, 0x552); ee.set([0xC0, 0xA0, 0x80, 0x60, 0x40, 0x02, 0x80], 0x571); us(ee); });
+    boot(b, 3); b.inputs.P5 |= 0x80; b.analog[5] = 0x50; b.run(FCLK * 2);
+    check('kalibre edilmiş RSSI göstergesi açılmıyor', /^KANAL/.test(lcd(b)) && b.ram[0x1EB] >= 3, lcd(b) + ', 0x01EB = ' + b.ram[0x1EB]); }
 }
 
 /* boot screen built into the ROM (acilis_yatolye.inc): 5 s, independent of the EEPROM */

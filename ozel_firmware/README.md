@@ -379,6 +379,19 @@ Not: S sürümünün opsiyon fonksiyonu (0x010630) trunk (0x334 bit 4) ve ses ya
 
 Toplam ~110 bayt (ek olarak `OZEL_RAM` çevresinde ~20 bayt). Diğer erişilmeyen bloklar (0x00AE–0x00FF, 0x0141–0x017E, 0x045A–0x04B8) canlı kodun (seri protokol, açılış) dizilerinin devamı olabilir; kullanılmamalı.
 
+## PAROLA, servis kodu ve RSSI göstergesinin kaldırılması
+
+`ornekler/parola_rssi_kaldir.inc` (AT V0-32). Orijinalde ALT MENU'deki PAROLA ekranı hem açılış parolası koyar hem de gizli bir servis kodu alır: `NP 25970`, `OP 25970` → `NP 10992`, `OP 10992` → `NP 00000`. Kod girilince menüde **MSR RSSI** (RSSI kalibrasyonu, EE 0x571–0x577) görünür. Kalibre edilmiş telsiz, susturma açıkken kanal adının yerine `-115dBm` gibi sinyal gücü gösterir (ayrıntı: `disasm/tus_takimi.md`, "RSSI göstergesi ve kalibrasyonu").
+
+| Yama | Yer | Sonuç |
+|---|---|---|
+| Menü tablosu (`frekans.asm` `MENU_NEXT`) | durum $0B DISPLAY → $08 ALT MENU | PAROLA ve MSR RSSI menüde yok |
+| B tipi kartta DISPLAY'i atlama | 0x0055D6: `LDM #$0E` → `#$08` | B tipinde de UYARI'dan ALT MENU'ye |
+| Açılışta parola | 0x008FC2 `BEQ` → `NOP NOP` | Firmware'in "00000" (parolayı sil) yolu: parola sorulmaz, kullanıcı bloğu FF'li parolayla yeniden yazılır |
+| Açılışta RSSI göstergesi | 0x0090AE `BBC #$40,$01` → `BRA` | EE 0x54B bit 6 yüklenmez, 0x01EB = 4 kalır; gösterge çalışmaz, kapanışta bit 6 sıfırlanır |
+
+Parolası unutulmuş bir telsiz bu sürümü yükleyince açılır; parola EEPROM'dan da silinir. F_004596, F_004E1A ve F_008D47 artık çağrılmıyor. `test_ozel.js` A ve B tipi kartta ALT MENU'yü, parolalı ve RSSI kalibreli EEPROM ile açılışı denetler.
+
 ## Seçmeli çağrının kaldırılması
 
 

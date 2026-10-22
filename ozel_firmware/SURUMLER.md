@@ -5,7 +5,7 @@ Aynı notlar sitede: [surumler.html](https://barisdinc.github.io/ASELSAN_4000/su
 
 ## yATOLYE özel firmware'i (`YA4000S_FREKANS_YATOLYE.HEX`)
 
-Güncel sürüm: **AT V0-31** (22.10.2026)
+Güncel sürüm: **AT V0-32** (22.10.2026)
 
 Orijinal YA4000S (AS V2-30) üzerine FREKANS (VFO) menüsü, APRS gönderme / alma, seçmeli çağrı kaldırıldı, açılışta 5 s yATOLYE.
 
@@ -21,11 +21,16 @@ Orijinal YA4000S (AS V2-30) üzerine FREKANS (VFO) menüsü, APRS gönderme / al
 - **APRS'te sessiz hoparlör** (AT V0-7 ile geldi): APRS menüsündeyken bip, uyarı ve hoparlör kapalı; alma çözücüsü çalışmaya devam eder.
 - **APRS modunu hatırlama** (AT V0-4 ile geldi): Telsiz APRS menüsündeyken kapatılırsa açılışta yine APRS'te başlar (EEPROM 0x732).
 - **Tarama** (AT V0-16 ile geldi): Orijinal tarama (LIST menüsü + p tuşu) çalışır; TKS'li kanallarda ton için daha uzun bekleme (ASELSAN V2-51 / V2-54'ten).
-- **Sadeleştirilmiş firmware** (AT V0-1 ile geldi): Select-5 (CCIR / ZVEI / EEA) kodu ve '#' ile arama kaldırıldı; yer yeni özelliklere açıldı. Trunk, veri mesajı, ses yayın, yazıcı ve servis terminali de kapalı (V0-19 / V0-21). Yalnız Türkçe (V0-22).
+- **Sadeleştirilmiş firmware** (AT V0-1 ile geldi): Select-5 (CCIR / ZVEI / EEA) kodu ve '#' ile arama kaldırıldı; yer yeni özelliklere açıldı. Trunk, veri mesajı, ses yayın, yazıcı ve servis terminali de kapalı (V0-19 / V0-21). Yalnız Türkçe (V0-22). Parola, servis kodu ve RSSI göstergesi yok (V0-32).
 - **Açılış ekranı ve sürüm** (AT V0-1 ile geldi): Açılışta 5 s yATOLYE, ardından AT V0-x sürüm numarası. Sürüm, tarih ve metin ROM başlığında; T4000 ve yükleme sayfası da gösterir.
 - **Güç ve monitör tuşları** (AT V0-31 ile geldi): p kısa: güç yüksek / düşük (YUKSEK G / ALCAK G); p uzun (~1 s): tarama; q: monitör (MONITOR* / MONITOR-).
 
 ### Sürüm geçmişi
+
+#### AT V0-32 · 22.10.2026 · yalnız simülatörde denendi
+
+- Değişiklik: ALT MENU'den PAROLA kaldırıldı. Telsizde daha önce parola konduysa açılışta sorulmaz ve silinir; parola yüzünden kilitli kalan telsiz bu sürümle açılır.
+- Değişiklik: Gizli servis kodu (PAROLA ekranından girilen 25970 / 10992 / 00000) ve onunla açılan MSR RSSI kalibrasyonu kaldırıldı. Kalibre edilmiş telsizde de sinyal gücü (-115dBm gibi) artık kanal adının yerine gösterilmez.
 
 #### AT V0-31 · 22.10.2026 · yalnız simülatörde denendi
 

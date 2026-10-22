@@ -275,7 +275,7 @@ footer.foot .wrap { padding-block: 28px 36px; display: flex; flex-wrap: wrap; ga
   <div class="logo"><svg class="mark"><use href="#logo-mark"/></svg><span class="word"><b><i>y</i>ATOLYE</b><span>telsiz yazılım atölyesi</span></span></div>
   <div>
     <h1>KULLANIM KILAVUZU<small>ASELSAN 4021 / 4025 araç telsizi · yATOLYE yazılımı</small></h1>
-    <div class="cv"><span class="ver">AT V0-31</span><span>22.10.2026</span></div>
+    <div class="cv"><span class="ver">AT V0-32</span><span>22.10.2026</span></div>
     <div class="radio" style="max-width:520px">[[RADYO_ON]]</div>
   </div>
   <div class="cv">Kanal · VFO · tarama · güç · monitör · APRS · GPS — github.com/barisdinc/ASELSAN_4000</div>
@@ -287,7 +287,7 @@ footer.foot .wrap { padding-block: 28px 36px; display: flex; flex-wrap: wrap; ga
       <div class="logo"><svg class="mark"><use href="#logo-mark"/></svg><span class="word"><b><i>y</i>ATOLYE</b><span>telsiz yazılım atölyesi</span></span></div>
       <h1>ASELSAN 4000 Kullanım Kılavuzu<small>Kanal, VFO, tarama, güç, monitör ve APRS — adım adım, ekran ekran</small></h1>
       <p class="lede">Bu kılavuz 4021 / 4025 araç telsizinin günlük kullanımını ve yATOLYE yazılımıyla gelen yeni özellikleri anlatır. Her işlevde önce yapılacaklar sırayla yazılır, ardından her tuşa basıştan sonra ekranda ne göreceğinizi gösteren bir şerit gelir. Ekran görüntüleri yazılımın simülatörde, araç telsizi kartıyla çalıştırılmasından alınmıştır.</p>
-      <div class="meta"><span class="ver">AT V0-31</span><span>Tuşlar: [m] [s] [p] [q] [0]–[9] [*] [#]</span></div>
+      <div class="meta"><span class="ver">AT V0-32</span><span>Tuşlar: [m] [s] [p] [q] [0]–[9] [*] [#]</span></div>
     </div>
     <div class="radio" aria-label="Telsizin ön paneli" style="width:440px;max-width:100%">[[RADYO_ON]]</div>
   </div>
@@ -305,7 +305,7 @@ footer.foot .wrap { padding-block: 28px 36px; display: flex; flex-wrap: wrap; ga
       <li><a href="#vfo">VFO: frekans ve ton</a></li>
       <li><a href="#liste">Tarama listesi oluşturma</a></li>
       <li><a href="#tarama">Taramayı başlatma ve durdurma</a></li>
-      <li><a href="#altmenu">Alt menü: ışık, uyarı, parola</a></li>
+      <li><a href="#altmenu">Alt menü: ışık ve uyarı</a></li>
       <li><a href="#aprs">APRS</a></li>
       <li><a href="#gps">GPS bağlantısı</a></li>
       <li><a href="#ozet">Hızlı başvuru kartı</a></li>
@@ -342,7 +342,7 @@ footer.foot .wrap { padding-block: 28px 36px; display: flex; flex-wrap: wrap; ga
       <li><div><b>Kanal numarası (2 hane).</b> Hafıza kanalındayken kanal numarası; VFO'da almada <span class="lcdtxt">Ur</span> (VR), gönderirken <span class="lcdtxt">Ut</span> (VT).</div></li>
       <li><div><b>Aç-kapa / ses düğmesi.</b> Telsizi açar, ses seviyesini ayarlar.</div></li>
       <li><div><b>LED'ler.</b> Kırmızı: gönderirken yanar. Sarı: kanalda yayın varken yanar.</div></li>
-      <li><div><b>Tuş takımı.</b> Rakamlar ve <kbd>*</kbd> <kbd>#</kbd>: kanal numarası, frekans, ton ve parola girişi. Sağ sütunda dört işlev tuşu (aşağıdaki tablo).</div></li>
+      <li><div><b>Tuş takımı.</b> Rakamlar ve <kbd>*</kbd> <kbd>#</kbd>: kanal numarası, frekans ve ton girişi. Sağ sütunda dört işlev tuşu (aşağıdaki tablo).</div></li>
       <li><div><b>Mikrofon konnektörü</b> (sol yan, 8 pin). Mikrofon ve <kbd class="ptt">PTT</kbd> buraya bağlanır. Programlama kablosu ve GPS de bu konnektörü kullanabilir; seri hatlar RS232 seviyesindedir (bkz. <a href="#gps">GPS bağlantısı</a>).</div></li>
     </ol>
   </div>
@@ -355,7 +355,7 @@ footer.foot .wrap { padding-block: 28px 36px; display: flex; flex-wrap: wrap; ga
       <tr><td>[s] <span class="kn">Seç</span></td><td>Menü öğesine girer, seçeneği kaydeder, ayarı açar / kapatır</td><td>VFO girişinde girilen haneleri temizler</td></tr>
       <tr class="hl"><td>[p] <span class="kn">Güç</span></td><td>Kısa: çıkış gücü yüksek / düşük</td><td>Uzun (~1 s): tarama başlat / durdur. <span class="yb"><svg><use href="#logo-mark"/></svg>yATOLYE</span></td></tr>
       <tr class="hl"><td>[q] <span class="kn">Monitör</span></td><td>Susturmayı devre dışı bırakır / devreye alır</td><td>Zayıf sinyali dinlemek için. <span class="yb"><svg><use href="#logo-mark"/></svg>yATOLYE</span></td></tr>
-      <tr><td>[0]–[9]</td><td>Normal ekranda iki haneli kanal numarası</td><td>Menülerde frekans, ton, kanal, parola girişi</td></tr>
+      <tr><td>[0]–[9]</td><td>Normal ekranda iki haneli kanal numarası</td><td>Menülerde frekans, ton, kanal girişi</td></tr>
       <tr><td>[*]</td><td>Girişte son haneyi siler</td><td>Giriş boşsa bir önceki adıma döner. APRS ekranında daha eski istasyon</td></tr>
       <tr><td>[#]</td><td>VFO'da adımı onaylar</td><td>APRS ekranında daha yeni istasyon</td></tr>
       <tr><td>[PTT]</td><td>Mikrofondaki bas-konuş</td><td>APRS ekranında önce konum paketi, sonra konuşma</td></tr>
@@ -370,11 +370,11 @@ footer.foot .wrap { padding-block: 28px 36px; display: flex; flex-wrap: wrap; ga
   <p class="intro">Aç-kapa düğmesini çevirince önce yATOLYE yazısı, ardından yazılım sürümü, sonra cihazın parça ve seri numaraları görünür. Son olarak son kullanılan kanal gelir.</p>
   <div class="sb">
     <figure class="fr"><div class="act"><span class="ico"><svg><use href="#i-power"/></svg> aç</span></div><span class="lcd" data-t="yATOLYE"></span><figcaption>5 saniye yATOLYE.</figcaption></figure>
-    <figure class="fr"><div class="act"><span class="ico"><svg><use href="#i-wait"/></svg> 1 s</span></div><span class="lcd" data-t="AT V0-31"></span><figcaption>Yüklü yazılımın sürümü.</figcaption></figure>
+    <figure class="fr"><div class="act"><span class="ico"><svg><use href="#i-wait"/></svg> 1 s</span></div><span class="lcd" data-t="AT V0-32"></span><figcaption>Yüklü yazılımın sürümü.</figcaption></figure>
     <figure class="fr"><div class="act"><span class="ico"><svg><use href="#i-wait"/></svg> 1 s</span></div><span class="lcd" data-t="PN935070"></span><figcaption>Parça numarası, ardından <span class="lcdtxt">SN</span> seri numarası.</figcaption></figure>
     <figure class="fr"><div class="act"><span class="ico"><svg><use href="#i-wait"/></svg> 2 s</span></div><span class="lcd" data-t="KANAL 01" data-c="01"></span><figcaption>Hazır. Kanal adı ve numarası.</figcaption></figure>
   </div>
-  <p>Telsiz APRS ekranındayken kapatıldıysa açılışın sonunda doğrudan APRS ekranına döner. Parola konduysa açılışta <span class="lcdtxt">PAROLA</span> yazar ve 4 haneli parola istenir.</p>
+  <p>Telsiz APRS ekranındayken kapatıldıysa açılışın sonunda doğrudan APRS ekranına döner. Bu yazılımda açılış parolası yoktur; eski yazılımla parola konmuş bir telsizde parola sorulmaz ve silinir.</p>
 </section>
 
 <!-- 03 -->
@@ -390,7 +390,7 @@ footer.foot .wrap { padding-block: 28px 36px; display: flex; flex-wrap: wrap; ga
     <div class="it"><span class="lcd" data-t="APRS TR*"></span><small>[s] izleyici (tracker) aç / kapa</small></div>
     <div class="it"><span class="lcd" data-t="APRS DG-"></span><small>[s] digipeater aç / kapa</small></div>
     <div class="it"><span class="lcd" data-t="APRS IG*"></span><small>[s] IGate (seri port) aç / kapa</small></div>
-    <div class="it"><span class="lcd" data-t="ALT MENU"></span><small>[s] ışık, uyarı, parola</small></div>
+    <div class="it"><span class="lcd" data-t="ALT MENU"></span><small>[s] ışık ve uyarı</small></div>
   </div>
   <p>APRS TR / DG / IG satırlarının son karakteri ayarın durumunu gösterir: <span class="lcdtxt">*</span> açık, <span class="lcdtxt">-</span> kapalı. FREKANS, APRS ve APRS TR / DG / IG <span class="yb"><svg><use href="#logo-mark"/></svg>yATOLYE</span> yazılımının eklediği öğelerdir. <span class="lcdtxt">ALT MENU</span> yalnız programlama yazılımında <b>Alt Menü</b> seçeneği açıksa görünür.</p>
 </section>
@@ -614,12 +614,11 @@ footer.foot .wrap { padding-block: 28px 36px; display: flex; flex-wrap: wrap; ga
 
 <!-- 09 -->
 <section class="ch" id="altmenu">
-  <div class="chhead"><span class="chno">09</span><h2>Alt menü: ışık, uyarı, parola</h2></div>
+  <div class="chhead"><span class="chno">09</span><h2>Alt menü: ışık ve uyarı</h2></div>
   <p class="intro">Menüde <span class="lcdtxt">ALT MENU</span>'ye gelip [s]'ye basın ([m] sekiz kez). Alt menüde [m] öğeler arasında gezer, [s] öğeyi açar ya da ayarı değiştirir. Yaklaşık 4 saniye tuşa basılmazsa normal ekrana dönülür. Seçilen ayarlar hafızaya yazılır.</p>
   <div class="ring">
     <div class="it"><span class="lcd" data-t="ISIK"></span><small>Işıklı uyarılar ve aydınlatma</small></div>
     <div class="it"><span class="lcd" data-t="UYARI"></span><small>Tuş ve uyarı sesleri</small></div>
-    <div class="it"><span class="lcd" data-t="PAROLA"></span><small>Açılış parolası</small></div>
   </div>
 
   <h3>Işık</h3>
@@ -638,20 +637,6 @@ footer.foot .wrap { padding-block: 28px 36px; display: flex; flex-wrap: wrap; ga
     <figure class="fr"><div class="act">[s]</div><span class="lcd" data-t="UYARI -" data-c="01"></span><figcaption>Sesler kapalı.</figcaption></figure>
   </div>
 
-  <h3>Parola</h3>
-  <ol class="steps">
-    <li><div>Alt menüde <span class="lcdtxt">PAROLA</span>'ya gelin, [s]: <span class="lcdtxt">YP</span> (yeni parola).</div></li>
-    <li><div>4 haneli parolayı yazın, [s] ile kaydedin.</div></li>
-    <li><div>Artık telsiz her açılışta <span class="lcdtxt">PAROLA</span> yazıp 4 hane ve [s] ister. Yanlışsa tekrar sorar.</div></li>
-    <li><div>Parolayı kaldırmak için eski parolayı girin; yeni parola istenince 5 kez [0] yazın.</div></li>
-  </ol>
-  <div class="sb">
-    <figure class="fr"><div class="act">[m][m]</div><span class="lcd" data-t="PAROLA" data-c="01"></span><figcaption>Üçüncü öğe.</figcaption></figure>
-    <figure class="fr"><div class="act">[s]</div><span class="lcd" data-t="YP" data-c="01"></span><figcaption>Yeni parolayı yazın.</figcaption></figure>
-    <figure class="fr"><div class="act">[4][7][1][1]</div><span class="lcd" data-t="YP  4711" data-c="01"></span><figcaption>Haneler sağdan kayarak yazılır.</figcaption></figure>
-    <figure class="fr"><div class="act">[s]</div><span class="lcd" data-t="KANAL 01" data-c="01"></span><figcaption>Kaydedildi.</figcaption></figure>
-  </div>
-  <div class="warn"><b>Dikkat</b>Parolayı unutursanız telsizi açamazsınız. Parolayı koymadan önce not edin.</div>
   <p>El telsizi modellerinde alt menüde ayrıca <span class="lcdtxt">GOSTERGE</span> (ekranı ters / normal) bulunur.</p>
 </section>
 
@@ -950,7 +935,7 @@ TB2XYZ&gt;APRS,TA7W-7*,WIDE2-1:&gt;Selam</pre>
     <div><h5>VFO</h5><p>[m]×3 [s] alma [#] gönderme [#]</p><p>alma ton [#] gönderme ton [#]</p><p>[*] sil · [m] çık</p></div>
     <div><h5>APRS</h5><p>[m]×4 [s] → <span class="lcdtxt">APRS AKT</span></p><p>[PTT] konum gönder</p><p>[*] eski · [#] yeni · [s] ayrıntı</p></div>
     <div><h5>APRS ayarları</h5><p><span class="lcdtxt">APRS TR</span> izleyici</p><p><span class="lcdtxt">APRS DG</span> digipeater</p><p><span class="lcdtxt">APRS IG</span> seri port · [s] aç/kapa</p></div>
-    <div><h5>Alt menü</h5><p>[m]×8 [s] → <span class="lcdtxt">ISIK</span> [s] aç/kapa</p><p>[m] UYARI · PAROLA</p></div>
+    <div><h5>Alt menü</h5><p>[m]×8 [s] → <span class="lcdtxt">ISIK</span> [s] aç/kapa</p><p>[m] UYARI</p></div>
     <div><h5>GPS</h5><p>GPS TX → mik. 7 / opsiyon 15</p><p>GND → mik. 8 / opsiyon 1 · 9600 8N1</p><p>RS232 seviyesi · TTL GPS → MAX3232</p></div>
   </div>
 </section>
@@ -961,8 +946,8 @@ TB2XYZ&gt;APRS,TA7W-7*,WIDE2-1:&gt;Selam</pre>
   <ul>
     <li><b>Lisans ve frekans.</b> Yalnız kullanma izniniz olan frekanslarda gönderme yapın. APRS, digipeater ve VFO'da elle girilen amatör frekanslar için amatör telsiz lisansı gerekir.</li>
     <li><b>Band dışı.</b> VFO telsizin donanım bandından biraz daha geniş bir aralığı kabul eder. Band dışında verici düzgün çalışmayabilir; ilk denemeleri yapay yükle ve band içinde bilinen bir frekansta yapın.</li>
-    <li><b>Kalıcı olmayanlar.</b> VFO frekansları, [p] ile seçilen güç ve duyulan APRS istasyonları listesi telsiz kapanınca silinir. Tarama listesi, alt menü ayarları, APRS TR/DG/IG ayarları ve parola hafızada kalır.</li>
-    <li><b>Bu yazılımda olmayanlar.</b> Seçmeli çağrı, trunk, veri mesajları, yazıcı menüsü ve servis terminali kaldırılmıştır. Kripto tuşunun yerini güç almıştır. Menüler yalnız Türkçedir.</li>
+    <li><b>Kalıcı olmayanlar.</b> VFO frekansları, [p] ile seçilen güç ve duyulan APRS istasyonları listesi telsiz kapanınca silinir. Tarama listesi, alt menü ayarları ve APRS TR/DG/IG ayarları hafızada kalır.</li>
+    <li><b>Bu yazılımda olmayanlar.</b> Seçmeli çağrı, trunk, veri mesajları, yazıcı menüsü, servis terminali, açılış parolası ve RSSI (sinyal gücü) göstergesi kaldırılmıştır. Kripto tuşunun yerini güç almıştır. Menüler yalnız Türkçedir.</li>
     <li><b>Seri port.</b> Programlama, IGate çıkışı ve GPS girişi aynı seri hattı kullanır. Telsizi programlamadan önce APRS ekranından çıkın ve GPS'i ayırın.</li>
   </ul>
 </section>
@@ -973,7 +958,7 @@ TB2XYZ&gt;APRS,TA7W-7*,WIDE2-1:&gt;Selam</pre>
 <footer class="foot">
   <div class="wrap">
     <div class="logo"><svg class="mark" style="width:40px;height:40px"><use href="#logo-mark"/></svg><span class="word"><b style="font-size:24px"><i>y</i>ATOLYE</b><span>telsiz yazılım atölyesi</span></span></div>
-    <div>Kullanım kılavuzu · yazılım <b>AT V0-31</b> · 22.10.2026<br>Kaynak ve güncel sürüm: github.com/barisdinc/ASELSAN_4000</div>
+    <div>Kullanım kılavuzu · yazılım <b>AT V0-32</b> · 22.10.2026<br>Kaynak ve güncel sürüm: github.com/barisdinc/ASELSAN_4000</div>
   </div>
 </footer>
 

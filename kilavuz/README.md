@@ -15,7 +15,7 @@ Yeni sürüm için:
 cd kilavuz
 python3 uret.py
 "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless=new --no-pdf-header-footer \
-  --virtual-time-budget=8000 --print-to-pdf="$PWD/KULLANIM_KILAVUZU_AT_V0-31.pdf" "file://$PWD/kullanim_kilavuzu.html"
+  --virtual-time-budget=8000 --print-to-pdf="$PWD/KULLANIM_KILAVUZU_AT_V0-32.pdf" "file://$PWD/kullanim_kilavuzu.html"
 ```
 
 Sürüm numarası `kaynak.html`'de dört yerde geçer (kapak, başlık, açılış ekranı, alt bilgi); PDF adı da ona göre değişir.

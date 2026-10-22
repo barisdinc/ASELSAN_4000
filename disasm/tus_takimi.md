@@ -1,6 +1,6 @@
 # Tuş takımı ve panel düğmeleri — YA4000S (A tipi kart)
 
-> Özel firmware (AT V0-31'den) `p` ve `q`'yu değiştirir: `p` kısa = güç yüksek / düşük, `p` uzun = tarama, `q` = monitör. Ayrıntı: `../ozel_firmware/README.md`, "Güç ve monitör tuşları". Aşağısı orijinal firmware.
+> Özel firmware (AT V0-31'den) `p` ve `q`'yu değiştirir: `p` kısa = güç yüksek / düşük, `p` uzun = tarama, `q` = monitör. Ayrıntı: `../ozel_firmware/README.md`, "Güç ve monitör tuşları". AT V0-32'den ALT MENU'de PAROLA ve MSR RSSI yok; kayıtlı parola açılışta silinir, RSSI göstergesi açılmaz (`parola_rssi_kaldir.inc`). Aşağısı orijinal firmware.
 
 Koddan çıkarıldı ve simülatörde denendi (`sim/`, `make test-sim`). "Doğrulandı" yazanlar simülatörde çalıştırıldı; diğerleri yalnızca koddan okundu.
 
@@ -60,7 +60,29 @@ Menüde yalnızca **EE[0x018] bit 5** (0x20) açıksa görünür (PC'deki progra
 | ALERT / UYARI | Uyarı sesi aç / kapa (0x023A bit 11) |
 | DISPLAY / GOSTERGE | `s` → INVERT ↔ NORMAL (TR TERS ↔ NORMAL) (`m` ile), ekran ters / normal |
 | PASSWORD / PAROLA | `s` → `NP` (TR `YP`) yeni parola: rakamlar, `s` kaydeder. EEPROM 0x54E–0x551 (boş = FF); kaydederken 0x552–0x553 de değişiyor (kontrol değeri, formülü çözülmedi). Parola varsa telsiz açılışta `PASSWORD` / `PAROLA` gösterir, `PR ----` ile 4 hane ve `s` ister; yanlışsa yeniden sorar. Kılavuz (1.9.8.3.3): parolayı silmek için eski parola girilir, yeni parola istenince 5 kez `0` yazılır |
-| MSR RSSI | `s` → sinyal gücü ölçümü (e80 … e120 dBm); 0x01EB ≥ 3 gerekir |
+| MSR RSSI | RSSI kalibrasyonu (aşağıda). Yalnızca servis kodu girildikten sonra ya da RSSI göstergesi açıkken görünür (0x01EB < 3) |
+
+### RSSI göstergesi ve kalibrasyonu (doğrulandı)
+
+Kalibre edildiğinde telsiz, susturma açıkken (kanalda sinyal, P57 = 1) kanal adı yerine sinyal gücünü gösterir: `-115dBm` gibi, 5 kalibrasyon noktası arasında 5 dB adımlarla, dışında da uzatarak (−60 … −135). Kodu F_00604C, ölçümü F_004DCC (AN5).
+
+1. **Servis kodu** (F_004596, ROM 0x317E tablosu `25970 / 10992`): SUB MENU → PASSWORD.
+   - Parola yokken: `NP` ekranında `25970` (0x01EB 4 → 5; 25970 parola olarak da kaydedilir).
+   - PASSWORD → `OP 25970` → `NP 10992` (5 → 6).
+   - PASSWORD → `OP 10992` → `NP 00000` (parola silinir; 0x01EB = 1 ya da 2).
+   - Herhangi bir adımda yanlış kod girilirse 0x01EB = 3 olur ve gösterge kapanır.
+   - Tuş dizisi (parola boşken, `m m s` = SUB MENU ve sonra `m m m s` = PASSWORD):
+     ```
+     m m s m m m s 2 5 9 7 0
+     m m s m m m s 2 5 9 7 0 1 0 9 9 2
+     m m s m m m s 1 0 9 9 2 0 0 0 0 0
+     ```
+2. **MSR RSSI** artık PASSWORD'dan sonra görünür. `s` → ` e80dBm`: girişe −80 dBm sinyal verilir ve `s` iki kez basılır. Aynı işlem ` e90dBm`, `e100dBm`, `e110dBm` ve `e120dBm` için tekrarlanır.
+   - Her ölçüm bir öncekinden küçük olmalı; değilse uyarı sesi çalar ve aynı seviye yeniden istenir.
+   - Bitince AN5 değerleri **EE 0x571–0x575**'e, toplamları büyük-endian olarak **0x576–0x577**'ye yazılır. Ardından gösterge açılır (0x01EB = 0).
+3. **Kalıcılık:** Gösterge açıkken kapanışta **EE 0x54B bit 6** yazılır. KULLANICI sağlaması 0x552–0x553, 0x54B–0x551 baytlarının toplamıdır. Açılışta bu bit 1 ve 0x571 tablosunun sağlaması doğruysa gösterge kendiliğinden açılır.
+   - Bit 1 ama tablo bozuksa gösterge kapalı kalır (0x01EB = 2).
+   - Bit 0 ise tablo dolu olsa da gösterge kapalıdır.
 
 ## `#` — seçmeli çağrı ile arama (doğrulandı)
 

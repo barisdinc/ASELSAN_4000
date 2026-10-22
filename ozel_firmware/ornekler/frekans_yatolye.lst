@@ -65,7 +65,9 @@
 0034A9  00 00 00 00 00 00 …          .ORG $011000
 011000  01 02                        .COPY $003188, 2                ; durum 0, 1
 011002  14                           .BYTE ST_FREKANS                ; durum 2 (LIST) -> FREKANS
-011003  03 08 06 07 04 00 …          .COPY $00318B, N_OLD-3          ; durum 3..$13
+011003  03 08 06 07 04 00 …          .COPY $00318B, 8                ; durum 3..$0A
+01100B  08                           .BYTE $08                       ; $0B DISPLAY -> ALT MENU (PAROLA ve MSR RSSI yok)
+01100C  0D 0B 12 0F 01 04 …          .COPY $003194, N_OLD-12         ; durum $0C..$13
 011014  16                           .BYTE ST_APRS                   ; $14 FREKANS -> APRS
 011015  00                           .BYTE $00                       ; $15 etkin -> m = normal ekran
 011016  18                           .BYTE ST_APRS_TR                ; $16 APRS -> APRS TR
@@ -4056,7 +4058,18 @@
 0194C0                               .ASSUME M=1,X=0
 0194C0  80 08                        BRA   OK_SERVIS_YOK
 0194C2  EA EA EA                     .BYTE $EA,$EA,$EA
-0194C5                               .ORG $00E460                    ; açılış: EE[0x018] -> $0340 okundu; JSRL F_00E153
+0194C5                               .ORG $0055D6                    ; B tipi kart: DISPLAY yerine LDM #$0E,$0227 (PAROLA)
+0055D6                               .EXPECT $9C,$27,$02,$0E
+0055D6  9C 27 02 08                  .BYTE $9C,$27,$02,$08           ; -> ALT MENU
+0055DA  00 00 00 00 00 00 …          .ORG $008FC2                    ; BEQ L_008FE2 (geçerli parola -> RAM 0x025A'ya kopyala)
+008FC2                               .EXPECT $F0,$1E
+008FC2  EA EA                        .BYTE $EA,$EA                   ; düşer: 0x025A.. = FF, kullanıcı bloğu yeniden yazılır
+008FC4  00 00 00 00 00 00 …          .ORG $0090AE                    ; BBC #$40,$01,L_0090C5 (bit 6 -> F_008D47 -> 0x01EB = 1/2)
+0090AE                               .EXPECT $34,$01,$40,$13
+0090AE                               .ASSUME M=1,X=0
+0090AE  80 15                        BRA   PR_RSSI_YOK
+0090B0  EA EA                        .BYTE $EA,$EA
+0090B2  00 00 00 00 00 00 …          .ORG $00E460                    ; açılış: EE[0x018] -> $0340 okundu; JSRL F_00E153
 00E460                               .EXPECT $22,$53,$E1,$00
 00E460  22 90 20 01                  JSRL  DIL_TR_ACILIS
 00E464                               .ORG $00DAB0                    ; F_00DA32: 0x018..0x02D okundu; sıradaki okuma (0x58B)
@@ -4652,6 +4665,7 @@ F_ISIK                   $008156
 F_LCD                    $00828C
 VK_STA                   $008336
 YK_ATLA                  $009097
+PR_RSSI_YOK              $0090C5
 ACILIS_TAMAM             $00A55A
 F_FX806                  $00CB52
 F_SONRAKI_E153           $00E153
