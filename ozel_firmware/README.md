@@ -281,6 +281,7 @@ VFO kancası bu sırada VFO modunu bitirmez. APRS ekranındayken (144,800) track
 - GPS konumu yokken her saniye denenir. Bir dakika içinde geçerli cümle gelmezse GPS konumu bırakılır, EEPROM konumuna dönülür.
 - Alma kesmesine (0x01948B) kanca: bayt firmware'e aynen gider (servis protokolü etkilenmez), ayrıca küçük bir ayrıştırıcıdan geçer (yalnız istenince tampona yazar). RAM: APRS tamponunun arkası $07CC–$07DF (tampon 140 bayta indi), $04EF.
 - GPS ile programlama aynı kabloyu kullanır: programlarken GPS'i çıkarın.
+- Telsizin seri hatları RS232 seviyesindedir. RS232 çıkışlı GPS doğrudan bağlanır; TTL (3,3 V / 5 V) GPS modülü araya bir TTL→RS232 dönüştürücüyle (MAX3232) bağlanır. Telsizin Tx ucu TTL girişlere doğrudan bağlanmamalı. Bağlantı çizimleri: `kilavuz/` GPS bölümü.
 
 **Digipeater (`ornekler/aprs_digi.inc`, AT V0-25).** APRS DG açıkken, APRS ekranında duyulan her geçerli paketin yolundaki ilk tekrarlanmamış (H biti 0) adrese bakılır:
 

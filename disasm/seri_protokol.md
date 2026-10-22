@@ -1,5 +1,7 @@
 # UART0 (RS232, P82 RxD0 / P83 TxD0) — YA4000S
 
+Telsiz dışındaki bütün seri hatlar (mikrofon konnektörü pin 6 Tx / 7 Rx, opsiyon konnektörü pin 7 Tx / 15 Rx) RS232 seviyesindedir; işlemcinin P82/P83 TTL uçları kart üzerinden seviye dönüştürülerek çıkar. PC tarafında USB-RS232 dönüştürücü gerekir (USB-TTL çalışmaz); TTL bir cihaz (GPS modülü, mikrodenetleyici) MAX3232 gibi bir TTL↔RS232 dönüştürücüyle bağlanır.
+
 Firmware'de GPS/NMEA desteği yok (ROM'da "$GP" yok, alma kesmesinde '$' ya da satır sonu işlenmiyor).
 UART0'ı üç şey kullanıyor:
 

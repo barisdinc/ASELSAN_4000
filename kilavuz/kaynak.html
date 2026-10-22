@@ -343,7 +343,7 @@ footer.foot .wrap { padding-block: 28px 36px; display: flex; flex-wrap: wrap; ga
       <li><div><b>Aç-kapa / ses düğmesi.</b> Telsizi açar, ses seviyesini ayarlar.</div></li>
       <li><div><b>LED'ler.</b> Kırmızı: gönderirken yanar. Sarı: kanalda yayın varken yanar.</div></li>
       <li><div><b>Tuş takımı.</b> Rakamlar ve <kbd>*</kbd> <kbd>#</kbd>: kanal numarası, frekans, ton ve parola girişi. Sağ sütunda dört işlev tuşu (aşağıdaki tablo).</div></li>
-      <li><div><b>Mikrofon konnektörü</b> (sol yan, 8 pin). Mikrofon ve <kbd class="ptt">PTT</kbd> buraya bağlanır. Programlama kablosu ve GPS de bu konnektörü kullanabilir (bkz. <a href="#gps">GPS bağlantısı</a>).</div></li>
+      <li><div><b>Mikrofon konnektörü</b> (sol yan, 8 pin). Mikrofon ve <kbd class="ptt">PTT</kbd> buraya bağlanır. Programlama kablosu ve GPS de bu konnektörü kullanabilir; seri hatlar RS232 seviyesindedir (bkz. <a href="#gps">GPS bağlantısı</a>).</div></li>
     </ol>
   </div>
 
@@ -780,7 +780,7 @@ footer.foot .wrap { padding-block: 28px 36px; display: flex; flex-wrap: wrap; ga
   <div class="warn"><b>Lisans</b>Digipeater kendiliğinden gönderme yapan bir verici istasyonudur. Yalnız amatör telsiz lisansıyla ve izinli APRS frekansında çalıştırın. İlk denemeleri yapay yükle (dummy load) yapın.</div>
 
   <h3>IGate: paketleri bilgisayara aktarma (APRS IG)</h3>
-  <p>IG açıkken APRS ekranında duyulan her paket seri porttan (9600 baud, 8N1) bir satır metin olarak gelir. Biçim APRS-IS ve Direwolf ile aynıdır.</p>
+  <p>IG açıkken APRS ekranında duyulan her paket seri porttan (9600 baud, 8N1) bir satır metin olarak gelir. Biçim APRS-IS ve Direwolf ile aynıdır. Seri port RS232 seviyesindedir: bilgisayara programlama kablosuyla, yani bir <b>USB-RS232</b> dönüştürücüyle bağlayın (USB-TTL değil).</p>
   <pre class="serial">TA1ABC-9&gt;APRS,WIDE1-1,WIDE2-1:!4050.63N/03109.39E&gt;Merhaba Duzce
 TB2XYZ&gt;APRS,TA7W-7*,WIDE2-1:&gt;Selam</pre>
 
@@ -808,6 +808,7 @@ TB2XYZ&gt;APRS,TA7W-7*,WIDE2-1:&gt;Selam</pre>
       <tr><td>Hız</td><td>9600 baud, 8 veri biti, eşliksiz, 1 dur biti (8N1). Çoğu GPS modülünün varsayılanı budur.</td></tr>
       <tr><td>Cümle</td><td><code>$GPRMC</code> ya da <code>$GNRMC</code> (diğer cümleler yok sayılır)</td></tr>
       <tr><td>Kablolar</td><td>GPS TX → telsiz RX, GPS GND → telsiz toprak. GPS RX ve telsiz TX boş kalır.</td></tr>
+      <tr><td>Seviye</td><td>RS232. Telsizin bütün seri hatları (veri girişi ve çıkışı) RS232 seviyesindedir; TTL (3,3 V / 5 V) değildir.</td></tr>
     </tbody>
   </table></div>
 
@@ -817,7 +818,7 @@ TB2XYZ&gt;APRS,TA7W-7*,WIDE2-1:&gt;Selam</pre>
     <tbody>
       <tr class="hl"><td>Mikrofon (ön, sol yan)</td><td>7</td><td>Rx Veri (RS232, telsize giriş)</td><td>GPS TX buraya</td></tr>
       <tr class="hl"><td></td><td>8</td><td>Mikrofon toprak</td><td>GPS GND buraya</td></tr>
-      <tr><td></td><td>6</td><td>Tx Veri (telsizden çıkış)</td><td>bağlanmaz</td></tr>
+      <tr><td></td><td>6</td><td>Tx Veri (RS232, telsizden çıkış)</td><td>bağlanmaz</td></tr>
       <tr><td></td><td>3</td><td>Regüleli 10 V</td><td>GPS'i beslemek için kullanmayın</td></tr>
       <tr class="hl"><td>Opsiyon (arka, 15 pin)</td><td>15</td><td>Veri girişi (RS232, telsize giriş)</td><td>GPS TX buraya</td></tr>
       <tr class="hl"><td></td><td>1</td><td>Toprak</td><td>GPS GND buraya</td></tr>
@@ -827,7 +828,7 @@ TB2XYZ&gt;APRS,TA7W-7*,WIDE2-1:&gt;Selam</pre>
   </table></div>
   <p>Pin numaraları ASELSAN bakım kılavuzundaki konnektör tablolarındandır; konnektörün üzerinde de yazılıdır. Çizimlerdeki pin sırası fiziksel yerleşimi değil, numarayı gösterir.</p>
 
-  <div class="warn"><b>TTL GPS</b>Telsizin veri girişi RS232 içindir ve sinyali ters çevirir. Bu yüzden 3,3 V / 5 V TTL çıkışlı modüller (NEO-6M, NEO-M8N, ATGM336H gibi) <b>doğrudan bağlanırsa veri ters gelir ve çalışmaz</b>. Araya bir ters çevirici ya da TTL→RS232 dönüştürücü (MAX3232 modülü) koyun (B çizimi). RS232 çıkışlı GPS alıcıları (eski “puck” tipi GPS'ler) ise doğrudan bağlanır (A çizimi).</div>
+  <div class="warn"><b>RS232 seviyesi</b>Telsizin seri hatları RS232 seviyesindedir: hat boştayken eksi, veri bitlerinde artı gerilim, yani TTL'e göre hem gerilim hem mantık olarak terstir. Bu yüzden:<br>• RS232 çıkışlı GPS alıcıları (eski “puck” tipi GPS'ler) doğrudan bağlanır (A çizimi).<br>• 3,3 V / 5 V TTL çıkışlı modüller (NEO-6M, NEO-M8N, ATGM336H gibi) <b>doğrudan bağlanırsa çalışmaz</b>; araya bir TTL→RS232 dönüştürücü (MAX3232 modülü) koyun (B çizimi).<br>• Telsizin Tx Veri ucunu (mikrofon 6, opsiyon 7) GPS RX, Arduino ya da USB-TTL gibi bir TTL girişine <b>doğrudan bağlamayın</b>; RS232 gerilimi o girişe zarar verebilir.</div>
 
   <figure class="wiring">
     <svg viewBox="0 0 760 250" role="img" aria-label="A: RS232 çıkışlı GPS mikrofon konnektörüne">
@@ -858,38 +859,41 @@ TB2XYZ&gt;APRS,TA7W-7*,WIDE2-1:&gt;Selam</pre>
   </figure>
 
   <figure class="wiring">
-    <svg viewBox="0 0 760 290" role="img" aria-label="B: TTL GPS ters çevirici üzerinden">
-      <text x="10" y="22" font-size="15" font-weight="600">B · TTL GPS modülü → ters çevirici → telsiz</text>
+    <svg viewBox="0 0 760 270" role="img" aria-label="B: TTL GPS MAX3232 dönüştürücü üzerinden">
+      <text x="10" y="22" font-size="15" font-weight="600">B · TTL GPS modülü → MAX3232 (TTL→RS232) → telsiz</text>
       <rect x="20" y="50" width="170" height="170" rx="12" class="dev"/>
       <text x="105" y="78" text-anchor="middle" class="devt" font-size="14">GPS (TTL)</text>
       <g class="mono" font-size="12">
-        <rect x="140" y="96" width="50" height="22" class="pin"/><text x="165" y="111" text-anchor="middle">VCC</text>
+        <rect x="140" y="86" width="50" height="22" class="pin"/><text x="165" y="101" text-anchor="middle">VCC</text>
         <rect x="140" y="126" width="50" height="22" class="pin"/><text x="165" y="141" text-anchor="middle">TX</text>
         <rect x="140" y="156" width="50" height="22" class="pin"/><text x="165" y="171" text-anchor="middle">RX</text>
         <rect x="140" y="186" width="50" height="22" class="pin"/><text x="165" y="201" text-anchor="middle">GND</text>
       </g>
-      <!-- 5 V rail -->
-      <path d="M190 107 H230 V60 H420" class="pwr"/>
-      <text x="236" y="54" class="lbl-pwr" font-size="12">+5 V</text>
-      <!-- inverter: NPN -->
-      <path d="M190 137 H262" class="rx"/>
-      <rect x="262" y="128" width="46" height="18" rx="3" class="box"/><text x="285" y="141" text-anchor="middle" class="mono" font-size="11">10 kΩ</text>
-      <path d="M308 137 H344" class="rx"/>
-      <circle cx="366" cy="150" r="26" class="box"/>
-      <path d="M352 134 V166 M352 144 L374 128 M352 156 L374 172" stroke="currentColor" stroke-width="2" fill="none" style="color:var(--ink)"/>
-      <path d="M344 137 H352" class="rx"/>
-      <text x="366" y="196" text-anchor="middle" class="mono" font-size="11">BC547</text>
-      <path d="M374 172 V230" class="gnd"/>
-      <!-- pull-up -->
-      <path d="M420 60 V80" class="pwr"/>
-      <rect x="411" y="80" width="18" height="40" rx="3" class="box"/><text x="436" y="104" class="mono" font-size="11">4,7 kΩ</text>
-      <path d="M420 120 V128 H374" class="rx"/>
-      <path d="M420 128 H500 V97 H556" class="rx"/>
-      <text x="470" y="90" class="lbl-rx" font-size="12">çevrilmiş veri</text>
-      <!-- ground -->
-      <path d="M190 197 H230 V230 H500 V207 H556" class="gnd"/>
-      <text x="300" y="248" font-size="12" font-weight="600">ortak toprak</text>
       <circle cx="202" cy="167" r="3" class="nc"/><text x="210" y="171" font-size="11" fill="currentColor" class="nc">boş</text>
+      <!-- TTL tarafı -->
+      <path d="M190 97 H260" class="pwr"/>
+      <text x="200" y="88" class="lbl-pwr" font-size="11">3,3–5 V</text>
+      <path d="M190 137 H260" class="rx"/>
+      <text x="200" y="130" class="lbl-rx" font-size="11">TTL</text>
+      <path d="M190 197 H260" class="gnd"/>
+      <!-- MAX3232 modülü -->
+      <rect x="260" y="40" width="200" height="190" rx="12" class="box"/>
+      <text x="360" y="62" text-anchor="middle" font-size="13" font-weight="600">MAX3232 modülü</text>
+      <text x="360" y="78" text-anchor="middle" font-size="11">TTL ↔ RS232</text>
+      <g class="mono" font-size="11">
+        <rect x="260" y="86" width="52" height="22" class="pin"/><text x="286" y="101" text-anchor="middle">VCC</text>
+        <rect x="260" y="126" width="52" height="22" class="pin"/><text x="286" y="141" text-anchor="middle">T1IN</text>
+        <rect x="260" y="156" width="52" height="22" class="pin" opacity=".5"/><text x="286" y="171" text-anchor="middle" opacity=".6">R1OUT</text>
+        <rect x="260" y="186" width="52" height="22" class="pin"/><text x="286" y="201" text-anchor="middle">GND</text>
+        <rect x="408" y="86" width="52" height="22" class="pin"/><text x="434" y="101" text-anchor="middle">T1OUT</text>
+        <rect x="408" y="126" width="52" height="22" class="pin" opacity=".5"/><text x="434" y="141" text-anchor="middle" opacity=".6">R1IN</text>
+        <rect x="408" y="186" width="52" height="22" class="pin"/><text x="434" y="201" text-anchor="middle">GND</text>
+      </g>
+      <!-- RS232 tarafı -->
+      <path d="M460 97 H556" class="rx"/>
+      <text x="470" y="88" class="lbl-rx" font-size="11">RS232 veri</text>
+      <path d="M460 197 H500 V207 H556" class="gnd"/>
+      <text x="300" y="250" font-size="12" font-weight="600">ortak toprak (GPS, modül, telsiz)</text>
       <rect x="556" y="44" width="190" height="196" rx="12" class="box"/>
       <text x="651" y="66" text-anchor="middle" font-size="13" font-weight="600">Telsiz</text>
       <g class="mono" font-size="12">
@@ -897,7 +901,7 @@ TB2XYZ&gt;APRS,TA7W-7*,WIDE2-1:&gt;Selam</pre>
         <rect x="556" y="196" width="44" height="22" class="pin"/><text x="578" y="211" text-anchor="middle">GND</text><text x="608" y="206" font-size="11">mik. 8 ya da</text><text x="608" y="219" font-size="11">opsiyon 1</text>
       </g>
     </svg>
-    <figcaption>Bir NPN transistör (BC547 ya da benzeri) ve iki direnç yeter: GPS TX → 10 kΩ → baz; emetör toprağa; kollektör hem 4,7 kΩ ile +5 V'a hem de telsizin RX ucuna. Hazır çözüm isterseniz MAX3232 TTL→RS232 modülü kullanın: GPS TX → modülün TTL giriş ucu (T1IN), modülün RS232 çıkışı (T1OUT) → telsiz RX.</figcaption>
+    <figcaption>MAX3232 modülü TTL sinyali RS232 seviyesine çıkarır ve ters çevirir. Modülü GPS ile aynı gerilimden besleyin (3,3 V ya da 5 V). GPS TX → modülün TTL girişi (T1IN, bazı modüllerde TXD). Modülün RS232 çıkışı (T1OUT, DB9 modüllerde 3. pin) → telsizin RX ucu. R1IN / R1OUT boş kalır. Hazır modül yoksa MAX232 (5 V) ya da benzeri bir RS232 sürücüsü de olur.</figcaption>
   </figure>
 
   <figure class="wiring">
@@ -905,7 +909,7 @@ TB2XYZ&gt;APRS,TA7W-7*,WIDE2-1:&gt;Selam</pre>
       <text x="10" y="22" font-size="15" font-weight="600">C · Kalıcı araç kurulumu: arka opsiyon konnektörü</text>
       <rect x="20" y="50" width="190" height="160" rx="12" class="dev"/>
       <text x="115" y="78" text-anchor="middle" class="devt" font-size="14">GPS</text>
-      <text x="115" y="96" text-anchor="middle" class="devs" font-size="11">(RS232, ya da TTL + B çizimi)</text>
+      <text x="115" y="96" text-anchor="middle" class="devs" font-size="11">(RS232 ya da TTL+MAX3232)</text>
       <g class="mono" font-size="12">
         <rect x="160" y="110" width="50" height="22" class="pin"/><text x="185" y="125" text-anchor="middle">VCC</text>
         <rect x="160" y="140" width="50" height="22" class="pin"/><text x="185" y="155" text-anchor="middle">TX</text>
@@ -928,10 +932,10 @@ TB2XYZ&gt;APRS,TA7W-7*,WIDE2-1:&gt;Selam</pre>
         <rect x="556" y="164" width="44" height="22" class="pin"/><text x="578" y="179" text-anchor="middle">1</text><text x="608" y="179">Toprak</text>
       </g>
     </svg>
-    <figcaption>Opsiyon konnektörünün 2. pini telsiz açıkken 13,2 V verir (en çok 1 A). GPS'i bundan bir 5 V regülatörle (7805 ya da küçük bir DC-DC modül) beslerseniz GPS telsizle birlikte açılıp kapanır. 13,2 V'u GPS'e doğrudan vermeyin.</figcaption>
+    <figcaption>Opsiyon konnektörünün 2. pini telsiz açıkken 13,2 V verir (en çok 1 A). GPS'i bundan bir 5 V regülatörle (7805 ya da küçük bir DC-DC modül) beslerseniz GPS telsizle birlikte açılıp kapanır. 13,2 V'u GPS'e doğrudan vermeyin. TTL GPS kullanıyorsanız MAX3232 modülünü de GPS ile aynı 5 V'tan besleyin ve veri telini B çizimindeki gibi modülden geçirin.</figcaption>
   </figure>
 
-  <div class="note"><b>Programlarken</b>Programlama kablosu da aynı seri girişi kullanır. Telsizi programlamadan önce GPS'i ayırın ve APRS ekranından çıkın. Masada denemek için yükleme sayfasının <b>Seri izleme</b> bölümündeki haritadan bir nokta seçip <b>GÖNDER</b> ile GPS taklidi yapabilirsiniz.</div>
+  <div class="note"><b>Programlarken</b>Programlama kablosu da aynı seri girişi kullanır. Bilgisayar tarafında <b>USB-RS232</b> dönüştürücü gerekir; USB-TTL dönüştürücü (CH340, CP2102, FTDI TTL kablo) doğrudan çalışmaz. Telsizi programlamadan önce GPS'i ayırın ve APRS ekranından çıkın. Masada denemek için yükleme sayfasının <b>Seri izleme</b> bölümündeki haritadan bir nokta seçip <b>GÖNDER</b> ile GPS taklidi yapabilirsiniz.</div>
 </section>
 
 <!-- 12 -->
@@ -947,7 +951,7 @@ TB2XYZ&gt;APRS,TA7W-7*,WIDE2-1:&gt;Selam</pre>
     <div><h5>APRS</h5><p>[m]×4 [s] → <span class="lcdtxt">APRS AKT</span></p><p>[PTT] konum gönder</p><p>[*] eski · [#] yeni · [s] ayrıntı</p></div>
     <div><h5>APRS ayarları</h5><p><span class="lcdtxt">APRS TR</span> izleyici</p><p><span class="lcdtxt">APRS DG</span> digipeater</p><p><span class="lcdtxt">APRS IG</span> seri port · [s] aç/kapa</p></div>
     <div><h5>Alt menü</h5><p>[m]×8 [s] → <span class="lcdtxt">ISIK</span> [s] aç/kapa</p><p>[m] UYARI · PAROLA</p></div>
-    <div><h5>GPS</h5><p>GPS TX → mik. 7 / opsiyon 15</p><p>GND → mik. 8 / opsiyon 1 · 9600 8N1</p></div>
+    <div><h5>GPS</h5><p>GPS TX → mik. 7 / opsiyon 15</p><p>GND → mik. 8 / opsiyon 1 · 9600 8N1</p><p>RS232 seviyesi · TTL GPS → MAX3232</p></div>
   </div>
 </section>
 

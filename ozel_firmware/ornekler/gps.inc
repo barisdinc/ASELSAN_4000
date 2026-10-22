@@ -5,6 +5,7 @@
 ; cümlesinin enlem / boylamı alınır; APRS paketi (tracker, PTT) EEPROM'daki konum yerine bunu
 ; kullanır. GPS konumu yokken her saniye denenir; bir dakika içinde geçerli cümle gelmezse GPS
 ; konumu bırakılır (EEPROM konumuna dönülür). APRS ekranında GPS konumu varken "APRS" yerine "GPS".
+; Seri hat RS232 seviyesindedir: TTL GPS modülü MAX3232 gibi bir TTL->RS232 dönüştürücüyle bağlanır.
 ;
 ; Alma kesmesi (L_019469) baytı U0RB'den okuduğu yerde (0x01948B) GPS_RX'e uğrar: bayt firmware'e
 ; aynen gider (servis protokolü etkilenmez), ayrıca GPS_BAYT ayrıştırır. Ayrıştırıcı yalnız

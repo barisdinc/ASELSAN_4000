@@ -7,8 +7,8 @@ Fonksiyon adlari YA4000D.asm etiketleridir. "yon" = data direction register eris
 
 | Vektor | Handler | Donanim baglantisi (kilavuz/sema) |
 |---|---|---|
-| UART0_RX | L_019469 | RS232 (P82 RxD0) |
-| UART0_TX | L_0195B2 | RS232 (P83 TxD0) |
+| UART0_RX | L_019469 | RS232 (P82 RxD0; konnektörlerde RS232 seviyesi, P82 TTL) |
+| UART0_TX | L_0195B2 | RS232 (P83 TxD0; konnektörlerde RS232 seviyesi, P83 TTL) |
 | ZERODIV | L_01B9A0 | sifira bolme |
 | BRK | L_01B9AB | BRK |
 | DBC | L_01B9B6 | debug |
