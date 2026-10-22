@@ -23,8 +23,8 @@
 ;   +80  sağlama: +0..+79 baytlarının 16 bit toplamı, büyük uçlu (0x730..0x731)
 ; İmza, sürüm ya da sağlama tutmazsa (bölüm hiç yazılmamışsa) ROM'daki varsayılanlar kullanılır
 ; (AP_VARSAYILAN, aynı yerleşim). Bölüm her APRS'e girişte yeniden okunur.
-; Paket: <çağrı>>APIZCI,WIDE1-1,WIDE2-1:!<enlem><tablo><boylam><kod><yorum>
-;   örnek: TC19MK-10>APIZCI,WIDE1-1,WIDE2-1:!3955.52N/03250.22EbASELSAN 4000
+; Paket: <çağrı>>APIZCI,WIDE2-2:!<enlem><tablo><boylam><kod><yorum>
+;   örnek: TC19MK-10>APIZCI,WIDE2-2:!3955.52N/03250.22EbASELSAN 4000
 ; Alan geçersizse ekranda "CAGRI -" / "ENLEM -" / "BOYLAM -" (İngilizce "CALL -", "LAT -", "LON -")
 ; ve paket gönderilmez.
 
@@ -747,11 +747,11 @@ AHA_1:  LDA   A,>AP_HEDEF,X             ; hedef APIZCI (uzun adres yalnız X ile
         BRA   AHA_HATA
 AHA_2:  TXY
         LDX   #0
-AHA_3:  LDA   A,>AP_YOL,X               ; WIDE1-1, WIDE2-1, kontrol, PID, '!'
+AHA_3:  LDA   A,>AP_YOL,X               ; WIDE2-2, kontrol, PID, '!'
         STA   A,AP_CER,Y
         INX
         INY
-        CPX   #17
+        CPX   #AP_YOL_N
         BNE   AHA_3
         TYX
         CLM
@@ -802,10 +802,10 @@ AHA_HATA:
 AP_HEDEF:                               ; "APIZCI", SSID 0, C biti (komut) = 1
         .BYTE 'A'*2,'P'*2,'I'*2,'Z'*2,'C'*2,'I'*2,$E0
         .BYTE 'A'*2,'P'*2,'A'*2,'T'*2,'A'*2,'R'*2,$E0     ; APATAR: APRS DG açıkken (+7)
-AP_YOL:                                 ; WIDE1-1, WIDE2-1 (son adres), UI, PID yok, '!'
-        .BYTE 'W'*2,'I'*2,'D'*2,'E'*2,'1'*2,' '*2,$62
-        .BYTE 'W'*2,'I'*2,'D'*2,'E'*2,'2'*2,' '*2,$63
+AP_YOL:                                 ; WIDE2-2 (son adres), UI, PID yok, '!' (AT V0-29)
+        .BYTE 'W'*2,'I'*2,'D'*2,'E'*2,'2'*2,' '*2,$65
         .BYTE $03,$F0,'!'
+AP_YOL_N    .EQU 10
 
 ; Bölüm yazılmamışsa kullanılan değerler: EEPROM'daki yerleşimin aynısı (sağlama hariç).
 ; Ankara, Anıtkabir 39°55,52' K 32°50,22' D; bisiklet; otomatik gönderim kapalı.

@@ -5,7 +5,7 @@ Aynı notlar sitede: [surumler.html](https://barisdinc.github.io/ASELSAN_4000/su
 
 ## yATOLYE özel firmware'i (`YA4000S_FREKANS_YATOLYE.HEX`)
 
-Güncel sürüm: **AT V0-28** (22.10.2026)
+Güncel sürüm: **AT V0-29** (22.10.2026)
 
 Orijinal YA4000S (AS V2-30) üzerine FREKANS (VFO) menüsü, APRS gönderme / alma, seçmeli çağrı kaldırıldı, açılışta 5 s yATOLYE.
 
@@ -25,6 +25,10 @@ Orijinal YA4000S (AS V2-30) üzerine FREKANS (VFO) menüsü, APRS gönderme / al
 - **Açılış ekranı ve sürüm** (AT V0-1 ile geldi): Açılışta 5 s yATOLYE, ardından AT V0-x sürüm numarası. Sürüm, tarih ve metin ROM başlığında; T4000 ve yükleme sayfası da gösterir.
 
 ### Sürüm geçmişi
+
+#### AT V0-29 · 22.10.2026 · yalnız simülatörde denendi
+
+- Değişiklik: Kendi APRS paketlerimizin yolu WIDE2-2 (önceden WIDE1-1,WIDE2-1).
 
 #### AT V0-28 · 22.10.2026 · yalnız simülatörde denendi
 

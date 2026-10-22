@@ -444,7 +444,7 @@ function aprsAyarSet(ee, o) {
 /* firmware'in göndereceği paket (metin; yorumun baytları Latin-1 olarak, afsk.js gibi) */
 function aprsPaket(ee) {
   const a = aprsGet(ee), yb = a.gecerli ? (() => { const b = []; for (let i = 0; i < APRS_YORUM && ee[APRS0 + 36 + i]; i++) b.push(ee[APRS0 + 36 + i]); return b; })() : utf8(a.yorum);
-  return a.cagri.toUpperCase() + '>APIZCI,WIDE1-1,WIDE2-1:!' + a.enlem.toUpperCase() + a.tablo + a.boylam.toUpperCase() + a.kod + yb.map(c => String.fromCharCode(c)).join('');
+  return a.cagri.toUpperCase() + '>APIZCI,WIDE2-2:!' + a.enlem.toUpperCase() + a.tablo + a.boylam.toUpperCase() + a.kod + yb.map(c => String.fromCharCode(c)).join('');
 }
 
 /* ---------------------------------------------------------------- sayfalar */

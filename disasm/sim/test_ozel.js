@@ -322,7 +322,7 @@ if (RING.includes('APRS')) {
   const P = globalThis.P4000;
   const aprs = o => ee => { if (o) P.aprsSet(ee, o); };
   const AYAR = { cagri: 'ta7w-7', enlem: '4050.63N', boylam: '03109.39E', yorum: 'Düzce, 73 de TA7W!', tablo: '/', kod: '>' };
-  const PAKET = 'TA7W-7>APIZCI,WIDE1-1,WIDE2-1:!4050.63N/03109.39E>' + String.fromCharCode(...P.utf8('Düzce, 73 de TA7W!'));
+  const PAKET = 'TA7W-7>APIZCI,WIDE2-2:!4050.63N/03109.39E>' + String.fromCharCode(...P.utf8('Düzce, 73 de TA7W!'));
   const vco = b => (b.radioState().vco / 1e6).toFixed(4);
   const enter = 'mm' + 'm'.repeat(RING.indexOf('APRS')) + 's';
   const paketGonder = (b, sure) => {
@@ -388,7 +388,7 @@ if (RING.includes('APRS')) {
   keys(b, 'm'); b.run(FCLK * 0.3);
   check('APRS\'te kanal değişti: çıkınca yeni kanal kalır', vco(b) === '201.0500', vco(b));
   /* başka ayarlar: paket gerçekten EEPROM'daki bölümden kuruluyor */
-  const VARS = 'TC19MK-10>APIZCI,WIDE1-1,WIDE2-1:!3955.52N/03250.22EbASELSAN 4000';
+  const VARS = 'TC19MK-10>APIZCI,WIDE2-2:!3955.52N/03250.22EbASELSAN 4000';
   const ham = (o, f) => ee => { P.aprsSet(ee, o); f(ee); P.aprsFix(ee); };      // aprsSet'in reddedeceği içerik
   const yaz = (a, t) => ee => t.split('').forEach((c, i) => { ee[0x6E0 + a + i] = c.charCodeAt(0); });
   const uzun = 'Merhaba dunya: bu yorum tam kirk uc bayt...';
@@ -397,9 +397,9 @@ if (RING.includes('APRS')) {
     ['varsayılanlar EEPROM\'a yazılı', aprs(P.APRS_VARSAYILAN), VARS],
     ['bölümün sağlaması bozuk: ROM varsayılanları', ee => { P.aprsSet(ee, AYAR); ee[0x6E0 + 40] ^= 1; }, VARS],
     ['SSID 12, güney / batı, simge tablosu \\, yorum yok', aprs({ cagri: 'N0CALL-12', enlem: '-33.86833', boylam: '151 12.34 W', tablo: '\\', kod: 'k', yorum: '' }),
-      'N0CALL-12>APIZCI,WIDE1-1,WIDE2-1:!3352.10S\\15112.34Wk'],
-    ['SSID yok, 43 baytlık yorum', aprs({ cagri: 'TA1AB', yorum: uzun }), 'TA1AB>APIZCI,WIDE1-1,WIDE2-1:!3955.52N/03250.22Eb' + uzun],
-    ['küçük harfli konum harfi büyüğe çevrilir', ham({ cagri: 'TA1AB' }, yaz(23, 'n')), 'TA1AB>APIZCI,WIDE1-1,WIDE2-1:!3955.52N/03250.22EbASELSAN 4000']]) {
+      'N0CALL-12>APIZCI,WIDE2-2:!3352.10S\\15112.34Wk'],
+    ['SSID yok, 43 baytlık yorum', aprs({ cagri: 'TA1AB', yorum: uzun }), 'TA1AB>APIZCI,WIDE2-2:!3955.52N/03250.22Eb' + uzun],
+    ['küçük harfli konum harfi büyüğe çevrilir', ham({ cagri: 'TA1AB' }, yaz(23, 'n')), 'TA1AB>APIZCI,WIDE2-2:!3955.52N/03250.22EbASELSAN 4000']]) {
     const r = radio(mod); boot(r, 2.5); keys(r, enter); r.run(FCLK * 0.3);
     const f = paketGonder(r), sim = r.eeprom.mem.slice();
     check('APRS ayar: ' + ad, uzun.length === 43 && f.length === 1 && f[0].fcsOk && f[0].text === bek && P.aprsPaket(sim) === bek,
@@ -726,7 +726,7 @@ if (RING.includes('APRS TR*')) {
     for (let i = 0; i < sn * 10; i++) { if (sinyal) { if (Math.floor(i / 50) % 2 === 0) b.inputs.P5 |= 0x80; else b.inputs.P5 &= ~0x80; } b.run(FCLK * 0.1); ekran.add(lcd(b)); f.add(vco()); }
     b.inputs.P5 &= ~0x80; b.pushAudio = push; return { p: AFSK.decode(log, FCLK).map(x => x.text), ekran: [...ekran], f: [...f] }; };
   let r = izle(60);
-  check('arka plan tracker: 20 s + 30 s boşluk sonra 144,800\'de bir paket, kanala dönüş', r.p.length === 1 && r.p[0] === 'TA7W-7>APIZCI,WIDE1-1,WIDE2-1:!4050.63N/03109.39E>arka' &&
+  check('arka plan tracker: 20 s + 30 s boşluk sonra 144,800\'de bir paket, kanala dönüş', r.p.length === 1 && r.p[0] === 'TA7W-7>APIZCI,WIDE2-2:!4050.63N/03109.39E>arka' &&
     r.ekran.includes('APRS TX ') && r.f.includes('144.8000') && lcd(b) === 'KANAL 01' && vco() === '201.0000', r.p.join(';') + ' | ' + r.ekran.join('|') + ' | ' + vco());
   r = izle(70, true);
   check('arka plan tracker: kanalda 5 s\'de bir sinyal varken (30 s boşluk yok) gönderilmez', r.p.length === 0 && !r.f.includes('144.8000'), r.p.length + ' paket');
@@ -741,7 +741,7 @@ if (RING.includes('APRS TR*')) {
   c.pushAudio = (buf, v) => { if (buf === c.audio.ta1) { log.push(c.now, v); if (!ilk) ilk = c.now; } push.call(c, buf, v); };
   const t0 = c.now; c.inputs.P5 |= 0x80; c.run(FCLK * 16); const sinyalde = log.length; c.inputs.P5 &= ~0x80; c.run(FCLK * 3); c.pushAudio = push;
   const pk = AFSK.decode(log, FCLK).map(x => x.text);
-  check('APRS ekranı: beacon kanalda sinyal varken beklenir, ilk boşlukta gider; DG açıkken APATAR', sinyalde === 0 && pk.length === 1 && /^TA7W-7>APATAR,/.test(pk[0]), sinyalde + ' / ' + pk.join(';'));
+  check('APRS ekranı: beacon kanalda sinyal varken beklenir, ilk boşlukta gider; DG açıkken APATAR', sinyalde === 0 && pk.length === 1 && /^TA7W-7>APATAR,WIDE2-2:/.test(pk[0]), sinyalde + ' / ' + pk.join(';'));
   keys(c, 'm');
   /* UHF telsiz (bant tabanı 400 MHz): APRS frekansı 432,500 (ekranda da, arka planda da) */
   const UHF = ee => { ee[0x58C] = 16000 >> 8; ee[0x58D] = 16000 & 255; B.eeSetChannel(ee, 1, 433e6, 433e6, { name: 'UHF' }); };

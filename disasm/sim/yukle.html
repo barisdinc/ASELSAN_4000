@@ -1036,7 +1036,7 @@ if (location.hash === '#otomatik-test-aprs') (async () => {
   const setv = (k, v) => { const i = $('wsP4').querySelector('[data-aprs=' + k + ']'); i.value = v; i.onchange(); };
   setv('cagri', 'ta7w-7'); setv('yorum', 'Düzce 73!'); setv('aralik', '120');
   const sel = $('wsP4').querySelector('[data-aprs=simge]'); sel.value = '/>'; sel.onchange();
-  const paket = $('wsP4').textContent.includes('TA7W-7>APIZCI,WIDE1-1,WIDE2-1:!3955.52N/03250.22E>');
+  const paket = $('wsP4').textContent.includes('TA7W-7>APIZCI,WIDE2-2:!3955.52N/03250.22E>');
   $('wsWrite').click();
   window.confirm = () => true;
   $('erC1').checked = true; updateEeWrite();

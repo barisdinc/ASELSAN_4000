@@ -67,6 +67,14 @@
     ],
     "surumler": [
       {
+        "surum": "0-29",
+        "tarih": "2026-10-22",
+        "durum": "sim",
+        "degisiklik": [
+          "Kendi APRS paketlerimizin yolu WIDE2-2 (önceden WIDE1-1,WIDE2-1)."
+        ]
+      },
+      {
         "surum": "0-28",
         "tarih": "2026-10-22",
         "durum": "sim",

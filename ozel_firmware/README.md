@@ -194,15 +194,15 @@ FREKANS'taki gibi APRS açıkken firmware'in ~4 s'lik menü zaman aşımı kapal
 Paket:
 
 ```
-<çağrı>>APIZCI,WIDE1-1,WIDE2-1:!<enlem><tablo><boylam><kod><yorum>
-TC19MK-10>APIZCI,WIDE1-1,WIDE2-1:!3955.52N/03250.22EbASELSAN 4000
+<çağrı>>APIZCI,WIDE2-2:!<enlem><tablo><boylam><kod><yorum>
+TC19MK-10>APIZCI,WIDE2-2:!3955.52N/03250.22EbASELSAN 4000
 ```
 
 Bölümdeki bir alan geçersizse (sayfa geçersiz değeri zaten yazmaz) ekranda `CAGRI -`, `ENLEM -` ya da `BOYLAM -` (İngilizce `CALL -`, `LAT -`, `LON -`) yazar ve paket gönderilmez; PTT normal gönderme yapar.
 
 Çerçeve (en çok 95 bayt) RAM 0x740–0x79F'de kurulur. Bu alan firmware'in iki yığınının arasında kalıyor: APRS dahil ölçülen en derin kullanım çerçeve yığınında 0x6A8, donanım yığınında 0x82B; iki yanda da ~140 bayt pay var.
 
-- `APIZCI` hedef alanı (tocall): APRS haritalarında cihaz / yazılım adı olarak görünür. APRS tocall listesine kayıtlı değil; bilinmeyen kimliği çoğu hizmet "bilinmeyen cihaz" olarak gösterir. Yol `WIDE1-1,WIDE2-1`.
+- `APIZCI` hedef alanı (tocall): APRS haritalarında cihaz / yazılım adı olarak görünür. APRS tocall listesine kayıtlı değil; bilinmeyen kimliği çoğu hizmet "bilinmeyen cihaz" olarak gösterir. Yol `WIDE2-2` (AT V0-29; önceden `WIDE1-1,WIDE2-1`). Digipeater açıkken hedef `APATAR`.
 
 **Ton üretimi.** Seçmeli çağrının donanım yolu kullanılır (bkz. `docs/calisma_analizi.md` bölüm 9):
 
