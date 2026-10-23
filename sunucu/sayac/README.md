@@ -2,7 +2,7 @@
 
 Programlama sayfasının (`disasm/sim/yukle.html`) düğmelerinin yanındaki sayaçları ve sayfanın altındaki **Bağlantı kaydı** listesini tutar:
 
-- **Sayaçlar:** EEPROM yedeği, flash yedeği, EEPROM yazma (3. adımda Telsize yaz), firmware yükleme (5. adım).
+- **Sayaçlar:** EEPROM yedeği, flash yedeği, EEPROM yazma (4. adım, Telsize yaz), firmware yükleme (6. adım).
 - **Kayıt:** Telsize bağlanma ve bu dört işlem için zaman, maskeli IP, telsizin yazılım sürümü. En son 300 satır tutulur.
 
 Yalnız gerçek telsizle (Web Serial) yapılan ve **başarıyla biten** işlemler sayılır; simülatör modu sayılmaz.
