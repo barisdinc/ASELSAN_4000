@@ -1,11 +1,13 @@
-; tus_guc.inc - daire (p) tuşu güç / tarama, üçgen (q) tuşu monitör
+; tus_guc.inc - daire (p) tuşu güç / tarama, üçgen (q) tuşu monitör / kanal kayıt
 ;
 ; Cihazda panelde güç ve monitör düğmesi yok; bu işleri tuş takımı üstlenir (normal ekran,
 ; ayarlanmış FREKANS ekranı ve APRS ekranında; uzun basış ve monitör APRS'te yok):
 ;   p kısa bas  : çıkış gücü yüksek <-> düşük, ekranda ~1,5 s "YUKSEK G" / "ALCAK G"
 ;                 (tarama sürüyorsa kısa basış taramayı durdurur, güce dokunmaz)
 ;   p ~1 s tut  : taramayı başlat / durdur (el kartında orijinal 'p'; araç kartında KNL TARA + s)
-;   q           : monitör (susturma devre dışı / devrede), ekranda "MONITOR*" / "MONITOR-"
+;   q kısa bas  : monitör (susturma devre dışı / devrede), ekranda "MONITOR*" / "MONITOR-";
+;                 tuş bırakılınca (AT V0-32'ye kadar basınca)
+;   q ~1 s tut  : VFO'yu hafıza kanalına kaydet (kanal_kayit.inc)
 ; Diğer menülerde p firmware'e aynen gider; q her yerde yutulur (orijinalde A tipi kartta q,
 ; 0x0242 bit 4'ü kurup sonraki tuşları yutuyordu).
 ;
@@ -25,8 +27,9 @@
 ; RAM: 0x0447..0x0449 (hiçbir kodun erişmediği, çalışırken dokunulmayan baytlar; 0x0445 ve
 ; 0x044A 16 bitlik değişkenler, bunlara değmez).
 
-TUS_P       .EQU $0447          ; 0 boşta; $80|tık p basılı; 1 uzun basış işlendi (bırakılmayı bekle)
-TUS_IS      .EQU $0448          ; bit 0 güç değiştir, bit 1 monitör, bit 7 mesaj ekranda
+TUS_P       .EQU $0447          ; 0 boşta; $80|tık p / q basılı; 1 uzun basış işlendi (bırakılmayı bekle)
+TUS_IS      .EQU $0448          ; bit 0 güç değiştir, bit 1 monitör, bit 2 basılı tuş q (p değil),
+                                ; bit 3 mesaja kanal numarasını ekle, bit 7 mesaj ekranda
 TUS_MS      .EQU $0449          ; mesajın biteceği tık (alt 7 bit)
 TARAMA_D    .EQU $0241          ; bit 2 (0x0240 bit 10): tarama sürüyor (F_0048C1 kurar, 0x004A17 siler)
 F_MONITOR   .EQU $004FF6
@@ -47,21 +50,26 @@ TUS_KANCA:
         LDA   A,$0226
         CMP   A,#$0F
         BEQ   TK_BIRAK
-        CMP   A,#'p'
+        BBC   #KY_ACIK,KY_DURUM,TK_0    ; kanal kayıt modunda bütün tuşlar orada
+        JMP   KY_TUS
+TK_0:   CMP   A,#'p'
         BEQ   TK_P
         CMP   A,#'q'
         BNE   TK_SON
-        LDA   A,MENU                    ; q: normal ekranda ve FREKANS'ta monitör, her yerde yutulur
-        BEQ   TK_Q
+        LDA   A,MENU                    ; q: normal ekranda ve FREKANS'ta monitör / kayıt,
+        BEQ   TK_Q                      ; her yerde yutulur
         CMP   A,#ST_FREKANS_ON
         BNE   TK_YUT
-TK_Q:   SEB   #$02,TUS_IS
-        BRA   TK_YUT
+TK_Q:   LDA   A,TUS_P                   ; basılı tutarken gelen tekrarlar yutulur
+        BNE   TK_YUT
+        SEB   #$04,TUS_IS
+        BRA   TK_BAS
 TK_P:   JSR   TUS_EKRAN                 ; p: normal ekran, FREKANS, APRS; diğer menülerde firmware'e
         BNE   TK_SON
-        LDA   A,TUS_P                   ; basılı tutarken gelen tekrarlar yutulur
+        LDA   A,TUS_P
         BNE   TK_YUT
-        LDA   A,TIK_32MS
+        CLB   #$04,TUS_IS
+TK_BAS: LDA   A,TIK_32MS
         ORA   A,#$80
         STA   A,TUS_P
         BRA   TK_YUT
@@ -71,7 +79,11 @@ TK_BIRAK:
         LDM   #0,TUS_P
         CMP   A,#$80
         BCC   TK_SON                    ; uzun basış zaten işlendi
-        LDA   A,MENU                    ; kısa basış: normal ekranda tarama sürüyorsa durdur
+        BBC   #$04,TUS_IS,TK_PKISA
+        SEB   #$02,TUS_IS               ; q kısa: monitör
+        BRA   TK_SON
+TK_PKISA:
+        LDA   A,MENU                    ; p kısa: normal ekranda tarama sürüyorsa durdur
         BNE   TK_GUC
         BBC   #$04,TARAMA_D,TK_GUC
         JSR   TARAMA_TUS
@@ -108,7 +120,9 @@ TE_SON: RTS
 TUS_ISLE:
         SEM
         .ASSUME M=1,X=0
-        LDA   A,TUS_P                   ; p ~1 s basılı: normal ekranda taramayı başlat / durdur
+        BBC   #KY_ACIK,KY_DURUM,TI_0    ; kanal kayıt modu: yalnız o
+        JMP   KY_ISLE
+TI_0:   LDA   A,TUS_P                   ; p / q ~1 s basılı
         CMP   A,#$80
         BCC   TI_GUC
         LDA   A,TIK_32MS
@@ -117,6 +131,10 @@ TUS_ISLE:
         AND   A,#$7F
         CMP   A,#TG_UZUN
         BCC   TI_GUC
+        BBC   #$04,TUS_IS,TI_PUZUN
+        LDM   #1,TUS_P                  ; q: kanal kayıt
+        JMP   KY_BASLA
+TI_PUZUN:                               ; p: normal ekranda taramayı başlat / durdur
         LDA   A,MENU
         BNE   TI_UZUN
         LDA   A,$0226                   ; bekleyen tuş yoksa taramayı aç / kapat
@@ -192,7 +210,13 @@ TI_KOPYA:
         INY
         CPY   #8
         BNE   TI_KOPYA
-        LDA   A,TIK_32MS
+        BBC   #$08,TUS_IS,TI_K2         ; "TAMAM 05": kaydedilen kanal
+        CLB   #$08,TUS_IS
+        LDA   A,KY_H
+        STA   A,LCD+6
+        LDA   A,KY_H+1
+        STA   A,LCD+7
+TI_K2:  LDA   A,TIK_32MS
         CLC
         ADC   A,#TG_MESAJ
         STA   A,TUS_MS
@@ -252,3 +276,13 @@ TM_MON_A:
         .TEXT8 "MONITOR*"
 TM_MON_K:
         .TEXT8 "MONITOR-"
+TM_KAYIT:
+        .TEXT8 "KAYIT"                  ; kayıt ekranı "KAYIT 0_" (ilk 6 karakter)
+TM_TAMAM:
+        .TEXT8 "TAMAM"                  ; + kanal numarası
+TM_IPTAL:
+        .TEXT8 "IPTAL"
+TM_VFOYOK:
+        .TEXT8 "VFO YOK"
+TM_KHATA:
+        .TEXT8 "KYT HATA"

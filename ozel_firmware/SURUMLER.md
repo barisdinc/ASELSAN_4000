@@ -5,7 +5,7 @@ Aynı notlar sitede: [surumler.html](https://barisdinc.github.io/ASELSAN_4000/su
 
 ## yATOLYE özel firmware'i (`YA4000S_FREKANS_YATOLYE.HEX`)
 
-Güncel sürüm: **AT V0-32** (22.10.2026)
+Güncel sürüm: **AT V0-33** (23.10.2026)
 
 Orijinal YA4000S (AS V2-30) üzerine FREKANS (VFO) menüsü, APRS gönderme / alma, seçmeli çağrı kaldırıldı, açılışta 5 s yATOLYE.
 
@@ -23,9 +23,15 @@ Orijinal YA4000S (AS V2-30) üzerine FREKANS (VFO) menüsü, APRS gönderme / al
 - **Tarama** (AT V0-16 ile geldi): Orijinal tarama (LIST menüsü + p tuşu) çalışır; TKS'li kanallarda ton için daha uzun bekleme (ASELSAN V2-51 / V2-54'ten).
 - **Sadeleştirilmiş firmware** (AT V0-1 ile geldi): Select-5 (CCIR / ZVEI / EEA) kodu ve '#' ile arama kaldırıldı; yer yeni özelliklere açıldı. Trunk, veri mesajı, ses yayın, yazıcı ve servis terminali de kapalı (V0-19 / V0-21). Yalnız Türkçe (V0-22). Parola, servis kodu ve RSSI göstergesi yok (V0-32).
 - **Açılış ekranı ve sürüm** (AT V0-1 ile geldi): Açılışta 5 s yATOLYE, ardından AT V0-x sürüm numarası. Sürüm, tarih ve metin ROM başlığında; T4000 ve yükleme sayfası da gösterir.
-- **Güç ve monitör tuşları** (AT V0-31 ile geldi): p kısa: güç yüksek / düşük (YUKSEK G / ALCAK G); p uzun (~1 s): tarama; q: monitör (MONITOR* / MONITOR-).
+- **Güç ve monitör tuşları** (AT V0-31 ile geldi): p kısa: güç yüksek / düşük (YUKSEK G / ALCAK G); p uzun (~1 s): tarama; q kısa: monitör (MONITOR* / MONITOR-).
+- **VFO'yu hafıza kanalına kaydetme** (AT V0-33 ile geldi): VFO kuruluyken q ~1 s: KAYIT __, kanal numarası (1..99), s ile kaydet (TAMAM 05). Alma / gönderme frekansı, tonlar ve güç kanala yazılır; kanalın adı alma frekansı olur (145 5000). Başka tuş ya da 8 s bekleme iptal eder.
 
 ### Sürüm geçmişi
+
+#### AT V0-33 · 23.10.2026 · yalnız simülatörde denendi
+
+- Yeni: VFO'yu hafıza kanalına kaydetme: FREKANS ile frekanslar ve tonlar ayarlandıktan sonra (FREKANS ekranında ya da normal ekranda) üçgen (q) tuşunu ~1 s basılı tutun. Ekranda KAYIT __; kanal numarasını yazın (KAYIT 05) ve s'ye basın, ekranda TAMAM 05. Alma ve gönderme frekansı, alma ve gönderme tonu ve p ile seçilen güç kanala yazılır; kanalın adı alma frekansı olur (145 5000). Başka bir tuş ya da 8 s bekleme iptal eder (IPTAL). VFO kurulu değilse VFO YOK.
+- Değişiklik: Monitör artık q tuşu bırakılınca açılıp kapanır (uzun basış kanal kaydı için).
 
 #### AT V0-32 · 22.10.2026 · yalnız simülatörde denendi
 

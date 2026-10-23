@@ -853,6 +853,83 @@ if (RING.includes('FREQ')) {
     check('kalibre edilmiş RSSI göstergesi açılmıyor', /^KANAL/.test(lcd(b)) && b.ram[0x1EB] >= 3, lcd(b) + ', 0x01EB = ' + b.ram[0x1EB]); }
 }
 
+/* kanal kayıt (kanal_kayit.inc): VFO kurulu iken q ~1 s -> "KAYIT __", haneler, s -> EEPROM'daki kanal
+ * kaydı P4000'in yazacağıyla bayt bayt aynı, sağlamalar doğru; kanala geçince VFO frekansı ve adı geliyor;
+ * başka tuş / zaman aşımı iptal, VFO yokken "VFO YOK", kısa q hâlâ monitör */
+if (RING.includes('FREQ')) {
+  const P = globalThis.P4000;
+  const hex = (e, a, n) => Array.from(e.slice(a, a + n), x => x.toString(16).padStart(2, '0')).join(' ');
+  const kur = arac => {
+    const b = radio(ee => { ee[0x014] |= 0x08; if (arac) ee[0x58B] |= 0x12; });
+    if (arac) { b.hwArac = true; b.inputs.P4 = 0xCF; b.panel.setExt(0xBF, b); }
+    boot(b, 3);
+    return b;
+  };
+  const tus = (b, k, s) => { const i = KP.indexOf(k); b.keypad.press(i, true, b); b.run(FCLK * (s || 0.15)); b.keypad.press(i, false, b); b.run(FCLK * 0.6); return lcd(b); };
+  const vfo = (b, rx, tx, rt, tt) => {
+    for (let k = 0; k < 10 && !/^FREKANS/.test(lcd(b)); k++) tus(b, 'm');
+    for (const k of 's' + rx + '#' + tx + '#' + rt + '#' + tt + '#') tus(b, k);
+    return lcd(b);
+  };
+  // ekran tamponu ($0252): güç yüksekken yanan simge 3. karakterle karışıyor, simülatör o 'Y'yi çözemiyor
+  const tusT = (b, k, s) => { tus(b, k, s); return V.textBuffer(b); };
+  const kayit = (b, no) => { const r = [tusT(b, 'q', 1.3)]; for (const k of no) r.push(tusT(b, k)); r.push(tusT(b, 's')); return r; };
+
+  // el kartı, FREKANS ekranı açıkken: 145,6625 / 145,0625, 88,5 / 100,0 Hz, p ile yüksek güç -> kanal 12
+  { const b = kur(false), once = new Uint8Array(b.eeprom.mem);
+    const ekran = vfo(b, '1456625', '1450625', '885', '1000');
+    tus(b, 'p');
+    b.run(FCLK * 2);
+    const r = kayit(b, '12');
+    const bekle = new Uint8Array(once);
+    P.setChannel(bekle, 12, { name: '145 6625', rx: 145662500, tx: 145062500, rxTcs: 8, txTcs: 12, hprf: 1, tot: 0, ani: 0 }, { xs: true });
+    P.fixSums(bekle);
+    const e = b.eeprom.mem, a = 0x2E + 13 * 11;
+    check('kanal kayıt: "KAYIT __" -> "KAYIT 12" -> "TAMAM 12"', ekran === '145 6625' && r.join('|') === 'KAYIT __|KAYIT 1_|KAYIT 12|TAMAM 12', ekran + ' / ' + r.join('|'));
+    check('kanal kayıt: kayıt P4000 kodlamasıyla aynı (kristal kaydırma 1, HPRF, tonlar, ad)', hex(e, a, 13) === hex(bekle, a, 13) && P.channel(e, 12).xshift === 1,
+      hex(e, a, 13) + ' / ' + hex(bekle, a, 13));
+    let fark = []; for (let i = 0; i < 2048; i++) if (e[i] !== bekle[i]) fark.push(i.toString(16));
+    check('kanal kayıt: yalnız kanal 12 ve AKTARMA sağlaması değişti, bütün sağlamalar doğru', !fark.length && P.checkSums(e).every(s => s.ok),
+      'fark: ' + (fark.join(' ') || 'yok'));
+    b.run(FCLK * 2);
+    const sonra = lcd(b), mon = tus(b, 'q');
+    check('kanal kayıt: mesajdan sonra VFO ekranı, kısa q monitör', sonra === '145 6625' && mon === 'MONITOR*', sonra + ' / ' + mon);
+    b.panel.setExt(((16 - 12) & 15) << 4 | 0x0F, b); b.run(FCLK * 1.5);
+    const st = b.radioState();
+    check('kanal kayıt: kanal 12 seçilince ad ve alma frekansı', lcd(b) === '145 6625' && (st.vco / 1e6).toFixed(4) === '190.6625', lcd(b) + ' VCO ' + (st.vco / 1e6).toFixed(4));
+    const c = new Board(rom); c.eeprom.mem.set(e); c.font = b.font; boot(c, 3);
+    check('kanal kayıt: kaydedilmiş EEPROM ile açılış', /^KANAL 01$/.test(lcd(c)), lcd(c));
+  }
+  // araç kartı, normal ekran (FREKANS'tan m ile çıkıldı): tek hane "7" -> "TAMAM 07"; kanal 07'ye tuşlarla
+  { const b = kur(true);
+    vfo(b, '1468000', '', '0', '');
+    tus(b, 'm');
+    const n = lcd(b), r = kayit(b, '7');
+    b.run(FCLK * 2);
+    const c7 = P.channel(b.eeprom.mem, 7);
+    tus(b, '0'); tus(b, '7'); b.run(FCLK * 1.5);
+    check('kanal kayıt (araç kartı, normal ekran): tek hane, simplex, tonsuz',
+      n === '146 8000' && r.join('|') === 'KAYIT __|KAYIT 7_|TAMAM 07' && c7.rx === 146800000 && c7.tx === 146800000 && !c7.rxTcs && !c7.txTcs &&
+      c7.name === '146 8000' && lcd(b) === '146 8000' && P.checkSums(b.eeprom.mem).every(s => s.ok), n + ' / ' + r.join('|') + ' / ' + JSON.stringify(c7) + ' / ' + lcd(b));
+  }
+  // iptal, zaman aşımı, 00, VFO yok
+  { const b = kur(false);
+    const yok = tus(b, 'q', 1.3);
+    vfo(b, '1455000', '', '', '');
+    const once = new Uint8Array(b.eeprom.mem);
+    const iptal = [tus(b, 'q', 1.3), tus(b, '3'), tus(b, '*')];
+    b.run(FCLK * 2);
+    const za = [tus(b, 'q', 1.3)]; b.run(FCLK * 8.5); za.push(lcd(b));
+    b.run(FCLK * 2);
+    const sifir = [tus(b, 'q', 1.3), tus(b, '0'), tus(b, '0'), tus(b, 's'), tus(b, 'm')];
+    let degisti = false; for (let i = 0; i < 2048; i++) if (b.eeprom.mem[i] !== once[i]) degisti = true;
+    check('kanal kayıt: VFO yokken "VFO YOK"; başka tuş, zaman aşımı ve "00" yazmıyor',
+      yok === 'VFO YOK ' && iptal.join('|') === 'KAYIT __|KAYIT 3_|IPTAL   ' && za.join('|') === 'KAYIT __|IPTAL   ' &&
+      sifir.join('|') === 'KAYIT __|KAYIT 0_|KAYIT 00|KAYIT 00|IPTAL   ' && !degisti,
+      yok + ' / ' + iptal.join('|') + ' / ' + za.join('|') + ' / ' + sifir.join('|') + (degisti ? ' / EEPROM değişti' : ''));
+  }
+}
+
 /* boot screen built into the ROM (acilis_yatolye.inc): 5 s, independent of the EEPROM */
 if (new Board(rom).rom[0xE0E1] === 0x5C) {
   for (const [name, mod] of [['varsayılan EEPROM', null], ['Türkçe + UHF EEPROM', ee => { ee[0x018] |= 0x80; ee[0x58C] = 0x3E; ee[0x58D] = 0x80; }]]) {

@@ -1,6 +1,6 @@
 # Tuş takımı ve panel düğmeleri — YA4000S (A tipi kart)
 
-> Özel firmware (AT V0-31'den) `p` ve `q`'yu değiştirir: `p` kısa = güç yüksek / düşük, `p` uzun = tarama, `q` = monitör. Ayrıntı: `../ozel_firmware/README.md`, "Güç ve monitör tuşları". AT V0-32'den ALT MENU'de PAROLA ve MSR RSSI yok; kayıtlı parola açılışta silinir, RSSI göstergesi açılmaz (`parola_rssi_kaldir.inc`). Aşağısı orijinal firmware.
+> Özel firmware (AT V0-31'den) `p` ve `q`'yu değiştirir: `p` kısa = güç yüksek / düşük, `p` uzun = tarama, `q` kısa = monitör, `q` uzun = VFO'yu hafıza kanalına kaydet (AT V0-33, `kanal_kayit.inc`). Ayrıntı: `../ozel_firmware/README.md`, "Güç ve monitör tuşları". AT V0-32'den ALT MENU'de PAROLA ve MSR RSSI yok; kayıtlı parola açılışta silinir, RSSI göstergesi açılmaz (`parola_rssi_kaldir.inc`). Aşağısı orijinal firmware.
 
 Koddan çıkarıldı ve simülatörde denendi (`sim/`, `make test-sim`). "Doğrulandı" yazanlar simülatörde çalıştırıldı; diğerleri yalnızca koddan okundu.
 

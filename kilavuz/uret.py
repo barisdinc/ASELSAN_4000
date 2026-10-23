@@ -29,6 +29,7 @@ s = s.replace('[[RADYO_ON_NUMARALI]]', radyo(True)).replace('[[RADYO_ON]]', rady
 pins = ''.join('<circle cx="%d" cy="78" r="4"/>' % (172 + 20 * i) for i in range(8)) + ''.join('<circle cx="%d" cy="94" r="4"/>' % (182 + 20 * i) for i in range(7))
 s = s.replace('[[OPSIYON_PINLER]]', pins)
 s = re.sub(r'\[P\]', '<kbd class="f" title="p (1 s)" aria-label="p tuşunu 1 saniye basılı tut">%s<small>1 s</small></kbd>' % icon('p'), s)
+s = re.sub(r'\[Q\]', '<kbd class="f" title="q (1 s)" aria-label="q tuşunu 1 saniye basılı tut">%s<small>1 s</small></kbd>' % icon('q'), s)
 s = re.sub(r'\[([mspq])\]', lambda m: '<kbd class="f" title="%s" aria-label="%s tuşu">%s</kbd>' % (m.group(1), NAMES[m.group(1)], icon(m.group(1))), s)
 s = re.sub(r'\[PTT\]', '<kbd class="ptt">PTT</kbd>', s)
 s = re.sub(r'\[([0-9*#])\]', r'<kbd>\1</kbd>', s)

@@ -171,7 +171,8 @@ Cihazda panelde güç ve monitör düğmesi olmadığı için bu işleri tuş ta
 |---|---|---|
 | `p` (daire) kısa | normal ekran, ayarlanmış FREKANS ekranı, APRS ekranı | Çıkış gücü yüksek ↔ düşük; ekranda ~1,5 s `YUKSEK G` / `ALCAK G`, sonra kanal adı / frekans / `APRS AKT` geri gelir |
 | `p` ~1 s basılı | normal ekran | Taramayı başlat / durdur (orijinal `p`). Tarama sürerken kısa `p` de durdurur |
-| `q` (üçgen) | normal ekran, FREKANS ekranı | Monitör: susturmayı devre dışı bırak / devreye al; ekranda `MONITOR*` / `MONITOR-` |
+| `q` (üçgen) kısa | normal ekran, FREKANS ekranı | Monitör: susturmayı devre dışı bırak / devreye al; ekranda `MONITOR*` / `MONITOR-`. AT V0-33'ten tuş bırakılınca |
+| `q` ~1 s basılı | normal ekran, ayarlanmış FREKANS ekranı | VFO'yu hafıza kanalına kaydet (aşağıda) |
 
 Diğer menülerde `p` firmware'e aynen gider; `q` her yerde yutulur (orijinalde A tipi kartta `q` 0x0242 bit 4'ü kurup sonraki tuşları yutuyordu).
 
@@ -181,6 +182,29 @@ Diğer menülerde `p` firmware'e aynen gider; `q` her yerde yutulur (orijinalde 
 - **Monitör:** firmware'in `q` yolu (L_00549D): 0x0240 bit 1 + `F_004FF6(Y = 'q')`; durum 0x023A bit 13.
 - **Tarama bayrağı:** 0x0240 bit 10 (0x0241 bit 2; F_0048C1 kurar, 0x004A17 siler). 0x022A taramada 0'dan geçtiği için kullanılmadı.
 - **RAM:** `$0447`–`$0449`. Hiçbir kodun erişmediği, çalışırken dokunulmayan baytlar; 0x0445 ve 0x044A 16 bitlik değişkenler, bunlara değmez.
+
+### VFO'yu hafıza kanalına kaydetme (`ornekler/kanal_kayit.inc`, AT V0-33)
+
+FREKANS ile alma / gönderme frekansı ve tonlar ayarlandıktan sonra (açık kalan FREKANS ekranında ya da `m` ile çıkılmış normal ekranda):
+
+| Tuş | Ekran | İş |
+|---|---|---|
+| `q` ~1 s basılı | `KAYIT __` | Kayıt modu (onay sesi). VFO kurulu değilse `VFO YOK` + hata sesi |
+| `0`–`9` | `KAYIT 0_`, `KAYIT 05` | Kanal numarası, 1 ya da 2 hane (1..99); üçüncü hane yok sayılır |
+| `s` | `TAMAM 05` (~1,5 s) | EEPROM'daki kanal kaydına yaz, sonra VFO ekranına dön. Hane yoksa ya da `00` ise hata sesi, kayıt ekranı kalır |
+| başka tuş | `IPTAL` | Vazgeç. ~8 s tuşa basılmazsa da |
+
+Yazılan kayıt (0x02E + 13·(n−1)) P4000'in yazacağıyla bayt bayt aynı (`test_ozel.js` `P4000.setChannel` ile karşılaştırır):
+
+- **Frekans kelimeleri:** VFO'nun metninden (`VFO_RX_HANE`, `VFO_METIN+8`) `FR_HESAPLA` ile.
+- **Tonlar:** `VFO_RX_TON` / `VFO_TX_TON`; TX TKS +5 b7 (var) ve +6..+11 b7'lerine.
+- **Kanal adı:** alma frekansının metni, ör. `145 6625` (boşluk = ondalık nokta).
+- **HPRF:** `p` ile güç seçildiyse seçilen (0x023C bit 4), yoksa kanalınki. TOT: `$037C` bit 6.
+- **Kristal kaydırma:** P4000'in kuralı (0x4885B1), alma frekansından. ANI 0.
+- **Tarama listesi biti:** değişmez.
+- **AKTARMA sağlaması (0x535–0x536):** eski kaydın baytları çıkarılıp yenileri eklenerek düzeltilir. Yazılanlar geri okunup karşılaştırılır; farklıysa `KYT HATA`.
+
+Kayıt yığında 40 baytlık tamponda hazırlanır (D = tampon). EEPROM yordamları (`F_0072EE` / `F_0073C6`) `TUS_ISLE`'nin boş çerçevesiyle çağrılır. RAM: `$044D`–`$0452`; hiçbir kodun adreslemediği, `ram_bos.js` ölçümünde erişilmeyen baytlar.
 
 ## APRS kullanımı
 

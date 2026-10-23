@@ -72,6 +72,7 @@ TITLES_TR:
         .INCLUDE "aprs_detay.inc"       ; APRS alma: istasyonların konumu
         .INCLUDE "aprs_digi.inc"        ; APRS digipeater
         .INCLUDE "aprs_arka.inc"        ; arka planda APRS tracker
+        .INCLUDE "kanal_kayit.inc"      ; q uzun: VFO'yu hafıza kanalına kaydet
 
         .ORG $012400                    ; bank 1 boş alanı (açılış ekranı $012000'de)
         .INCLUDE "aprs.inc"
