@@ -19,7 +19,7 @@ yATOLYE yazılımlı (AT V0-33) 4021 / 4025 araç telsizinin Türkçe kullanım 
 
 Telsizi tarayıcıda çalıştıran simülatör: **https://barisdinc.github.io/ASELSAN_4000/**
 
-Gerçek telsizden seri port üzerinden EEPROM ve flash yedeği, firmware yükleme ve EEPROM geri yükleme (Chrome / Edge, USB-RS232): **https://barisdinc.github.io/ASELSAN_4000/yukle.html**
+Gerçek telsizden seri port üzerinden EEPROM ve flash yedeği, firmware yükleme ve EEPROM programlama / geri yükleme (Chrome / Edge, USB-RS232): **https://barisdinc.github.io/ASELSAN_4000/yukle.html**
 
 Orijinal firmware'leri (YA4000?.HEX) ve `ozel_firmware/` örneklerini kurulum gerektirmeden dener. Kaynak ve kullanım: [`disasm/sim/`](disasm/sim/README.md). Disassembly ve araçlar: [`disasm/`](disasm/README.md), çalışma analizi: [`docs/calisma_analizi.md`](docs/calisma_analizi.md).
 

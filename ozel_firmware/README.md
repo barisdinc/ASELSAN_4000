@@ -300,7 +300,7 @@ Ayar EEPROM 0x733'te: `$A0` | bit 0 TR, bit 1 DG, bit 2 IG (APRS bölümünün s
 
 VFO kancası bu sırada VFO modunu bitirmez. APRS ekranındayken (144,800) tracker beacon süresi dolunca kanalın ilk boşluğunda gönderir. DG açıkken kendi paketlerimizin hedefi (cihaz tipi) `APATAR`, değilken `APIZCI`. APRS ekranı `APRS AKT`. RAM: `ARKA_DURUM` $0131; sayaçlar APRS ekranınınkiler.
 
-**GPS (`ornekler/gps.inc`, AT V0-26).** Seri porta (programlama kablosu, 9600 8N1) bağlı bir GPS alıcısı ya da yükleme sayfasının "Seri izleme" bölümündeki GPS benzetimi `$GPRMC` (`$GNRMC` …) gönderirse:
+**GPS (`ornekler/gps.inc`, AT V0-26).** Seri porta (programlama kablosu, 9600 8N1) bağlı bir GPS alıcısı `$GPRMC` (`$GNRMC` …) gönderirse:
 - APRS ekranındayken dakikada bir sonraki geçerli (durum `A`) RMC cümlesinin enlem / boylamı alınır (APRS biçiminde, `DDMM.mmN` / `DDDMM.mmE`); tracker ve PTT paketleri EEPROM'daki konum yerine bunu kullanır. Ekranda `APRS` yerine `GPS` (`GPS  OK`, `GPS  PTT`).
 - GPS konumu yokken her saniye denenir. Bir dakika içinde geçerli cümle gelmezse GPS konumu bırakılır, EEPROM konumuna dönülür.
 - Alma kesmesine (0x01948B) kanca: bayt firmware'e aynen gider (servis protokolü etkilenmez), ayrıca küçük bir ayrıştırıcıdan geçer (yalnız istenince tampona yazar). RAM: APRS tamponunun arkası $07CC–$07DF (tampon 140 bayta indi), $04EF.
