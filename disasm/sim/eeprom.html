@@ -1,0 +1,483 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ASELSAN 4000 EEPROM Düzenleyici</title>
+<style>
+:root {
+  --bg: #f3f2ee; --panel: #ffffff; --ink: #1d1f22; --muted: #6b6f76; --line: #dcdad3;
+  --accent: #2f6fdb; --accent-ink: #ffffff; --bad: #c8372d; --good: #23843b; --warn: #b7791f;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #17181b; --panel: #202227; --ink: #e6e6e3; --muted: #9a9ea6; --line: #33363d; --accent: #5b8ef0;
+  --good: #4cc26a; --bad: #ef6a5e; --warn: #e0a64a;
+} }
+:root[data-theme="dark"] {
+  --bg: #17181b; --panel: #202227; --ink: #e6e6e3; --muted: #9a9ea6; --line: #33363d; --accent: #5b8ef0;
+  --good: #4cc26a; --bad: #ef6a5e; --warn: #e0a64a;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+header { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; padding: 10px 16px; border-bottom: 1px solid var(--line); background: var(--panel); position: sticky; top: 0; z-index: 5; }
+header h1 { font-size: 16px; margin: 0; font-weight: 650; }
+header nav { margin-left: auto; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+header a { color: var(--accent); text-decoration: none; font-size: 13px; }
+button, select, input[type=number] { font: inherit; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 6px 11px; }
+input[type=number] { width: 9em; font-family: var(--mono); }
+button { cursor: pointer; }
+button:hover:not(:disabled) { border-color: var(--muted); }
+button:disabled { opacity: .45; cursor: default; }
+button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+main { max-width: 920px; margin: 0 auto; padding: 16px; display: grid; gap: 14px; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
+.card h2 { margin: 0 0 10px; font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); font-weight: 650; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.kv { display: grid; grid-template-columns: max-content 1fr; gap: 4px 14px; font-size: 13px; margin-top: 10px; }
+.kv > div:nth-child(odd) { color: var(--muted); }
+.note { color: var(--muted); font-size: 12.5px; }
+.mono { font-family: var(--mono); font-size: 12px; }
+.ok { color: var(--good); } .bad { color: var(--bad); } .warn { color: var(--warn); }
+.banner { border-left: 3px solid var(--warn); padding: 8px 12px; background: color-mix(in srgb, var(--warn) 10%, transparent); border-radius: 4px; font-size: 13px; }
+table { border-collapse: collapse; width: 100%; font-size: 12.5px; }
+th, td { text-align: left; padding: 3px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+th { color: var(--muted); font-weight: 600; }
+td.num { font-family: var(--mono); }
+.scroll { max-height: 260px; overflow: auto; margin-top: 10px; }
+.hazir button { margin-right: 4px; }
+ul.hata { margin: 8px 0 0; padding-left: 18px; font-size: 13px; }
+[hidden] { display: none !important; }
+.risk { border: 3px solid var(--bad); border-radius: 10px; padding: 12px 16px; background: color-mix(in srgb, var(--bad) 9%, var(--panel)); }
+.risk h2 { margin: 0 0 6px; font-size: 19px; line-height: 1.25; color: var(--bad); font-weight: 800; }
+.risk p { margin: 6px 0; font-size: 14.5px; font-weight: 700; }
+.risk .kucuk { font-size: 12.5px; font-weight: 400; color: var(--muted); }
+.risk.ic { border-width: 2px; padding: 8px 12px; margin: 8px 0; } .risk.ic p { font-size: 13.5px; }
+button.danger { background: var(--bad); color: #fff; border-color: var(--bad); }
+.status { font-size: 13px; }
+progress { width: 100%; height: 10px; accent-color: var(--accent); }
+.prog { display: none; gap: 4px; margin-top: 10px; } .prog.on { display: grid; }
+.dl { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.dl a { color: var(--accent); font-size: 13px; font-weight: 600; text-decoration: none; border: 1px solid var(--line); border-radius: 6px; padding: 5px 10px; }
+.yedekuyari { margin-top: 8px; font-size: 13.5px; font-weight: 800; color: var(--bad); } .yedekuyari.tamam { color: var(--good); font-weight: 700; }
+.checks { display: grid; gap: 6px; margin: 10px 0; font-size: 13px; } .checks label { display: flex; gap: 8px; align-items: flex-start; }
+.checks label.riskonay { font-weight: 800; color: var(--bad); }
+label.mode { display: flex; gap: 6px; align-items: center; }
+.sayac { color: var(--muted); font-size: 12px; }
+#log { height: 120px; overflow: auto; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; white-space: pre-wrap; margin: 0; }
+@media (max-width: 600px) { .kv { grid-template-columns: 1fr; } .kv > div:nth-child(odd) { margin-top: 6px; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>ASELSAN 4000 · EEPROM Düzenleyici</h1>
+  <nav><span class="sayac" id="acilis" title="Bu sayfanın toplam açılma sayısı (tüm kullanıcılar)"></span><a href="./">Simülatör</a><a href="yukle.html">Seri yükleme</a><a href="surumler.html">Sürümler</a><a href="https://github.com/barisdinc/ASELSAN_4000">GitHub</a><button id="themeBtn" title="Açık / koyu tema">◐</button></nav>
+</header>
+<main>
+  <section class="risk" role="alert">
+    <h2>⚠ HER EEPROM DOSYASI (BIN) TEK BİR TELSİZE AİTTİR</h2>
+    <p>İÇİNDE O TELSİZİN SERİ NUMARASI, GÜÇ KALİBRASYONU VE FABRİKA AYARLARI VARDIR. BU SAYFADA ÜRETTİĞİNİZ BIN DOSYASINI <u>YALNIZCA YEDEĞİNİ ALDIĞINIZ TELSİZE</u> YÜKLEYİN. BAŞKA BİR TELSİZE YÜKLERSENİZ KALİBRASYONU BOZULUR VE GERİ DÖNÜLEMEYEBİLİR.</p>
+    <p>DEĞİŞTİRMEDEN ÖNCE TELSİZİN EEPROM YEDEĞİNİ ALIP BİLGİSAYARINIZA KAYDEDİN. TÜM İŞLEMLER KENDİ RİSKİNİZLE.</p>
+    <p class="kucuk">Telsize yazma yalnızca bu oturumda telsizden yedek alınıp indirildiyse ve yazılacak dosya o telsize aitse (seri numarası, kalibrasyon ve donanım tipi aynıysa) açılır. Bağlanmadan da çalışabilirsiniz: dosyanızı açın, değiştirin, yeni BIN'i indirin. Dosyalar tarayıcıdan dışarı gönderilmez.</p>
+  </section>
+
+  <section class="card">
+    <h2>1 · Bağlantı</h2>
+    <div class="row" style="gap:16px">
+      <label class="mode"><input type="radio" name="mode" value="serial" checked> Gerçek telsiz (USB-RS232)</label>
+      <label class="mode"><input type="radio" name="mode" value="sim"> Simülatör (deneme)</label>
+      <select id="simFw" title="Simülatördeki telsizin firmware'i" hidden></select>
+    </div>
+    <p class="note" id="serialNote">Telsizi açın, seri kabloyu bağlayın, <b>Bağlan</b>'a basıp listeden USB-seri dönüştürücüyü seçin (9600 8N1, RS232 seviyeli dönüştürücü). Chrome ya da Edge gerekir.</p>
+    <p class="note warn" id="noSerial" hidden>Bu tarayıcıda Web Serial yok: gerçek telsize bağlanmak için masaüstünde Chrome ya da Edge kullanın. Dosyayla çalışmak ve simülatör her tarayıcıda çalışır.</p>
+    <div class="row">
+      <button class="primary" id="connectBtn">Bağlan</button>
+      <button id="disconnectBtn" disabled>Bağlantıyı kes</button>
+      <span class="status" id="status">Bağlı değil</span>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>2 · Yedek</h2>
+    <div class="row">
+      <button class="primary" id="okuBtn" disabled>Telsizden oku (yedek al)</button>
+      <span class="note">ya da</span>
+      <input type="file" id="dosya" accept=".bin,.BIN,.eep,.e2p" hidden><button id="dosyaBtn">Bilgisayardan BIN aç…</button>
+      <span class="note">(sürükleyip bırakabilirsiniz)</span>
+    </div>
+    <div class="prog" id="okuProg"><progress id="okuBar" max="1" value="0"></progress><span class="note" id="okuTxt"></span></div>
+    <div class="dl" id="yedekDl"></div>
+    <div class="yedekuyari" id="yedekUyari" hidden></div>
+    <div id="dosyaBilgi"></div>
+  </section>
+
+  <section class="card" id="ozCard" hidden>
+    <h2>3 · Özellikler</h2>
+    <div id="ozellik"></div>
+  </section>
+
+  <section class="card" id="bantCard" hidden>
+    <h2>4 · Frekans bandı</h2>
+    <p class="note" style="margin:0">Telsiz, frekansları bir <b>bant tabanına</b> göre tutar; çalışabildiği aralık tabandan başlayıp yaklaşık 41 MHz yukarı gider. Tabanı değiştirince kanallarınızın frekansları <b>aynı kalır</b> (kayıtlar yeni tabana göre yeniden hesaplanır) ve sağlama toplamları düzeltilir. Taban, kanallarınızın hepsini kapsayacak ve aynı bant ailesinde (VHF / UHF) kalacak şekilde sınırlıdır.</p>
+    <div class="kv" id="bantBilgi"></div>
+    <div class="row hazir" id="hazir" style="margin-top:10px"></div>
+    <div class="row" style="margin-top:8px">
+      <label>Yeni taban <input type="number" id="yeniTaban" step="0.025"> MHz</label>
+      <button class="primary" id="bantBtn">Bandı değiştir</button>
+      <span class="note" id="bantAralik"></span>
+    </div>
+    <div id="bantSonuc"></div>
+  </section>
+
+  <section class="card" id="ayarCard" hidden>
+    <h2>5 · Diğer ayarlar</h2>
+    <p class="note" style="margin:0 0 8px">P4000'deki sayfaların aynısı: kanallar, tonlar, seçenekler, KSYS, APRS. Alanlar kendi sınırları içinde değiştirilebilir; telsize özel kalibrasyon ve fabrika alanları salt okunurdur.</p>
+    <div id="editor"></div>
+  </section>
+
+  <section class="card" id="indirCard" hidden>
+    <h2>6 · Kaydet ve telsize yaz</h2>
+    <p class="note" id="farkBilgi" style="margin:0 0 8px"></p>
+    <div class="row">
+      <button id="binBtn">Yeni BIN indir</button>
+      <button id="p40Btn">P4000 kütüğü indir (.p40)</button>
+      <button id="geriBtn">Tüm değişiklikleri geri al</button>
+    </div>
+    <div id="yazKutu">
+      <div class="risk ic"><p>⚠ TELSİZİN EEPROM'U ÜZERİNE YAZILIR. YALNIZCA BU DOSYANIN AİT OLDUĞU TELSİZE YAZIN. KENDİ RİSKİNİZLE.</p></div>
+      <div id="kimlik"></div>
+      <div class="checks"><label class="riskonay"><input type="checkbox" id="yazOnay"> GERİ DÖNÜLEMEYECEK SORUNLAR OLUŞABİLECEĞİNİ ANLADIM; BU İŞLEMİ KENDİ RİSKİMLE YAPIYORUM.</label></div>
+      <div class="row"><button class="danger" id="yazBtn" disabled>Telsize yaz</button><span class="note" id="yazGate"></span></div>
+      <div class="prog" id="yazProg"><progress id="yazBar" max="1" value="0"></progress><span class="note" id="yazTxt"></span></div>
+      <div id="yazSonuc"></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Günlük</h2>
+    <pre id="log" class="mono"></pre>
+  </section>
+
+  <p class="note">Kaynak: <span class="mono">disasm/sim/eeprom.html</span>, <span class="mono">p4000.js</span>, <span class="mono">seri_istemci.js</span> · EEPROM yerleşimi: <a href="https://github.com/barisdinc/ASELSAN_4000/blob/master/docs/p4000_eeprom.md">p4000_eeprom.md</a></p>
+</main>
+
+<script src="m7700.js"></script>
+<script src="board.js"></script>
+<script src="p4000.js"></script>
+<script src="updater.js"></script>
+<script src="seri_istemci.js"></script>
+<script src="firmware.js"></script>
+<script>
+'use strict';
+const $ = id => document.getElementById(id);
+const B = window.Board, P = window.P4000, S = window.SeriIstemci;
+const FW = window.FIRMWARE_HEX || {};
+let ad = '', ilk = null, ee = null, ilkTaban = 0, kaynak = '';   // work copy: file name, as opened, edited, base as opened, 'telsiz' | 'dosya'
+let port = null, client = null, header = null, busy = false;
+let eeData = null, yedekIndi = false, yedekAd = '';             // the radio's EEPROM read in this session, its backup downloaded
+
+function esc(s) { return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
+const mhz = (w, d) => (w * 0.025).toFixed(d == null ? 3 : d);          // 25 kHz units -> MHz text
+const ust = w => w * 25000 + 0x3FFE * 2500;                            // highest frequency for a base
+function log(m) { $('log').textContent += new Date().toLocaleTimeString('tr-TR') + '  ' + m + '\n'; $('log').scrollTop = $('log').scrollHeight; }
+function setStatus(m, cls) { $('status').textContent = m; $('status').className = 'status ' + (cls || ''); }
+function stamp() { const d = new Date(), p = n => String(n).padStart(2, '0'); return d.getFullYear() + p(d.getMonth() + 1) + p(d.getDate()) + '-' + p(d.getHours()) + p(d.getMinutes()); }
+function progress(bar, txt, f) { $(bar).value = f; $(txt).textContent = Math.round(f * 100) + ' %'; }
+$('themeBtn').onclick = () => {
+  const r = document.documentElement, cur = r.getAttribute('data-theme');
+  const dark = cur ? cur === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+  r.setAttribute('data-theme', dark ? 'light' : 'dark');
+};
+
+/* ---------------------------------------------------------------- açılış sayacı (sunucu/sayac; yukle.html ile aynı sunucu) */
+const SAYAC_VARSAYILAN = '';   // Worker kurulunca: 'https://aselsan-sayac.<hesap>.workers.dev' (yukle.html'deki ile aynı)
+const SAYAC_PARAM = new URLSearchParams(location.search).get('sayac');
+const SAYAC_URL = (SAYAC_PARAM || SAYAC_VARSAYILAN).replace(/\/$/, '');
+function sayacOlay(tur, ek) {
+  if (!SAYAC_URL || (tur !== 'eeprom_acilis' && mode() !== 'serial' && !SAYAC_PARAM)) return Promise.resolve(null);
+  return fetch(SAYAC_URL + '/olay', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ tur, ek: ek || '' }) })
+    .then(r => r.json()).then(d => d.sayac).catch(() => null);
+}
+if (location.hash.indexOf('#otomatik-test') !== 0) sayacOlay('eeprom_acilis').then(sy => {
+  if (sy && sy.eeprom_acilis != null) $('acilis').textContent = 'Bu sayfa ' + sy.eeprom_acilis.toLocaleString('tr-TR') + ' kez açıldı';
+});
+
+/* ---------------------------------------------------------------- bağlantı */
+function mode() { return document.querySelector('input[name=mode]:checked').value; }
+for (const name of Object.keys(FW)) $('simFw').add(new Option(name, name));
+if (FW['YA4000S_FREKANS_YATOLYE.HEX']) $('simFw').value = 'YA4000S_FREKANS_YATOLYE.HEX';
+if (!S.WebSerialPort.supported()) {
+  $('noSerial').hidden = false;
+  document.querySelector('input[value=serial]').disabled = true;
+  document.querySelector('input[value=sim]').checked = true;
+}
+function onMode() { const sim = mode() === 'sim'; $('simFw').hidden = !sim; $('serialNote').hidden = sim; }
+document.querySelectorAll('input[name=mode]').forEach(r => r.onchange = onMode); onMode();
+function refresh() {
+  $('connectBtn').disabled = !!port || busy; $('disconnectBtn').disabled = !port || busy;
+  document.querySelectorAll('input[name=mode]').forEach(r => r.disabled = !!port || busy);
+  $('simFw').disabled = !!port || busy;
+  $('okuBtn').disabled = !client || busy; $('dosyaBtn').disabled = busy;
+  if (ee) yazDurum();
+}
+async function run(fn) {
+  busy = true; refresh();
+  try { await fn(); } catch (e) { log('HATA: ' + e.message); setStatus(e.message, 'bad'); }
+  finally { busy = false; refresh(); }
+}
+$('connectBtn').onclick = () => run(async () => {
+  if (mode() === 'sim') {
+    setStatus('Simülatör açılıyor…');
+    const b = new B.Board(B.parseHex(FW[$('simFw').value]));
+    b.eeprom.mem.set(B.defaultEeprom());
+    const sp = new S.SimPort(b, B.FCLK), bootSec = b.rom[0xE0E1] === 0x5C ? 8 : 2.5;   // firmware with the 5 s yATOLYE screen boots longer
+    for (let t = 0; t < bootSec; t += 0.25) { b.run(B.FCLK * 0.25); await new Promise(r => setTimeout(r, 0)); }
+    port = sp; log('simülatör: ' + $('simFw').value + ' (varsayılan EEPROM)');
+  } else {
+    const p = new S.WebSerialPort(); setStatus('Port seçin…'); await p.open(9600); port = p; log('seri port açıldı (9600 8N1)');
+  }
+  setStatus('Telsize bağlanılıyor…');
+  const c = new S.RadioClient(port, { log });
+  try { await c.connect(); } catch (e) { await port.close(); port = null; throw e; }
+  client = c; header = await client.readHeader();
+  setStatus('Bağlı · ' + header.version, 'ok'); log('telsiz: ' + header.version + ', ' + header.date);
+  sayacOlay('baglanti', header.version);
+});
+$('disconnectBtn').onclick = () => run(async () => {
+  if (port) await port.close();
+  port = null; client = null; setStatus('Bağlı değil'); log('bağlantı kesildi');
+});
+
+/* ---------------------------------------------------------------- yedek: telsizden ya da dosyadan */
+$('okuBtn').onclick = () => run(async () => {
+  $('okuProg').classList.add('on'); log('EEPROM okunuyor');
+  const now = await client.readEeprom(f => progress('okuBar', 'okuTxt', f));
+  eeData = now; yedekIndi = false;
+  const name = 'aselsan_eeprom_' + stamp() + '.bin';
+  $('yedekDl').innerHTML = '';
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([now], { type: 'application/octet-stream' }));
+  a.download = name; a.textContent = 'EEPROM yedeğini indir (' + name + ')'; $('yedekDl').appendChild(a);
+  const u = $('yedekUyari'); u.hidden = false; u.className = 'yedekuyari';
+  u.textContent = '⚠ YEDEK HENÜZ BİLGİSAYARINIZDA DEĞİL: "EEPROM YEDEĞİNİ İNDİR" BAĞLANTISINA TIKLAYIP KAYDEDİN. TELSİZE YAZMA ANCAK BUNDAN SONRA AÇILIR.';
+  a.addEventListener('click', () => {
+    yedekIndi = true; yedekAd = name; u.className = 'yedekuyari tamam';
+    u.textContent = '✓ ' + name + ' indirildi. Bu dosya yalnızca bu telsize aittir; güvenli bir yere kopyalayın.';
+    log('yedek indirildi: ' + name); refresh();
+  });
+  log('EEPROM okundu');
+  sayacOlay('ee_yedek', header && header.version);
+  yukle('telsiz (' + (header ? header.version : '') + ')', now, 'telsiz');
+});
+$('dosyaBtn').onclick = () => $('dosya').click();
+$('dosya').onchange = () => { ac($('dosya').files[0]); $('dosya').value = ''; };
+addEventListener('dragover', e => e.preventDefault());
+addEventListener('drop', e => { e.preventDefault(); ac(e.dataTransfer.files[0]); });
+async function ac(f) {
+  if (!f || busy) return;
+  yukle(f.name, new Uint8Array(await f.arrayBuffer()), 'dosya');
+}
+function yukle(name, raw, kay) {
+  const hata = raw.length !== 2048 ? 'dosya 2048 bayt olmalı (24C16 EEPROM yedeği); bu dosya ' + raw.length + ' bayt'
+    : raw.every(x => x === 0xFF) || raw.every(x => x === 0) ? 'dosya boş (tamamı ' + (raw[0] ? 'FF' : '00') + ')' : '';
+  if (hata) {
+    $('dosyaBilgi').innerHTML = '<p class="bad">' + esc(name) + ': ' + esc(hata) + '</p>';
+    if (!ee) ['ozCard', 'bantCard', 'ayarCard', 'indirCard'].forEach(id => $(id).hidden = true);
+    return;
+  }
+  if (ee && fark() && !confirm('Açık dosyadaki indirilmemiş / yazılmamış değişiklikler atılacak. Devam edilsin mi?')) return;
+  ad = kay === 'telsiz' ? 'aselsan_eeprom' : name; kaynak = kay; ilk = raw.slice(); ee = raw.slice(); ilkTaban = P.base(ee);
+  const s = P.checkSums(ilk), bozuk = s.filter(x => !x.ok);
+  $('dosyaBilgi').innerHTML = '<div class="kv"><div>Çalışılan</div><div>' + (kay === 'telsiz' ? 'telsizden okunan EEPROM' : 'dosya <span class="mono">' + esc(name) + '</span>') +
+    ' · seri no ' + esc(String(P.get(ee, 'seriNo'))) + '</div><div>Sağlama toplamları</div><div>' +
+    (bozuk.length ? '<span class="warn">⚠ tutmayan: ' + bozuk.map(x => esc(x.name)).join(', ') + ' (yeni dosyada düzeltilir; telsiz bu haliyle "ARZ PRG" verebilir)</span>'
+      : '<span class="ok">✓ 7 bloğun hepsi tutuyor</span>') + '</div></div>';
+  ['ozCard', 'bantCard', 'ayarCard', 'indirCard'].forEach(id => $(id).hidden = false);
+  $('bantSonuc').innerHTML = ''; $('yeniTaban').value = '';
+  ciz();
+}
+
+/* ---------------------------------------------------------------- göster */
+function fark(ref) { let d = 0; const r = ref || ilk; if (ee) { const t = olustur(); for (let a = 0; a < 2048; a++) if (t[a] !== r[a]) d++; } return d; }
+function ciz() { ozellik(); bant(); P.render($('editor'), ee, { editable: true, onChange: () => { ozellik(); bant(); durum(); } }); durum(); }
+function ozellik() {
+  const b = P.base(ee), chans = [];
+  for (let n = 1; n <= 99; n++) { const c = B.eeChannel(ee, n); if (c) chans.push([n, c]); }
+  const f = v => (v / 1e6).toFixed(4);
+  let h = '<div class="kv" style="margin-top:0">' +
+    '<div>Telsiz tipi</div><div>' + esc(P.telsizTipi(ee)) + ' · donanım ' + esc(P.donanimTipi(ee)) + '</div>' +
+    '<div>Frekans bandı</div><div>' + esc(P.bandText(ee)) + ' MHz <span class="note">(taban ' + mhz(b) + ' MHz, kanal aralığı ' + mhz(b) + '–' + (ust(b) / 1e6).toFixed(4) + ' MHz)</span></div>' +
+    '<div>Referans</div><div>' + (ee[0x58F] ? '13,0 MHz' : '12,8 MHz') + '</div>' +
+    '<div>Seri no / sürüm</div><div>' + esc(String(P.get(ee, 'seriNo'))) + ' / <span class="mono">' + esc(String(P.get(ee, 'versiyon'))) + '</span></div>' +
+    '<div>Menü dili</div><div>' + (ee[0x018] & 0x80 ? 'Türkçe' : 'İngilizce') + '</div>' +
+    '<div>Kanal sayısı</div><div>' + chans.length + '</div></div>';
+  if (chans.length) h += '<div class="scroll"><table><thead><tr><th>Kanal</th><th>Alma (MHz)</th><th>Gönderme (MHz)</th><th>Ad</th><th>TKS al/gön</th></tr></thead><tbody>' +
+    chans.map(([n, c]) => '<tr><td class="num">' + String(n).padStart(2, '0') + '</td><td class="num">' + f(c.rx) + '</td><td class="num">' + f(c.tx) +
+      '</td><td class="mono">' + esc(c.name) + '</td><td class="num">' + (c.rxTone || '–') + ' / ' + (c.txTone || '–') + '</td></tr>').join('') + '</tbody></table></div>';
+  $('ozellik').innerHTML = h;
+}
+const BILINEN = [5440, 5760, 5840, 16240, 17200, 18000];              // 136, 144, 146 / 406, 430, 450 MHz
+function bant() {
+  const b = P.base(ee), s = P.tabanSinir(ee), y = P.frekYerleri(ee).map(x => x.hz);
+  $('bantBilgi').innerHTML = '<div>Şu anki taban</div><div><b>' + mhz(b) + ' MHz</b>' + (b !== ilkTaban ? ' <span class="warn">(açıldığında ' + mhz(ilkTaban) + ' MHz idi)</span>' : '') + '</div>' +
+    '<div>Kullanılan frekanslar</div><div>' + (y.length ? (Math.min(...y) / 1e6).toFixed(4) + '–' + (Math.max(...y) / 1e6).toFixed(4) + ' MHz' : 'kanal yok') + '</div>' +
+    '<div>Seçilebilir taban</div><div>' + (s ? mhz(s.min) + '–' + mhz(s.max) + ' MHz (' + s.aile + ')' : '<span class="bad">tabanı bilinen bir bantta değil; değiştirilemez</span>') + '</div>';
+  $('yeniTaban').disabled = $('bantBtn').disabled = !s;
+  if (!s) { $('hazir').innerHTML = ''; return; }
+  $('yeniTaban').min = mhz(s.min); $('yeniTaban').max = mhz(s.max);
+  if (!$('yeniTaban').value) $('yeniTaban').value = mhz(b);
+  $('hazir').innerHTML = '<span class="note">Hazır:</span>' + BILINEN.filter(w => w >= s.min && w <= s.max)
+    .map(w => '<button data-w="' + w + '"' + (w === b ? ' disabled' : '') + '>' + mhz(w, 0) + ' MHz</button>').join('');
+  $('hazir').querySelectorAll('button').forEach(x => x.onclick = () => { $('yeniTaban').value = mhz(+x.dataset.w); bantAralik(); });
+  bantAralik();
+}
+function bantAralik() {
+  const v = parseFloat(String($('yeniTaban').value).replace(',', '.'));
+  $('bantAralik').textContent = v > 0 ? 'yeni aralık ' + v.toFixed(3) + '–' + (ust(Math.round(v * 40)) / 1e6).toFixed(4) + ' MHz' : '';
+}
+$('yeniTaban').oninput = bantAralik;
+
+/* ---------------------------------------------------------------- bant değiştirme */
+$('bantBtn').onclick = () => {
+  const v = parseFloat(String($('yeniTaban').value).replace(',', '.')), w = Math.round(v * 40);
+  if (!(v > 0) || Math.abs(w / 40 - v) > 1e-9) { $('bantSonuc').innerHTML = '<p class="bad">Taban 25 kHz adımında bir MHz değeri olmalı (ör. 144 ya da 144.025).</p>'; return; }
+  const eski = P.base(ee);
+  if (w === eski) { $('bantSonuc').innerHTML = '<p class="note">Taban zaten ' + mhz(w) + ' MHz.</p>'; return; }
+  const r = P.rebase(ee, w);
+  if (!r.ok) { $('bantSonuc').innerHTML = '<p class="bad">Değiştirilmedi:</p><ul class="hata bad">' + r.hatalar.slice(0, 8).map(h => '<li>' + esc(h) + '</li>').join('') + '</ul>'; return; }
+  log('bant tabanı ' + mhz(eski) + ' → ' + mhz(w) + ' MHz');
+  $('bantSonuc').innerHTML = '<p class="ok">✓ Taban ' + mhz(eski) + ' → ' + mhz(w) + ' MHz. ' + r.sozcuk + ' frekans kaydı yeni tabana göre yazıldı; frekanslar değişmedi, sağlamalar düzeltildi.</p>' +
+    (w < ilkTaban ? '<p class="warn">⚠ Telsizin bandının (' + mhz(ilkTaban) + ' MHz ve üstü) altına indiniz. Donanım (VCO, filtreler) bu frekanslarda çalışmayabilir: sentezör kilitlenmeyebilir ya da çıkış gücü düşebilir. Önce bir alma frekansıyla deneyin.</p>' : '');
+  ciz();
+};
+
+/* ---------------------------------------------------------------- kaydet / telsize yaz */
+function olustur() { return P.fixSums(ee.slice()); }
+function dosyaAdi(uz) { return ad.replace(/\.[^.]*$/, '') + '_' + P.get(ee, 'seriNo') + '_' + mhz(P.base(ee), 0) + 'MHz_duzenli' + uz; }
+function indir(veri, name) {
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([veri], { type: 'application/octet-stream' }));
+  a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+$('binBtn').onclick = () => { indir(olustur(), dosyaAdi('.bin')); log('yeni BIN indirildi: ' + dosyaAdi('.bin')); };
+$('p40Btn').onclick = () => indir(P.toP40(olustur()), dosyaAdi('.p40'));
+$('geriBtn').onclick = () => { if (confirm('Açıldığı hale dönülsün mü?')) { ee = ilk.slice(); $('yeniTaban').value = ''; $('bantSonuc').innerHTML = ''; ciz(); } };
+$('yazOnay').onchange = () => yazDurum();
+/* a file belongs to one radio: serial number, hardware type and calibration (0x578..0x5BC, except the
+ * band base 0x58C..0x58D which this page may change) must match the radio read in this session */
+function kimlikFark(a, b) {
+  const f = [];
+  if (P.get(a, 'seriNo') !== P.get(b, 'seriNo')) f.push('seri numarası farklı (dosyada ' + P.get(a, 'seriNo') + ', telsizde ' + P.get(b, 'seriNo') + ')');
+  let c = 0; for (let x = 0x578; x < 0x5BD; x++) if (x !== 0x58C && x !== 0x58D && a[x] !== b[x]) c++;
+  if (c) f.push('kalibrasyon / donanım bloğu ' + c + ' baytta farklı');
+  return f;
+}
+function durum() {
+  const d = fark();
+  $('farkBilgi').innerHTML = d ? '<span class="warn">' + d + ' bayt değişti</span> (sağlama toplamları dahil). İndirilen BIN yeni bir dosyadır; yalnızca yedeğini aldığınız telsize yükleyin.'
+    : 'Henüz değişiklik yok' + (P.checkSums(ilk).every(x => x.ok) ? '.' : ' (indirilen dosyada yalnız sağlamalar düzeltilir).');
+  $('geriBtn').disabled = !d;
+  yazDurum();
+}
+function yazDurum() {
+  const kf = eeData ? kimlikFark(olustur(), eeData) : [], d = eeData ? fark(eeData) : 0;
+  $('kimlik').innerHTML = !eeData ? '' : kf.length
+    ? '<p class="bad"><b>Bu dosya bağlı telsize ait değil:</b> ' + kf.map(esc).join('; ') + '. Yazılamaz.</p>'
+    : '<p class="ok">✓ Dosya bağlı telsize ait (seri no ' + esc(String(P.get(eeData, 'seriNo'))) + ', kalibrasyon aynı). Telsizdekinden ' + d + ' bayt farklı.</p>';
+  $('yazGate').textContent = !client ? 'Yazmak için bağlanın (1) ve telsizden okuyun (2).'
+    : !eeData ? 'Önce telsizden okuyun (2).'
+    : !yedekIndi ? 'Önce yedeği İNDİRİP bilgisayarınıza kaydedin (2. adımdaki bağlantı).'
+    : kf.length ? 'Dosya bu telsize ait değil.'
+    : !d ? 'Telsizdekiyle aynı; yazılacak bir şey yok.'
+    : !$('yazOnay').checked ? 'Onay kutusunu işaretleyin.' : '';
+  $('yazOnay').disabled = busy;
+  $('yazBtn').disabled = !(client && eeData && yedekIndi && !kf.length && d && $('yazOnay').checked && !busy);
+}
+function guard(e) { e.preventDefault(); e.returnValue = ''; }
+$('yazBtn').onclick = () => {
+  const hedef = olustur(), d = fark(eeData);
+  if (!confirm('DİKKAT: GERİ DÖNÜLEMEYECEK SORUNLAR OLUŞABİLİR. KENDİ RİSKİNİZLE.\n\n' + d + ' bayt telsizin EEPROM\'una yazılacak, ardından telsiz yeniden başlatılacak.\n\nBu telsizin yedeği: ' + yedekAd + '\n\nDevam edilsin mi?')) return;
+  run(async () => {
+    $('yazSonuc').innerHTML = ''; $('yazProg').classList.add('on');
+    addEventListener('beforeunload', guard);
+    log('EEPROM YAZILIYOR: ' + d + ' bayt');
+    let res;
+    try { res = await client.writeEeprom(hedef, { current: eeData, onProgress: f => progress('yazBar', 'yazTxt', f) }); }
+    catch (e) {
+      $('yazSonuc').innerHTML = '<p class="bad"><b>Yazma tamamlanmadı:</b> ' + esc(e.message) + '</p><p class="note">Telsizi kapatmadan kabloyu kontrol edip tekrar deneyin; gerekirse yedeğinizi (' + esc(yedekAd) + ') açıp yazın.</p>';
+      throw e;
+    } finally { removeEventListener('beforeunload', guard); }
+    log('yazıldı: ' + res.pages + ' sayfa; telsiz yeniden açılıyor');
+    sayacOlay('ee_yaz', header && header.version);
+    $('yazTxt').textContent = 'Telsiz yeniden açılıyor…';
+    await port.sleep(9000);                                  // boot (≈ 8 s with the yATOLYE screen)
+    await client.connect();
+    const now = await client.readEeprom();
+    let k = 0; for (let a = 0; a < 2048; a++) if (now[a] !== hedef[a]) k++;
+    eeData = now; ilk = now.slice(); ee = now.slice(); ilkTaban = P.base(now); kaynak = 'telsiz'; ad = 'aselsan_eeprom';
+    $('yazOnay').checked = false; $('yeniTaban').value = ''; ciz();
+    $('yazSonuc').innerHTML = k === 0 ? '<p class="ok"><b>✓ Telsize yazıldı.</b> Telsiz yeniden açıldı; okunan EEPROM yazılanla birebir aynı.</p>'
+      : '<p class="warn">Yazıldı ve doğrulandı, ancak yeniden açılıştan sonra ' + k + ' bayt farklı (firmware açılışta bazı değerleri kendisi güncelliyor olabilir).</p>';
+    log(k === 0 ? 'doğrulandı' : 'açılıştan sonra ' + k + ' bayt farklı');
+  });
+};
+refresh();
+
+/* eeprom.html#otomatik-test: dosyayla: 146 MHz tabanlı yedek 144'e indirilir (frekanslar aynı, sağlamalar
+ * tutar), sığmayan taban reddedilir, kanal adı değiştirilir, indirilecek BIN doğrulanır; bağlanmadan yazılamaz */
+if (location.hash === '#otomatik-test') (() => {
+  const hata = [], t = B.defaultEeprom();
+  t[0x58C] = 5840 >> 8; t[0x58D] = 5840 & 0xFF;
+  for (let n = 1; n <= 16; n++) t.fill(0xFF, 0x2E + (n - 1) * 13, 0x2E + n * 13);
+  [146.0e6, 146.5e6, 147.0e6, 147.5e6].forEach((f, i) => B.eeSetChannel(t, i + 1, f, f, { name: String(f / 1e6) }));
+  t[0x2E] |= 0xC0; P.fixSums(t);
+  yukle('deneme.bin', t, 'dosya');
+  if (!/130\.000–146\.000 MHz \(VHF\)/.test($('bantBilgi').textContent)) hata.push('sınır: ' + $('bantBilgi').textContent);
+  $('yeniTaban').value = '144'; $('bantBtn').click();
+  const o = olustur();
+  if (P.base(o) !== 5760 || !P.checkSums(o).every(x => x.ok) || B.eeChannel(o, 2).tx !== 146.5e6 || (o[0x2E] & 0xC0) !== 0xC0) hata.push('144: ' + $('bantSonuc').textContent);
+  if (!/144\.000–184\.9/.test($('ozellik').textContent)) hata.push('özellik: ' + $('ozellik').textContent.slice(0, 120));
+  if (!/bandının/.test($('bantSonuc').textContent)) hata.push('alt band uyarısı yok');
+  $('yeniTaban').value = '150'; $('bantBtn').click();
+  if (P.base(ee) !== 5760 || !/Değiştirilmedi/.test($('bantSonuc').textContent)) hata.push('150 kabul edildi');
+  $('yeniTaban').value = '430'; $('bantBtn').click();
+  if (P.base(ee) !== 5760) hata.push('UHF kabul edildi');
+  const c = P.channel(ee, 3); c.name = 'DENEME'; P.setChannel(ee, 3, c); ozellik(); durum();
+  const o2 = olustur();
+  if (B.eeChannel(o2, 3).name.trim() !== 'DENEME' || !P.checkSums(o2).every(x => x.ok) || !/bayt değişti/.test($('farkBilgi').textContent)) hata.push('ad: ' + $('farkBilgi').textContent);
+  if (!/^deneme_\d+_144MHz_duzenli\.bin$/.test(dosyaAdi('.bin'))) hata.push('ad ' + dosyaAdi('.bin'));
+  if (!$('yazBtn').disabled || !/bağlanın/.test($('yazGate').textContent)) hata.push('bağlanmadan yazılabilir');
+  window.confirm = () => true; $('geriBtn').click();
+  if (P.base(ee) !== 5840 || fark()) hata.push('geri al');
+  yukle('kisa.bin', new Uint8Array(100), 'dosya');
+  if ($('dosyaBilgi').textContent.indexOf('2048') < 0) hata.push('kısa dosya kabul edildi');
+  document.body.dataset.test = hata.length ? 'hata ' + hata.join(' / ') : 'bitti';
+})();
+/* eeprom.html#otomatik-test-online: simülatöre bağlan, oku (yedek indirilmeden yazılamaz), tabanı 136 → 144,
+ * kanal adı değiştir, telsize yaz: telsizde taban 144, frekanslar aynı; başka telsizin dosyası reddedilir */
+if (location.hash === '#otomatik-test-online') (async () => {
+  document.querySelector('input[value=sim]').checked = true; onMode();
+  const until = c => new Promise(r => { const t = setInterval(() => { if (c()) { clearInterval(t); r(); } }, 50); });
+  const hata = [];
+  $('connectBtn').click(); await until(() => client && !busy);
+  $('okuBtn').click(); await until(() => !busy && ee);
+  const once = []; for (let n = 1; n <= 16; n++) once.push(B.eeChannel(eeData, n));
+  $('yeniTaban').value = '144'; $('bantBtn').click();
+  const c = P.channel(ee, 1); c.name = 'ONLINE'; P.setChannel(ee, 1, c); ozellik(); durum();
+  $('yazOnay').checked = true; yazDurum();
+  if (!$('yazBtn').disabled || !/İNDİRİP/.test($('yazGate').textContent)) hata.push('yedek indirilmeden yazılabilir');
+  $('yedekDl').querySelector('a').click();
+  if ($('yazBtn').disabled) hata.push('yazma açılmadı: ' + $('yazGate').textContent);
+  window.confirm = () => true;
+  $('yazBtn').click(); await until(() => !busy);
+  const m = port.b.eeprom.mem;
+  const ayni = once.every((x, i) => { const y = B.eeChannel(m, i + 1); return y.rx === x.rx && y.tx === x.tx; });
+  if (P.base(m) !== 5760 || !ayni || B.eeChannel(m, 1).name.trim() !== 'ONLINE' || !P.checkSums(m).every(x => x.ok) || !/Telsize yazıldı/.test($('yazSonuc').textContent))
+    hata.push('yazma: taban ' + P.base(m) + ' ayni=' + ayni + ' ' + $('yazSonuc').textContent);
+  const baska = m.slice(); baska[0x591] ^= 0x10; P.set(baska, 'seriNo', 99999); P.fixSums(baska);
+  yukle('baska_telsiz.bin', baska, 'dosya'); $('yazOnay').checked = true; yazDurum();
+  if (!$('yazBtn').disabled || !/ait değil/.test($('kimlik').textContent)) hata.push('başka telsizin dosyası reddedilmedi: ' + $('kimlik').textContent);
+  document.body.dataset.test = hata.length ? 'hata ' + hata.join(' / ') : 'bitti';
+})();
+</script>
+</body>
+</html>

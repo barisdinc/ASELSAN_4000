@@ -136,6 +136,52 @@ for (let i = 1; i <= 24; i++) f({ k: 'aDurum' + i, p: 'adata', g: 'durum', l: 'D
 const FIELDS = F;
 
 function base(ee) { return ee[0x58C] << 8 | ee[0x58D]; }        // HalfBaseChan, 25 kHz birim
+
+/* ---------------------------------------------------------------- bant tabanı değiştirme
+ * Frekanslar tabana göre 14 bitlik sözcük (2,5 kHz) olarak tutulur: kanal (0x2E + 13(n-1), TX +0, RX +2,
+ * üst 2 bit bayrak) ve KSYS (0x7E3 alma, 0x7E6 gönderme). Taban değişince sözcükler kaydırılır, frekanslar
+ * aynı kalır (tamamen sıfır KSYS bloğu kullanılmıyor sayılır). Taban, bilinen telsiz bantlarının penceresinde kalır (VHF / UHF arası geçilmez: donanım farklı). */
+const TABAN_AILE = [['VHF', 130e6, 160e6], ['UHF', 400e6, 450e6]];
+const SOZ_UST = 0x3FFE;                                           // en büyük geçerli sözcük (0x3FFF = boş)
+function frekYerleri(ee) {                                        // [{ yer, a, maske }] dolu frekans sözcükleri
+  const y = [];
+  for (let n = 1; n <= 99; n++) {
+    const a = 0x2E + (n - 1) * 13;
+    if (((ee[a] & 0x3F) << 8 | ee[a + 1]) === 0x3FFF) continue;
+    y.push({ yer: 'kanal ' + n + ' gönderme', a, maske: 0x3F }, { yer: 'kanal ' + n + ' alma', a: a + 2, maske: 0x3F });
+  }
+  /* KSYS: an all-zero block (sum included) is an unused KSYS, as on most real radios; 0x3FFF = empty word */
+  const ksysBos = ee.slice(0x7E0, 0x7F6).every(x => x === 0);
+  if (!ksysBos) for (const [a, yer] of [[0x7E3, 'KSYS alma'], [0x7E6, 'KSYS gönderme']]) if ((ee[a] << 8 | ee[a + 1]) !== 0x3FFF) y.push({ yer, a, maske: 0xFF });
+  return y.map(x => Object.assign(x, { hz: (base(ee) * 10 + ((ee[x.a] & x.maske) << 8 | ee[x.a + 1])) * 2500 }));
+}
+/* the base window (25 kHz units) that keeps every used frequency representable */
+function tabanSinir(ee) {
+  const b = base(ee) * 25000, aile = TABAN_AILE.find(([, lo, hi]) => b >= lo && b <= hi);
+  if (!aile) return null;
+  const hz = frekYerleri(ee).map(x => x.hz);
+  let lo = aile[1], hi = aile[2];
+  if (hz.length) { lo = Math.max(lo, Math.max(...hz) - SOZ_UST * 2500); hi = Math.min(hi, Math.min(...hz)); }
+  return { aile: aile[0], min: Math.ceil(lo / 25000), max: Math.floor(hi / 25000) };
+}
+function rebase(ee, yeni) {
+  const s = tabanSinir(ee), hatalar = [];
+  if (!s) return { ok: false, hatalar: ['şu anki bant tabanı (' + (base(ee) * 0.025).toFixed(3) + ' MHz) bilinen bir bantta değil'] };
+  if (!Number.isInteger(yeni) || yeni < s.min || yeni > s.max) {
+    const kay = (base(ee) - yeni) * 10;
+    for (const x of frekYerleri(ee)) { const w = ((ee[x.a] & x.maske) << 8 | ee[x.a + 1]) + kay; if (w < 0 || w > SOZ_UST) hatalar.push(x.yer + ' ' + (x.hz / 1e6).toFixed(4) + ' MHz yeni aralığa sığmıyor'); }
+    hatalar.unshift('taban ' + (s.min * 0.025).toFixed(3) + '–' + (s.max * 0.025).toFixed(3) + ' MHz arasında olmalı (' + s.aile + ')');
+    return { ok: false, hatalar };
+  }
+  const kay = (base(ee) - yeni) * 10, yerler = frekYerleri(ee);
+  for (const x of yerler) {
+    const w = ((ee[x.a] & x.maske) << 8 | ee[x.a + 1]) + kay;
+    ee[x.a] = ee[x.a] & ~x.maske & 0xFF | w >> 8; ee[x.a + 1] = w & 0xFF;
+  }
+  ee[0x58C] = yeni >> 8; ee[0x58D] = yeni & 0xFF;
+  fixSums(ee);
+  return { ok: true, sozcuk: yerler.length };
+}
 function bandText(ee) {
   const mhz = Math.floor(base(ee) / 40);
   return { 146: '146-174', 406: '406-430', 430: '430-450', 450: '450-470' }[mhz] || mhz + ' - ' + (mhz + 30);
@@ -646,7 +692,7 @@ function injectCss(doc) {
 }
 
 const api = { FIELDS, PAGES, SUMS, TCS_HZ, get, set, getBits, setBits, channel, setChannel, xshift, base, checkSums, fixSums,
-  toP40, fromP40, p40Base, parseIni, dec1254, render, injectCss, telsizTipi, donanimTipi, bandText, where,
+  toP40, fromP40, p40Base, parseIni, dec1254, render, injectCss, telsizTipi, donanimTipi, bandText, where, TABAN_AILE, frekYerleri, tabanSinir, rebase,
   APRS0, APRS_UZ, APRS_VARSAYILAN, aprsGet, aprsSet, aprsGecerli, aprsFix, aprsKonum, aprsPaket, utf8, APRS_AYAR, aprsAyarGet, aprsAyarSet };
 if (typeof module !== 'undefined' && module.exports) module.exports = api;
 root.P4000 = api;

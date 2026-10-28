@@ -133,6 +133,23 @@ check('firmware sağlamaları = P4000 ilk dört blok', P.checkSums(def).slice(0,
   check('APRS: .p40 okuma bölümü korur', P.aprsGecerli(p40) && P.aprsGet(p40).cagri === 'TA7W-7');
 }
 
+/* bant tabanı değiştirme (eeprom.html): frekanslar, bayraklar ve sağlamalar korunur; sığmayan taban reddedilir */
+{
+  const ee = B.defaultEeprom(); P.set(ee, 'kRx', 150e6); P.set(ee, 'kTx', 151e6); ee[0x2E] |= 0x80; P.fixSums(ee);
+  const once = []; for (let n = 1; n <= 16; n++) once.push(P.channel(ee, n));
+  const s0 = P.tabanSinir(ee);
+  check('taban sınırı: VHF, 130 MHz – en düşük frekans (150)', s0.aile === 'VHF' && s0.min === 5200 && s0.max === 6000, JSON.stringify(s0));
+  const r = P.rebase(ee, 5760);
+  const ayni = once.every((c, i) => { const d = P.channel(ee, i + 1); return d.tx === c.tx && d.rx === c.rx && d.name === c.name && d.rxTcs === c.rxTcs; });
+  check('136 → 144 MHz: kanallar ve KSYS aynı frekansta, bayrak korunur, sağlamalar tutar',
+    r.ok && P.base(ee) === 5760 && ayni && P.get(ee, 'kRx') === 150e6 && P.get(ee, 'kTx') === 151e6 && (ee[0x2E] & 0x80) && P.checkSums(ee).every(x => x.ok), JSON.stringify(r));
+  const z = B.defaultEeprom(); P.fixSums(z);
+  check('sıfır KSYS bloğu frekans sayılmaz (taban 144\'e iner)', P.rebase(z, 5760).ok && P.base(z) === 5760 && P.checkSums(z).every(x => x.ok));
+  const kopya = ee.slice();
+  const r2 = P.rebase(ee, 6040), r3 = P.rebase(ee, 16000);
+  check('sığmayan / başka banda taban reddedilir, EEPROM değişmez', !r2.ok && /KSYS alma/.test(r2.hatalar.join()) && !r3.ok && same(ee, kopya), r2.hatalar.concat(r3.hatalar).join('; '));
+}
+
 /* 5. dışarıdan verilen dosyalar */
 for (const f of args) {
   const raw = readBin(f);

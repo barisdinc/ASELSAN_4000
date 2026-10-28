@@ -29,7 +29,7 @@ jobs:
         run: |
           mkdir _site
           cd disasm/sim
-          cp index.html app.js board.js m7700.js radio_view.js updater.js firmware.js yukle.html seri_istemci.js p4000.js afsk.js surumler.html surum_notlari.js ../../_site/
+          cp index.html app.js board.js m7700.js radio_view.js updater.js firmware.js yukle.html eeprom.html seri_istemci.js p4000.js afsk.js surumler.html surum_notlari.js ../../_site/
           touch ../../_site/.nojekyll
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3

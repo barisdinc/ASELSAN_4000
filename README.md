@@ -21,6 +21,8 @@ Telsizi tarayıcıda çalıştıran simülatör: **https://barisdinc.github.io/A
 
 Gerçek telsizden seri port üzerinden EEPROM ve flash yedeği, firmware yükleme ve EEPROM programlama / geri yükleme (Chrome / Edge, USB-RS232): **https://barisdinc.github.io/ASELSAN_4000/yukle.html**
 
+EEPROM düzenleyici: telsizden yedek alıp (ya da kendi `.bin` dosyanızı açıp) frekans bandını ve ayarları sınırlar içinde değiştirme, yeni BIN indirme ya da aynı telsize geri yazma: **https://barisdinc.github.io/ASELSAN_4000/eeprom.html**
+
 Orijinal firmware'leri (YA4000?.HEX) ve `ozel_firmware/` örneklerini kurulum gerektirmeden dener. Kaynak ve kullanım: [`disasm/sim/`](disasm/sim/README.md). Disassembly ve araçlar: [`disasm/`](disasm/README.md), çalışma analizi: [`docs/calisma_analizi.md`](docs/calisma_analizi.md).
 
 # ONEMLI NOT
