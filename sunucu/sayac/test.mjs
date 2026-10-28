@@ -17,6 +17,8 @@ check('başka adres hemen sayılır', olayEkle(d, 'ee_yedek', '5.6.7.8', 7001).s
 check('bağlantı sayaç değil, kayıtta', (x => x.sayac.ee_yedek === 2 && x.kayit[0].tur === 'baglanti')(olayEkle(d, 'baglanti', '9.9.9.9', 8000)));
 check('geçersiz tür reddedilir', olayEkle(d, 'sil', '9.9.9.9', 9000) === null && olayEkle(d, '__proto__', '9.9.9.9', 9000) === null);
 check('ek temizlenir', olayEkle(d, 'flash_yaz', '9.9.9.9', 9000, '<b>x</b>\u0000' + 'y'.repeat(50)).kayit[0].ek.length <= 32);
+{ const x = olayEkle(olayEkle(d, 'eeprom_acilis', '9.9.9.9', 8000), 'eeprom_acilis', '9.9.9.9', 8001);
+  check('sayfa açılışı her seferinde sayılır, kayda yazılmaz', x.sayac.eeprom_acilis === 2 && x.kayit.length === d.kayit.length); }
 let e = bosDurum(); for (let i = 0; i < KAYIT_EN_COK + 20; i++) e = olayEkle(e, 'flash_yedek', '10.' + (i >> 8) + '.' + (i & 255) + '.1', i * 10);
 check('kayıt sınırlı, en yeni başta', e.kayit.length === KAYIT_EN_COK && e.sayac.flash_yedek === KAYIT_EN_COK + 20 && e.kayit[0].t > e.kayit[1].t);
 check('görünüm n satır', gorunum(e, 5).kayit.length === 5);

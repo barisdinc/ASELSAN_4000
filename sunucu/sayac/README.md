@@ -3,6 +3,7 @@
 Programlama sayfasının (`disasm/sim/yukle.html`) düğmelerinin yanındaki sayaçları ve sayfanın altındaki **Bağlantı kaydı** listesini tutar:
 
 - **Sayaçlar:** EEPROM yedeği, flash yedeği, EEPROM yazma (4. adım, Telsize yaz), firmware yükleme (6. adım).
+- **Sayfa açılışı:** EEPROM düzenleyicinin (`disasm/sim/eeprom.html`) kaç kez açıldığı (`eeprom_acilis`). Her açılış sayılır, kayda yazılmaz.
 - **Kayıt:** Telsize bağlanma ve bu dört işlem için zaman, maskeli IP, telsizin yazılım sürümü. En son 300 satır tutulur.
 
 Yalnız gerçek telsizle (Web Serial) yapılan ve **başarıyla biten** işlemler sayılır; simülatör modu sayılmaz.
@@ -22,14 +23,14 @@ npx wrangler kv namespace create SAYAC   # çıkan id'yi wrangler.toml'daki BURA
 npx wrangler deploy                      # adres: https://aselsan-sayac.<hesap>.workers.dev
 ```
 
-Sonra `disasm/sim/yukle.html`'deki `SAYAC_VARSAYILAN` sabitine bu adresi yazın (ya da adresi bana verin). Denemek için sayfayı `yukle.html?sayac=https://aselsan-sayac.<hesap>.workers.dev` ile açın; bu parametre simülatör işlemlerini de sayar.
+Sonra `disasm/sim/yukle.html` ve `disasm/sim/eeprom.html`'deki `SAYAC_VARSAYILAN` sabitlerine bu adresi yazın (ya da adresi bana verin). Denemek için sayfayı `yukle.html?sayac=https://aselsan-sayac.<hesap>.workers.dev` ile açın; bu parametre simülatör işlemlerini de sayar.
 
 ## API
 
 | İstek | Yanıt |
 |---|---|
 | `GET /durum?n=100` | `{ sayac: {ee_yedek, flash_yedek, ee_yaz, flash_yaz}, kayit: [{t, ip, tur, ek?}] }` |
-| `POST /olay` `{tur, ek?}` | `{ sayac, sayildi }`; `tur`: `ee_yedek` `flash_yedek` `ee_yaz` `flash_yaz` `baglanti` |
+| `POST /olay` `{tur, ek?}` | `{ sayac, sayildi }`; `tur`: `ee_yedek` `flash_yedek` `ee_yaz` `flash_yaz` `baglanti` `eeprom_acilis` |
 
 `POST` yalnız `https://barisdinc.github.io`, `localhost` ve `file://` (origin `null`) sayfalarından kabul edilir. Bu, tarayıcı dışından sahte istek gönderilmesini tam engellemez; sayılar kötü niyetle şişirilebilir.
 

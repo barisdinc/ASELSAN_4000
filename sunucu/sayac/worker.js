@@ -1,7 +1,7 @@
 /* worker.js - Cloudflare Worker: ASELSAN 4000 programlama sayfasının (disasm/sim/yukle.html) sayaçları
  * ve bağlantı kaydı. Depo: KV ("SAYAC" bağı, tek anahtar "durum").
  *   GET  /durum?n=100   -> { sayac: {ee_yedek, flash_yedek, ee_yaz, flash_yaz}, kayit: [{t, ip, tur, ek?}] }
- *   POST /olay          <- { tur: 'ee_yedek' | 'flash_yedek' | 'ee_yaz' | 'flash_yaz' | 'baglanti', ek?: '...' }
+ *   POST /olay          <- { tur: 'ee_yedek' | 'flash_yedek' | 'ee_yaz' | 'flash_yaz' | 'baglanti' | 'eeprom_acilis', ek?: '...' }
  *                       -> { sayac }
  * IP isteğin kendisinden (CF-Connecting-IP) alınır ve yalnız maskeli hâli saklanır.
  * KV son yazanın kazandığı bir depo: aynı anda gelen iki olaydan biri kaybolabilir (bu trafikte önemsiz). */

@@ -1,7 +1,8 @@
 /* cekirdek.js - programlama sayfasının sayaçları ve bağlantı kaydı (saf fonksiyonlar; worker.js kullanır,
  * test.mjs dener). Tam IP hiçbir zaman saklanmaz: yalnız maskeli hâli (85.105.12.x / 2a02:4e0:2d2a:x). */
 
-export const SAYACLAR = ['ee_yedek', 'flash_yedek', 'ee_yaz', 'flash_yaz'];
+export const SAYACLAR = ['ee_yedek', 'flash_yedek', 'ee_yaz', 'flash_yaz', 'eeprom_acilis'];
+export const KAYITSIZ = ['eeprom_acilis'];   // sayfa açılışı (eeprom.html): yalnız sayılır, kayda yazılmaz (kaydı doldururdu)
 export const TURLER = [...SAYACLAR, 'baglanti'];
 export const KAYIT_EN_COK = 300;      // kayıttaki en çok satır (eskiler düşer)
 export const TEKRAR_MS = 5000;        // aynı adresten aynı olay bu süre içinde yeniden gelirse sayılmaz
@@ -29,6 +30,7 @@ export function temizle(s) {
 /* olayı işle: durum değişirse yeni durum, değilse null (geçersiz tür ya da kısa sürede tekrar) */
 export function olayEkle(durum, tur, ip, zaman, ek) {
   if (!TURLER.includes(tur)) return null;
+  if (KAYITSIZ.includes(tur)) return { sayac: Object.assign({}, bosDurum().sayac, durum.sayac, { [tur]: (durum.sayac[tur] || 0) + 1 }), kayit: durum.kayit };
   const adres = maskele(ip);
   const son = durum.kayit.find(k => k.ip === adres && k.tur === tur);
   if (son && zaman - son.t < TEKRAR_MS) return null;
