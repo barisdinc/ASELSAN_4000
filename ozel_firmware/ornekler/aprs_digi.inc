@@ -12,8 +12,10 @@
 ;
 ; Tampon (AR_CER = AP_CER) durumu AR_Y_DURUM: kesme geçerli paketi aldığında IG ya da DG açıksa 8
 ; (kilitli, karar ana döngüde: DG_ISLE). IG açıksa önce paket olduğu gibi seri porta yazılır
-; (1..5), sonra digi; değilse doğrudan 7 (digi gönderimi bekliyor). Kendi gönderimimiz (PTT /
-; tracker) bekleyen digiyi iptal eder.
+; (1..5), sonra digi; değilse doğrudan 7 (digi gönderimi bekliyor). Bekleyen digi (7) varken kendi
+; paketimiz de istenirse aynı gönderimde önce digi, ardından kendi paketimiz gider (AT V0-35).
+; Otomatik / 1 uzun gönderim digi kararı ya da seri port yazımı (1..5, 8) bitene kadar bekler;
+; yalnız o sırada PTT tuşuna basılırsa karar iptal edilir (tampon ortak).
 ; Çağrı işareti EEPROM'daki APRS bölümünden (AP_ALAN_AD + AP_CAGRI_YAZ) tamponun sonuna (DG_MY)
 ; yazılır; uzun paket (> DG_N_EN_COK) tekrarlanmaz.
 ; RAM (boşalan parçalar): DIGI_ISTE $012F, DG_SURE $0130, DG_MS $039C, yaşlar $0399..$039B,

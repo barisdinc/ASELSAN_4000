@@ -73,10 +73,10 @@ TITLES_TR:
         .INCLUDE "aprs_digi.inc"        ; APRS digipeater
         .INCLUDE "aprs_arka.inc"        ; arka planda APRS tracker
         .INCLUDE "kanal_kayit.inc"      ; q uzun: VFO'yu hafıza kanalına kaydet
+        .INCLUDE "aprs_rx.inc"          ; APRS alma: duyulan istasyonlar ($012400 bölgesi doldu, AT V0-35)
 
         .ORG $012400                    ; bank 1 boş alanı (açılış ekranı $012000'de)
         .INCLUDE "aprs.inc"
-        .INCLUDE "aprs_rx.inc"          ; APRS alma: duyulan istasyonlar
         .INCLUDE "secmeli_kaldir.inc"   ; seçmeli çağrı kaldırıldı, ~4,1 KB boşaltıldı
         .INCLUDE "tarama_tks.inc"       ; taramada TKS bekleme süresi uzun (ASELSAN V2-51/V2-54)
         .INCLUDE "yazici_kaldir.inc"    ; YAZICI menüsü ve yazıcı çıkışı yok

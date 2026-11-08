@@ -8,6 +8,9 @@
 ;   q kısa bas  : monitör (susturma devre dışı / devrede), ekranda "MONITOR*" / "MONITOR-";
 ;                 tuş bırakılınca (AT V0-32'ye kadar basınca)
 ;   q ~1 s tut  : VFO'yu hafıza kanalına kaydet (kanal_kayit.inc)
+;   1 ~1 s tut  : APRS TR ya da DG açıkken konum paketi (normal ekranda ve APRS ekranında;
+;                 aprs_arka.inc AP_BIR_UZUN). Bu durumda 1'in kısa basışı tuş bırakılınca
+;                 firmware'e verilir (kanal seçimi aynen çalışır).
 ; Diğer menülerde p firmware'e aynen gider; q her yerde yutulur (orijinalde A tipi kartta q,
 ; 0x0242 bit 4'ü kurup sonraki tuşları yutuyordu).
 ;
@@ -29,7 +32,8 @@
 
 TUS_P       .EQU $0447          ; 0 boşta; $80|tık p / q basılı; 1 uzun basış işlendi (bırakılmayı bekle)
 TUS_IS      .EQU $0448          ; bit 0 güç değiştir, bit 1 monitör, bit 2 basılı tuş q (p değil),
-                                ; bit 3 mesaja kanal numarasını ekle, bit 7 mesaj ekranda
+                                ; bit 3 mesaja kanal numarasını ekle, bit 4 basılı tuş 1,
+                                ; bit 7 mesaj ekranda
 TUS_MS      .EQU $0449          ; mesajın biteceği tık (alt 7 bit)
 TARAMA_D    .EQU $0241          ; bit 2 (0x0240 bit 10): tarama sürüyor (F_0048C1 kurar, 0x004A17 siler)
 F_MONITOR   .EQU $004FF6
@@ -54,21 +58,32 @@ TUS_KANCA:
         JMP   KY_TUS
 TK_0:   CMP   A,#'p'
         BEQ   TK_P
+        CMP   A,#'1'
+        BEQ   TK_BIR
         CMP   A,#'q'
-        BNE   TK_SON
-        LDA   A,MENU                    ; q: normal ekranda ve FREKANS'ta monitör / kayıt,
+        BEQ   TK_Q0
+        JMP   TK_SON
+TK_Q0:  LDA   A,MENU                    ; q: normal ekranda ve FREKANS'ta monitör / kayıt,
         BEQ   TK_Q                      ; her yerde yutulur
         CMP   A,#ST_FREKANS_ON
         BNE   TK_YUT
 TK_Q:   LDA   A,TUS_P                   ; basılı tutarken gelen tekrarlar yutulur
         BNE   TK_YUT
         SEB   #$04,TUS_IS
+        CLB   #$10,TUS_IS
+        BRA   TK_BAS
+TK_BIR: JSR   AP_BIR_UYGUN              ; 1: APRS TR / DG açık, normal ekran ya da APRS ekranı
+        BNE   TK_SON
+        LDA   A,TUS_P
+        BNE   TK_YUT
+        CLB   #$04,TUS_IS
+        SEB   #$10,TUS_IS
         BRA   TK_BAS
 TK_P:   JSR   TUS_EKRAN                 ; p: normal ekran, FREKANS, APRS; diğer menülerde firmware'e
         BNE   TK_SON
         LDA   A,TUS_P
         BNE   TK_YUT
-        CLB   #$04,TUS_IS
+        CLB   #$14,TUS_IS
 TK_BAS: LDA   A,TIK_32MS
         ORA   A,#$80
         STA   A,TUS_P
@@ -79,6 +94,7 @@ TK_BIRAK:
         LDM   #0,TUS_P
         CMP   A,#$80
         BCC   TK_SON                    ; uzun basış zaten işlendi
+        BBS   #$10,TUS_IS,TK_BIRKISA
         BBC   #$04,TUS_IS,TK_PKISA
         SEB   #$02,TUS_IS               ; q kısa: monitör
         BRA   TK_SON
@@ -89,6 +105,11 @@ TK_PKISA:
         JSR   TARAMA_TUS
         BRA   TK_SON
 TK_GUC: SEB   #$01,TUS_IS
+        BRA   TK_YUT
+TK_BIRKISA:                             ; 1 kısa: bırakılınca firmware'e rakam olarak
+        CLB   #$10,TUS_IS
+        LDM   #'1',$0226
+        BRA   TK_SON
 TK_YUT: LDM   #$0F,$0226
 TK_SON: LDA   A,$0226
         CMP   A,#$3A
@@ -131,9 +152,13 @@ TI_0:   LDA   A,TUS_P                   ; p / q ~1 s basılı
         AND   A,#$7F
         CMP   A,#TG_UZUN
         BCC   TI_GUC
+        BBS   #$10,TUS_IS,TI_BIRUZUN
         BBC   #$04,TUS_IS,TI_PUZUN
         LDM   #1,TUS_P                  ; q: kanal kayıt
         JMP   KY_BASLA
+TI_BIRUZUN:
+        LDM   #1,TUS_P                  ; 1: APRS konum paketi
+        JMP   AP_BIR_UZUN
 TI_PUZUN:                               ; p: normal ekranda taramayı başlat / durdur
         LDA   A,MENU
         BNE   TI_UZUN

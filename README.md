@@ -13,7 +13,7 @@ Islemci olarak MSP430 kullanmaya karar verdik simdilik. Aslinda yeni nesil islem
 
 ## Kullanım kılavuzu
 
-yATOLYE yazılımlı (AT V0-34) 4021 / 4025 araç telsizinin Türkçe kullanım kılavuzu: **[KULLANIM_KILAVUZU_AT_V0-34.pdf](kilavuz/KULLANIM_KILAVUZU_AT_V0-34.pdf)**. Kanal, VFO, tarama, güç, monitör, APRS ve GPS bağlantısı adım adım, ekran görüntüleriyle. Kaynağı `kilavuz/kaynak.html`; `python3 kilavuz/uret.py` HTML'i üretir, PDF Chrome'un yazdırmasıyla alınır (`kilavuz/README.md`).
+yATOLYE yazılımlı (AT V0-35) 4021 / 4025 araç telsizinin Türkçe kullanım kılavuzu: **[KULLANIM_KILAVUZU_AT_V0-35.pdf](kilavuz/KULLANIM_KILAVUZU_AT_V0-35.pdf)**. Kanal, VFO, tarama, güç, monitör, APRS ve GPS bağlantısı adım adım, ekran görüntüleriyle. Kaynağı `kilavuz/kaynak.html`; `python3 kilavuz/uret.py` HTML'i üretir, PDF Chrome'un yazdırmasıyla alınır (`kilavuz/README.md`).
 
 ## Web simülatörü
 

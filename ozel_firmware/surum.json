@@ -26,15 +26,15 @@
     },
     "YA4000S_FREKANS.HEX": {
       "major": 0,
-      "minor": 37,
+      "minor": 38,
       "tarih": "2026-11-08",
-      "imza": "8010db311d5a2eac"
+      "imza": "932b30c34bc2c68c"
     },
     "YA4000S_FREKANS_YATOLYE.HEX": {
       "major": 0,
-      "minor": 34,
+      "minor": 35,
       "tarih": "2026-11-08",
-      "imza": "ee1209cdaaa03497"
+      "imza": "dd82fbde097fe3a7"
     }
   }
 }

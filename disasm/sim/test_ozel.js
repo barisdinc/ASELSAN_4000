@@ -823,6 +823,57 @@ if (RING.includes('APRS TR*')) {
   keys(u, 'm');
 }
 
+/* 1 uzun basış (aprs_arka.inc AP_BIR_UZUN, AT V0-35): APRS TR ya da DG açıkken konum paketi, ekranda APRS TX;
+ * kısa 1 firmware'e aynen gider; bekleyen digi paketi kendi paketimizle birlikte gider (iptal edilmez) */
+if (RING.includes('APRS TR*')) {
+  const P = globalThis.P4000;
+  const ayar = { cagri: 'ta7w-7', enlem: '4050.63N', boylam: '03109.39E', yorum: 'bir', tablo: '/', kod: '>', aralik: 0 };
+  const KENDI = 'TA7W-7>APIZCI,WIDE2-2:!4050.63N/03109.39E>bir', KENDI_DG = KENDI.replace('APIZCI', 'APATAR');
+  const vcoOf = b => (b.radioState().vco / 1e6).toFixed(4);
+  const dinle = (b, f) => { const log = [], push = b.pushAudio, ekran = new Set(), fr = new Set();
+    b.pushAudio = (buf, v) => { if (buf === b.audio.ta1) log.push(b.now, v); push.call(b, buf, v); };
+    f(ekran, fr); b.pushAudio = push; return { p: AFSK.decode(log, FCLK).map(x => (x.fcsOk ? '' : '[FCS] ') + x.text), ekran: [...ekran], f: [...fr] }; };
+  const izle = (b, sn, ekran, fr) => { for (let t = 0; t < sn - 1e-9; t += 0.1) { b.run(FCLK * 0.1); ekran.add(lcd(b)); fr.add(vcoOf(b)); } };
+  const bir = (b, sn, ekran, fr) => { const i = KP.indexOf('1'); b.keypad.press(i, true, b); izle(b, sn, ekran, fr); b.keypad.press(i, false, b); };
+  const aprsGir = b => { for (let k = 0; k < 12 && lcd(b) !== 'APRS    '; k++) keys(b, 'm'); keys(b, 's'); };
+  /* normal ekran: TR açık (varsayılan TR + IG), aralık 0 */
+  const a = radio(ee => P.aprsSet(ee, ayar)); boot(a, 2.5);
+  let r = dinle(a, (e, f) => { bir(a, 1.4, e, f); izle(a, 4, e, f); });
+  check('1 uzun (normal ekran, TR açık, aralık 0): APRS TX, 144,800\'de paket, kanala dönüş', r.p.join(';') === KENDI && r.ekran.includes('APRS TX ') && r.f.includes('144.8000') &&
+    lcd(a) === 'KANAL 01' && vcoOf(a) === '201.0000', r.p.join(';') + ' | ' + r.ekran.join('|') + ' | ' + vcoOf(a));
+  /* kısa 1: TR / DG kapalı telsizle aynı (firmware'e gider) */
+  const z = radio(ee => { P.aprsSet(ee, ayar); P.aprsAyarSet(ee, { tr: false, dg: false, ig: true }); }); boot(z, 2.5);
+  const kisa = b => { const g = keys(b, '1'); b.run(FCLK * 2); g.push(lcd(b)); return g.join('|') + ' ' + Array.from(b.ram.slice(0x283, 0x294)).join(','); };
+  const ka = kisa(a), kz = kisa(z);
+  check('1 kısa: TR açıkken de firmware\'e gider (TR / DG kapalı telsizle aynı)', ka === kz, ka + ' / ' + kz);
+  r = dinle(z, (e, f) => { bir(z, 1.4, e, f); izle(z, 3, e, f); });
+  check('1 uzun: TR ve DG kapalıyken paket yok', r.p.length === 0 && !r.f.includes('144.8000'), r.p.join(';') + ' | ' + r.ekran.join('|'));
+  /* APRS ekranı: yalnız DG açık, aralık 0 -> APATAR */
+  const c = radio(ee => { P.aprsSet(ee, ayar); P.aprsAyarSet(ee, { tr: false, dg: true, ig: false }); }); boot(c, 2.5); aprsGir(c);
+  r = dinle(c, (e, f) => { bir(c, 1.4, e, f); izle(c, 3, e, f); });
+  check('1 uzun (APRS ekranı, yalnız DG, aralık 0): APRS TX, APATAR paketi, APRS OK', r.p.join(';') === KENDI_DG && r.ekran.includes('APRS TX ') && lcd(c) === 'APRS OK ',
+    r.p.join(';') + ' | ' + r.ekran.join('|') + ' | ' + lcd(c));
+  /* bekleyen digi paketi + kendi paketimiz: ikisi de gider (önce digi) */
+  const ikisi = (b, text, anDurum) => dinle(b, () => {
+    const e = AFSK.edges(AFSK.encode(text), {}), t = b.now, son = e[e.length - 1];
+    b.selIn.setEdges(e.map(x => t + Math.round(x * FCLK))); b.inputs.P5 |= 0x80; b.run(FCLK * (son - 0.05));
+    let d = -1;
+    for (let i = 0; i < 200; i++) { b.run(FCLK * 0.002); d = b.ram[0x4FA]; if (anDurum(d)) break; }
+    b.inputs.P5 &= ~0x80; b.ram[0x3D4] = 1;     /* AP_SIMDI: tam bu anda 1 uzun basış */
+    b.ikisiDurum = d; b.run(FCLK * 4); });
+  r = ikisi(c, 'TA1AA>APRS,WIDE1-1:>digi1', d => d === 7);
+  check('digi bekliyorken (durum 7) kendi paketimiz: aynı gönderimde önce digi, sonra kendi (iptal yok)', c.ikisiDurum === 7 &&
+    r.p.join(';') === 'TA1AA>APRS,TA7W-7*:>digi1;' + KENDI_DG, 'durum ' + c.ikisiDurum + ': ' + r.p.join(';'));
+  const g = radio(ee => { P.aprsSet(ee, ayar); P.aprsAyarSet(ee, { tr: false, dg: true, ig: true }); }); boot(g, 2.5); aprsGir(g);
+  r = ikisi(g, 'TA1AB>APRS,WIDE2-2:>digi2', d => d >= 1 && d <= 6);
+  check('digi kararı / seri port sürerken kendi paketimiz bekler, sonra ikisi de gider', g.ikisiDurum >= 1 && g.ikisiDurum <= 6 &&
+    r.p.join(';') === 'TA1AB>APRS,TA7W-7*,WIDE2-1:>digi2;' + KENDI_DG, 'durum ' + g.ikisiDurum + ': ' + r.p.join(';'));
+  /* AT V0-34 hatası: ARKA_ILK AR_Y_DURUM ($04FA) ile çakışıyordu; açılışta ve menüde ayar değişince 0 kalmalı */
+  const h = radio(ee => { P.aprsSet(ee, Object.assign({}, ayar, { aralik: 20 })); P.aprsAyarSet(ee, { tr: true, dg: false, ig: false }); }); boot(h, 2.5);
+  const h0 = h.ram[0x4FA]; for (let k = 0; k < 12 && lcd(h).slice(0, 7) !== 'APRS IG'; k++) keys(h, 'm'); keys(h, 'ss'); const h1 = h.ram[0x4FA];
+  check('APRS alma seri durumu (AR_Y_DURUM) açılışta ve ayar değişince 0 (ARKA_ILK ayrı baytta)', h0 === 0 && h1 === 0 && h.ram[0x2D1] === 1, h0 + ' / ' + h1 + ' / ARKA_ILK ' + h.ram[0x2D1]);
+}
+
 /* yalnız Türkçe (dil_kaldir.inc): EEPROM'da İngilizce (0x018 bit 7 = 0) seçili olsa da menüler Türkçe */
 if (TR) {
   const b = radio(ee => { ee[0x018] = (ee[0x018] & 0x7F) | 0x20; }); boot(b, 2.5);

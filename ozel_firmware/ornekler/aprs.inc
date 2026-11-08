@@ -115,7 +115,12 @@ PTT_ISTEK   .EQU $0244          ; F_005E56: bit 0..5 PTT istekleri (0x20 P47, 0x
 F_PTT_APRS  .EQU $0004          ; firmware'de kullanılmayan istek biti: otomatik APRS gönderimi
 AP_EN_KISA  .EQU 10             ; en kısa otomatik gönderim aralığı (s)
 AP_ILK      .EQU 5              ; APRS'e girişten / açılıştan ilk otomatik pakete (s)
-ARKA_ILK    .EQU $04FA          ; 1 = arka plan tracker'ın ilk paketi bekleniyor (aprs_arka.inc)
+; ARKA_ILK / AP_SIMDI: kapatılan özelliklerden boşalan RAM'in artan baytları (ozel_firmware/README.md
+; "Boşalan RAM": 0x02AB-0x02D1 bloğunda DET kaydı 0x02CB-0x02D0'dan sonra, 0x03C8-0x03D4 bloğunda
+; 0x03CE-0x03D3'ten sonra; ram_bos.js'te erişilmiyor; açılışta sıfırlanan 0x0080-0x04EC içinde).
+; AT V0-34'te ARKA_ILK yanlışlıkla $04FA'daydı (AR_Y_DURUM ile çakışıyordu; V0-35'te düzeltildi).
+ARKA_ILK    .EQU $02D1          ; 1 = arka plan tracker'ın ilk paketi bekleniyor (aprs_arka.inc)
+AP_SIMDI    .EQU $03D4          ; 1 = APRS ekranında 1 uzun basış: ilk uygun anda gönder
 
 F_AP_KURULU .EQU 1
 F_AP_GITTI  .EQU 2
@@ -412,19 +417,30 @@ APRS_PTT:
         PHA
         SEM
         JSR   AP_HAZIR
-        BNE   AP_YOK
-        LDA   A,AR_Y_DURUM              ; digipeater paketi bekliyor (aprs_digi.inc): onu gönder
+        BEQ   AP_VAR
+        JMP   AP_YOK
+AP_VAR: LDA   A,AR_Y_DURUM              ; digipeater paketi bekliyor (aprs_digi.inc): onu gönder
         CMP   A,#7
         BNE   AP_KENDI
         JSR   AR_KAPAT
         CLM
         JSR   AFSK_GONDER
-        CLB   #F_PTT_APRS,PTT_ISTEK
         SEM
         LDM   #0,AR_Y_DURUM
-        BRA   AP_YOK
+        LDA   A,AP_OTO                  ; kendi paketimiz de isteniyor mu (otomatik / 1 uzun,
+        BNE   AP_KENDI2                 ; arka plan, PTT tuşu): aynı gönderimde ardından gider
+        LDA   A,ARKA_DURUM
+        CMP   A,#3
+        BEQ   AP_KENDI2
+        LDA   A,PTT_ISTEK
+        AND   A,#$3F & ~F_PTT_APRS
+        BNE   AP_KENDI2
+        CLM
+        CLB   #F_PTT_APRS,PTT_ISTEK
+        SEM
+        JMP   AP_YOK
 AP_KENDI:
-        CMP   A,#7                      ; kendi paketimiz: bekleyen digi / karar iptal
+        CMP   A,#7                      ; kendi paketimiz (PTT tuşu): bekleyen digi kararı iptal
         BCC   AP_KENDI2
         LDM   #0,AR_Y_DURUM
 AP_KENDI2:
@@ -1293,6 +1309,7 @@ AKN_ZAMAN:
         .ASSUME M=1,X=0
 AKN_CIKIS:
         LDM   #0,AP_DURUM
+        LDM   #0,AP_SIMDI
         JSR   AR_KAPAT                  ; alma çözücüsü kapansın (TB1)
         LDM   #0,AR_GOSTER
         LDM   #0,AR_SEC
@@ -1344,6 +1361,7 @@ AP_ACILIS_DENETLE:
         BNE   AAD_SON
         LDM   #0,AP_DURUM               ; RAM açılışta rastgele: APRS değişkenlerini temizle
         LDM   #0,AP_OTO
+        LDM   #0,AP_SIMDI
         JSR   AR_SIFIRLA
         CLM
         LDA   A,#ACILIS_TAMAM
@@ -1434,16 +1452,28 @@ AP_OTO_ZAMAN:
         LDA   A,TIK_32MS
         STA   A,AP_SONTIK
         JSR   AP_HAZIR                  ; paket hazır değilse sayma
-        BNE   AOZ_SON
-        CLM
+        BEQ   AOZ_H
+        JMP   AOZ_SON
+AOZ_H:  LDA   A,AP_OTO                  ; istek bekliyor (otomatik ya da 1 uzun basış; aralık 0
+        BNE   AOZ_BEKLE                 ; olsa da süresi dolarsa bırakılır)
+        LDA   A,AP_SIMDI                ; 1 uzun basış: aralık ve kanal beklenmez
+        BEQ   AOZ_N
+        LDA   A,RADYO_DURUM             ; gönderirken değil
+        CMP   A,#4
+        BCS   AOZ_SONJ
+        JMP   AOZ_DIGI
+AOZ_SONJ:
+        JMP   AOZ_SON
+AOZ_N:  CLM
         LDA   A,AP_ARALIK
         BEQ   AOZ_SON
         SEM
         LDA   A,AP_AYAR                 ; APRS TR ya da DG açık (aprs_ayar.inc); DG: digi konumu
         AND   A,#AYAR_TR|AYAR_DG
         BEQ   AOZ_SON
-        LDA   A,AP_OTO
-        BEQ   AOZ_SAY
+        BRA   AOZ_SAY
+AOZ_BEKLE:
+        .ASSUME M=1,X=0
         LDA   A,AP_OTO_SURE             ; istek bekliyor: süresi dolarsa bırak
         SEC
         SBC   A,AP_FARK
@@ -1478,6 +1508,16 @@ AOZ_2:  STA   A,AP_MS
         CMP   A,AP_ARALIK
         BCC   AOZ_SON
         BBS   #$0020,$023E,AOZ_SON      ; kanalda sinyal: ilk boşluğu bekle
+        SEM
+AOZ_DIGI:                               ; digi kararı / seri port yazımı sürüyorsa bekle (tampon
+        .ASSUME M=1,X=0                 ; ortak); digi gönderim bekliyorsa (7) ikisi birlikte gider
+        LDA   A,AR_Y_DURUM
+        BEQ   AOZ_ISTE
+        CMP   A,#7
+        BNE   AOZ_SON
+AOZ_ISTE:
+        LDM   #0,AP_SIMDI
+        CLM
         SEB   #F_PTT_APRS,PTT_ISTEK     ; zamanı geldi: PTT isteği
         SEM
         LDM   #1,AP_OTO

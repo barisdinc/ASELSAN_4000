@@ -236,3 +236,71 @@ AI_LCD:
         CLM
         PLA
         RTS
+
+; ---------------------------------------------------------------------------------------------
+; 1 tuşu ~1 s basılı: konum paketini hemen gönder (AT V0-35). APRS TR ya da DG açıkken çalışır.
+;   APRS ekranında: AP_SIMDI; AP_OTO_ZAMAN aralık ve kanal beklemeden otomatik gönderimin PTT
+;   isteğini kurar (digi kararı sürüyorsa bitince); APRS_PTT "APRS TX" / "APRS OK" yazar.
+;   Normal ekranda: arka plan tracker'ın 144,800'e geçişi (durum 2, "APRS TX"), gönderip kanala
+;   ya da VFO frekansına döner. Kanaldaki sinyal beklenmez (kullanıcı istedi), ama telsiz
+;   alımda olmalı (gönderirken değil). Aralık sayacı gönderimden sonra baştan başlar.
+; Uygun değilse (paket kurulamadı, gönderiyor) hata sesi.
+
+; Z = 1: 1 tuşu APRS'e ait (açılış denetimi bitti, TR ya da DG açık, normal ekran ya da APRS
+; ekranı). M = 1 giriş ve çıkış, A bozulur. Tuş kancasından ve TUS_ISLE'den çağrılır.
+AP_BIR_UYGUN:
+        .ASSUME M=1,X=0
+        CLM
+        LDA   A,AP_ACILIS
+        CMP   A,#ACILIS_TAMAM
+        SEM
+        BNE   ABU_SON
+        LDA   A,AP_AYAR
+        AND   A,#AYAR_TR|AYAR_DG
+        BEQ   ABU_HAYIR
+        LDA   A,MENU
+        BEQ   ABU_SON
+        CMP   A,#ST_APRS_ON
+ABU_SON:
+        RTS
+ABU_HAYIR:
+        LDA   A,#1
+        RTS
+
+; TUS_ISLE'den JMP (M = 1, çerçeve $0E,S); TUS_ISLE gibi TI_SON / TI_CIZ ile M = 0 RTS.
+AP_BIR_UZUN:
+        .ASSUME M=1,X=0
+        JSR   AP_BIR_UYGUN
+        BNE   ABZ_SON
+        LDA   A,MENU
+        BEQ   ABZ_ARKA
+        JSR   AP_HAZIR                  ; APRS ekranı: paket hazır mı
+        BNE   ABZ_HATA
+        LDM   #1,AP_SIMDI               ; AP_OTO_ZAMAN ilk uygun anda (digi kararı bitince) ister
+        JMP   TI_SON
+        .ASSUME M=1,X=0
+ABZ_ARKA:                               ; normal ekran: 144,800'e geç, gönder, dön
+        LDA   A,ARKA_DURUM
+        BNE   ABZ_SON                   ; arka plan zaten gönderiyor
+        LDA   A,RADYO_DURUM
+        CMP   A,#2
+        BNE   ABZ_HATA
+        CLM
+        JSR   AP_KUR
+        SEM
+        BBS   #F_AP_KURULU,AP_DURUM,ABZ_A1
+        LDM   #0,AP_DURUM               ; frekans bantta değil
+        BRA   ABZ_HATA
+ABZ_A1: LDM   #2,ARKA_DURUM
+        CLB   #$80,TUS_IS               ; gösterilen mesaj varsa biter
+        CLM
+        LDX   #0                        ; "APRS TX"
+        JSR   AP_METIN_YAZ
+        JMP   TI_CIZ
+        .ASSUME M=1,X=0
+ABZ_HATA:
+        SEM
+        LDY   #13
+        JSR   KY_BIP
+ABZ_SON:
+        JMP   TI_SON

@@ -17,7 +17,7 @@
       {
         "baslik": "APRS TR / DG / IG ayarları",
         "surum": "0-24",
-        "aciklama": "Menüde APRS TR (tracker), APRS DG (digipeater), APRS IG (seri port / igate); 's' ile * / -. TR ya da DG açıkken aralıkla otomatik konum (ilk paket ~5 s'de). Yalnız TR açıkken normal kanalda arka plan tracker (30 s boşlukta 144,800; ilk paket ~10 s'de). DG açıkken cihaz tipi APATAR (digi konumu). EEPROM 0x733."
+        "aciklama": "Menüde APRS TR (tracker), APRS DG (digipeater), APRS IG (seri port / igate); 's' ile * / -. TR ya da DG açıkken aralıkla otomatik konum (ilk paket ~5 s'de). Yalnız TR açıkken normal kanalda arka plan tracker (30 s boşlukta 144,800; ilk paket ~10 s'de). DG açıkken cihaz tipi APATAR (digi konumu). EEPROM 0x733. TR ya da DG açıkken 1 uzun: konum paketini hemen gönder."
       },
       {
         "baslik": "GPS konumu",
@@ -76,6 +76,20 @@
       }
     ],
     "surumler": [
+      {
+        "surum": "0-35",
+        "tarih": "2026-11-08",
+        "durum": "sim",
+        "yeni": [
+          "1 tuşunu ~1 s basılı tutunca konum paketi hemen gider (APRS TR ya da DG açıkken): normal ekranda herhangi bir kanaldayken APRS frekansına geçip gönderir ve döner, APRS ekranında doğrudan gönderir; ekranda APRS TX. Aralık 0 olsa da çalışır. 1'e kısa basış eskisi gibi kanal hanesidir."
+        ],
+        "degisiklik": [
+          "Bekleyen digi paketi artık kendi paketimiz yüzünden iptal edilmez: ikisi aynı gönderimde, önce digi, ardından kendi paketimiz gider. Otomatik ve 1 gönderimi digi kararı / seri port yazımı bitene kadar bekler."
+        ],
+        "duzeltme": [
+          "AT V0-34'te arka plan tracker'ın ilk paket bayrağı APRS alma seri yazma durumuyla aynı RAM baytını kullanıyordu (açılışta ve menüde APRS ayarı değişince seri yazma durumu bozulabiliyordu); ayrı bayta taşındı."
+        ]
+      },
       {
         "surum": "0-34",
         "tarih": "2026-11-08",
