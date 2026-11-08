@@ -17,7 +17,7 @@
       {
         "baslik": "APRS TR / DG / IG ayarları",
         "surum": "0-24",
-        "aciklama": "Menüde APRS TR (tracker), APRS DG (digipeater), APRS IG (seri port / igate); 's' ile * / -. Yalnız TR açıkken normal kanalda arka plan tracker (30 s boşlukta 144,800). DG açıkken cihaz tipi APATAR. EEPROM 0x733."
+        "aciklama": "Menüde APRS TR (tracker), APRS DG (digipeater), APRS IG (seri port / igate); 's' ile * / -. TR ya da DG açıkken aralıkla otomatik konum (ilk paket ~5 s'de). Yalnız TR açıkken normal kanalda arka plan tracker (30 s boşlukta 144,800; ilk paket ~10 s'de). DG açıkken cihaz tipi APATAR (digi konumu). EEPROM 0x733."
       },
       {
         "baslik": "GPS konumu",
@@ -76,6 +76,18 @@
       }
     ],
     "surumler": [
+      {
+        "surum": "0-34",
+        "tarih": "2026-11-08",
+        "durum": "sim",
+        "yeni": [
+          "APRS DG açıkken telsiz kendi konumunu da yayınlar (APRS TR kapalı olsa da): aralık ayarlıysa her aralıkta, cihaz tipi APATAR olarak (digipeater konumu)."
+        ],
+        "degisiklik": [
+          "İlk otomatik APRS paketi artık bir aralık beklenmeden gider: APRS ekranına girdikten (telsiz APRS'te açıldıysa açılıştan) ~5 s sonra; sonrası yine her aralıkta.",
+          "Arka plan tracker'da ilk paket: telsiz açıldıktan ya da menüde APRS TR / DG / IG değiştirildikten sonra kanalda 5 s boşluk yeter (~10 s'de gider); sonraki paketler yine aralık + 30 s boşlukla."
+        ]
+      },
       {
         "surum": "0-33",
         "tarih": "2026-10-23",

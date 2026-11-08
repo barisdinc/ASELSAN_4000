@@ -418,15 +418,16 @@ if (RING.includes('APRS')) {
   }
   /* otomatik gönderim (PTT'ye basılmadan): bölümdeki aralık */
   {
-    const r = radio(aprs(Object.assign({}, AYAR, { aralik: 12 }))); boot(r, 2.5); keys(r, enter); r.run(FCLK * 0.3);
+    const r = radio(aprs(Object.assign({}, AYAR, { aralik: 12 }))); boot(r, 2.5); const tGir = r.now; keys(r, enter); r.run(FCLK * 0.3);
     const log = [], push = r.pushAudio, tx = [];
     r.pushAudio = (buf, v) => { if (buf === r.audio.ta1) log.push(r.now, v); push.call(r, buf, v); };
     for (let t = 0; t < 27; t += 0.25) { r.run(FCLK * 0.25); tx.push(r.radioState().vco / 1e6 < 150 ? 1 : 0); }
     r.pushAudio = push;
     const f = AFSK.decode(log, FCLK), txs = tx.join('').split(/0+/).filter(Boolean).length;
     check('APRS otomatik: aralık 12 s, PTT yok, 27 s\'de 2 paket', f.length === 2 && f.every(x => x.fcsOk && x.text === PAKET), f.map(x => x.text).join(' / ') || 'paket yok');
-    const t1 = log.length ? log[0] / FCLK : 0;
-    check('APRS otomatik: ilk paket ~12 s sonra, her gönderimden sonra verici kapanıyor', txs === 2 && tx[tx.length - 1] === 0, 'gönderim ' + txs + ', son durum ' + (tx[tx.length - 1] ? 'TX' : 'RX') + ', ekran ' + lcd(r));
+    const t1 = log.length ? (log[0] - tGir) / FCLK : 0;
+    check('APRS otomatik: ilk paket girişten ~5 s sonra (' + t1.toFixed(1) + ' s)', t1 > 4 && t1 < 7.5, t1.toFixed(2) + ' s');
+    check('APRS otomatik: her gönderimden sonra verici kapanıyor', txs === 2 && tx[tx.length - 1] === 0, 'gönderim ' + txs + ', son durum ' + (tx[tx.length - 1] ? 'TX' : 'RX') + ', ekran ' + lcd(r));
     keys(r, 'm'); log.length = 0;
     r.pushAudio = (buf, v) => { if (buf === r.audio.ta1) log.push(r.now, v); push.call(r, buf, v); };
     r.run(FCLK * 14); r.pushAudio = push;
@@ -449,13 +450,15 @@ if (RING.includes('APRS')) {
     const ee1 = Uint8Array.from(r.eeprom.mem), fark = [];
     for (let a = 0; a < ee1.length; a++) if (ee1[a] !== ee0[a]) fark.push(a.toString(16));
     check('APRS modu: menüye girince EEPROM 0x732 = A5, başka bayt değişmez', ee1[0x732] === 0xA5 && fark.join() === '732', 'değişen ' + fark.join(','));
-    const r2 = yenidenAc(ee1);
+    const r2 = yenidenAc(ee1), tAcik = r2.now;
     check('APRS modu: kapat-aç -> menü seçmeden APRS AKT, alma 144,800', lcd(r2) === 'APRS AKT' && vco(r2) === '189.8000' && r2.ram[0x227] === 0x17, lcd(r2) + ' ' + vco(r2));
     const log = [], push = r2.pushAudio;
     r2.pushAudio = (buf, v) => { if (buf === r2.audio.ta1) log.push(r2.now, v); push.call(r2, buf, v); };
     r2.run(FCLK * 14); r2.pushAudio = push;
     const f = AFSK.decode(log, FCLK);
     check('APRS modu: kapat-aç sonrası otomatik gönderim sürüyor (12 s)', f.length === 1 && f[0].fcsOk && f[0].text === PAKET && lcd(r2) === 'APRS OK ', f.length + ' paket, ' + lcd(r2));
+    const tAc = log.length ? (log[0] - tAcik) / FCLK : 0;   // APRS AKT görününce (açılış + 0,5 s) başlar
+    check('APRS modu: kapat-aç sonrası ilk paket birkaç saniye içinde (' + tAc.toFixed(1) + ' s)', tAc > 3 && tAc < 7, tAc.toFixed(2) + ' s');
     const r3 = yenidenAc(Uint8Array.from(r2.eeprom.mem));
     check('APRS modu: ikinci kapat-aç da APRS\'te', lcd(r3) === 'APRS AKT' && r3.eeprom.mem[0x732] === 0xA5, lcd(r3));
     keys(r3, 'm'); r3.run(FCLK * 0.3);
@@ -681,14 +684,22 @@ if (RING.includes('APRS TR*')) {
   /* APRS ekranında: TR kapalı -> 12 s'de otomatik paket yok; IG kapalı -> seri port boş, detay var */
   keys(r, 'm'); for (let k = 0; k < 12 && lcd(r) !== 'APRS    '; k++) keys(r, 'm'); keys(r, 's');
   const log = [], push = r.pushAudio; r.pushAudio = (buf, v) => { if (buf === r.audio.ta1) log.push(r.now, v); push.call(r, buf, v); };
-  r.run(FCLK * 13); r.pushAudio = push;
-  check('APRS TR kapalı: aralık 10 s olsa da otomatik gönderim yok', lcd(r) === 'APRS AKT' && AFSK.decode(log, FCLK).length === 0, lcd(r));
+  r.run(FCLK * 6.5); r.pushAudio = push;
+  const dgk = AFSK.decode(log, FCLK).map(x => x.text);
+  check('APRS TR kapalı, DG açık: girişten ~5 s sonra digi konumu (APATAR)', dgk.length === 1 && dgk[0] === 'TA7W-7>APATAR,WIDE2-2:!4050.63N/03109.39E>x' && lcd(r) === 'APRS OK ', dgk.join(' ; ') + ' / ' + lcd(r));
   let seri = []; const ub = r.uartByte.bind(r); r.uartByte = (n, v) => { if (n === 0) seri.push(v); return ub(n, v); };
   const e = AFSK.edges(AFSK.encode('TA9IG-1>APRS:!4050.63N/03109.39E>igate yok'), {}), t = r.now;
   r.selIn.setEdges(e.map(x => t + Math.round(x * FCLK))); r.inputs.P5 |= 0x80; r.run(FCLK * (e[e.length - 1] + 0.05)); r.inputs.P5 &= ~0x80; r.run(FCLK * 0.4);
   const ek = lcd(r), d = keys(r, 'sss');
   check('APRS IG kapalı: seri porta yazılmaz, istasyon ve detay çalışır', seri.length === 0 && ek === 'TA9IG-1 ' && d.join('|') === '4050 63N|3109 39E|IGATE YO', seri.length + ' bayt, ' + ek + ' -> ' + d.join('|'));
   keys(r, 'm');
+  /* TR de DG de kapalı: aralık olsa da otomatik gönderim yok */
+  const z = radio(ee => { P.aprsSet(ee, AYAR); P.aprsAyarSet(ee, { tr: false, dg: false, ig: true }); }); boot(z, 2.5);
+  for (let k = 0; k < 12 && lcd(z) !== 'APRS    '; k++) keys(z, 'm'); keys(z, 's');
+  let zn = 0; const zp = z.pushAudio; z.pushAudio = (buf, v) => { if (buf === z.audio.ta1) zn++; zp.call(z, buf, v); };
+  z.run(FCLK * 13); z.pushAudio = zp;
+  check('APRS TR ve DG kapalı: aralık 10 s olsa da otomatik gönderim yok', zn === 0 && lcd(z) === 'APRS AKT', zn + ' örnek, ' + lcd(z));
+  keys(z, 'm');
 }
 
 /* APRS DG (aprs_digi.inc): WIDE1-1 -> ÇAĞRIM*, WIDE2-2 -> ÇAĞRIM*,WIDE2-1, WIDE2-1 -> ÇAĞRIM,WIDE2*, doğrudan;
@@ -763,14 +774,30 @@ if (RING.includes('APRS TR*')) {
     b.pushAudio = (buf, v) => { if (buf === b.audio.ta1) log.push(b.now, v); push.call(b, buf, v); };
     for (let i = 0; i < sn * 10; i++) { if (sinyal) { if (Math.floor(i / 50) % 2 === 0) b.inputs.P5 |= 0x80; else b.inputs.P5 &= ~0x80; } b.run(FCLK * 0.1); ekran.add(lcd(b)); f.add(vco()); }
     b.inputs.P5 &= ~0x80; b.pushAudio = push; return { p: AFSK.decode(log, FCLK).map(x => x.text), ekran: [...ekran], f: [...f] }; };
-  let r = izle(60);
-  check('arka plan tracker: 20 s + 30 s boşluk sonra 144,800\'de bir paket, kanala dönüş', r.p.length === 1 && r.p[0] === 'TA7W-7>APIZCI,WIDE2-2:!4050.63N/03109.39E>arka' &&
+  let r = izle(15);
+  check('arka plan tracker: açılıştan ~10 s sonra ilk paket 144,800\'de, kanala dönüş', r.p.length === 1 && r.p[0] === 'TA7W-7>APIZCI,WIDE2-2:!4050.63N/03109.39E>arka' &&
     r.ekran.includes('APRS TX ') && r.f.includes('144.8000') && lcd(b) === 'KANAL 01' && vco() === '201.0000', r.p.join(';') + ' | ' + r.ekran.join('|') + ' | ' + vco());
+  r = izle(40);
+  check('arka plan tracker: sonraki paket 20 s + 30 s boşluktan önce gitmez', r.p.length === 0 && !r.f.includes('144.8000'), r.p.length + ' paket');
+  r = izle(15);
+  check('arka plan tracker: 20 s + 30 s boşluk sonra ikinci paket, kanala dönüş', r.p.length === 1 && lcd(b) === 'KANAL 01' && vco() === '201.0000', r.p.length + ' paket, ' + lcd(b) + ' ' + vco());
   r = izle(70, true);
   check('arka plan tracker: kanalda 5 s\'de bir sinyal varken (30 s boşluk yok) gönderilmez', r.p.length === 0 && !r.f.includes('144.8000'), r.p.length + ' paket');
   keys(b, 'mms156525#160650###m');
   r = izle(60);
   check('arka plan tracker: VFO modunda gönderip VFO frekansına döner, VFO modu kalır', r.p.length === 1 && lcd(b) === '156 5250' && vco() === '201.5250' && (b.ram[0x571] << 8 | b.ram[0x570]) === 0x4656, r.p.length + ' ' + lcd(b) + ' ' + vco());
+  /* menüde APRS TR / DG / IG değişince ilk paket yine hemen (20 s + 30 s beklenmez) */
+  {
+    const m = radio(ee => { P.aprsSet(ee, ayar); P.aprsAyarSet(ee, { tr: true, dg: false, ig: false }); }); boot(m, 2.5);
+    const mlog = [], mp = m.pushAudio; m.pushAudio = (buf, v) => { if (buf === m.audio.ta1) mlog.push(m.now, v); mp.call(m, buf, v); };
+    m.run(FCLK * 15); const once = AFSK.decode(mlog, FCLK).length; mlog.length = 0;
+    for (let k = 0; k < 12 && lcd(m).slice(0, 7) !== 'APRS IG'; k++) keys(m, 'm');
+    const ig = keys(m, 'ss'), tDeg = m.now; let ek = '';
+    for (let i = 0; i < 300 && !mlog.length; i++) { m.run(FCLK * 0.1); ek = lcd(m); }
+    m.pushAudio = mp; const tm = mlog.length ? (mlog[0] - tDeg) / FCLK : 0;
+    check('arka plan tracker: menüde ayar değişince menüden çıkışın ardından ilk boşlukta (' + tm.toFixed(1) + ' s) paket', once === 1 && ig.join('|') === 'APRS IG*|APRS IG-' && mlog.length > 0 && tm < 25,
+      once + ' / ' + ig.join('|') + ' / ' + tm.toFixed(1) + ' s / ' + ek);
+  }
   /* DG açık: kendi paketimiz APATAR; APRS ekranında beacon kanaldaki sinyal bitince */
   const c = radio(ee => { P.aprsSet(ee, Object.assign({}, ayar, { aralik: 10 })); P.aprsAyarSet(ee, { tr: true, dg: true, ig: false }); }); boot(c, 2.5);
   for (let k = 0; k < 12 && lcd(c) !== 'APRS    '; k++) keys(c, 'm'); keys(c, 's');
@@ -786,7 +813,7 @@ if (RING.includes('APRS TR*')) {
   const u = radio(ee => { UHF(ee); P.aprsSet(ee, ayar); P.aprsAyarSet(ee, { tr: true, dg: false, ig: false }); }); boot(u, 2.5);
   const uv = () => (u.radioState().vco / 1e6).toFixed(4), uf = new Set(), ulog = [], upush = u.pushAudio;
   u.pushAudio = (buf, v) => { if (buf === u.audio.ta1) ulog.push(u.now, v); upush.call(u, buf, v); };
-  for (let i = 0; i < 600; i++) { u.run(FCLK * 0.1); uf.add(uv()); }
+  for (let i = 0; i < 300; i++) { u.run(FCLK * 0.1); uf.add(uv()); }
   u.pushAudio = upush;
   check('UHF: arka plan tracker 432,500\'de gönderir, kanala (433,000) döner', uf.has('432.5000') && !uf.has('144.8000') && AFSK.decode(ulog, FCLK).length === 1 && uv() === '388.0000',
     [...uf].join(',') + ' / ' + uv());

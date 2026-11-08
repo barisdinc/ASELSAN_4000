@@ -17,7 +17,9 @@
 ;   +24  boylam "DDDMM.mmE" (9 bayt)                  "03250.22E"
 ;   +33  boş
 ;   +34  otomatik gönderim aralığı, saniye (2 bayt büyük uçlu): APRS menüsündeyken PTT'ye
-;        basılmasa da bu aralıkla paket gider (0: kapalı; en kısa 10 s)
+;        basılmasa da bu aralıkla paket gider (0: kapalı; en kısa 10 s). APRS TR ya da APRS DG
+;        açıkken çalışır (DG açıkken cihaz tipi APATAR: digi konumu). İlk paket APRS'e girişten
+;        (açılışta kendiliğinden girişten de) AP_ILK saniye sonra gider, sonra her aralıkta.
 ;   +36  yorum, 43 bayt, 0 ile biter (baytlar olduğu gibi gider: küçük harf, noktalama, UTF-8)
 ;   +79  boş
 ;   +80  sağlama: +0..+79 baytlarının 16 bit toplamı, büyük uçlu (0x730..0x731)
@@ -112,6 +114,8 @@ TIK_32MS    .EQU $0457          ; TB2 kesmesi her 32 ms'de bir artırır
 PTT_ISTEK   .EQU $0244          ; F_005E56: bit 0..5 PTT istekleri (0x20 P47, 0x10 panel ...)
 F_PTT_APRS  .EQU $0004          ; firmware'de kullanılmayan istek biti: otomatik APRS gönderimi
 AP_EN_KISA  .EQU 10             ; en kısa otomatik gönderim aralığı (s)
+AP_ILK      .EQU 5              ; APRS'e girişten / açılıştan ilk otomatik pakete (s)
+ARKA_ILK    .EQU $04FA          ; 1 = arka plan tracker'ın ilk paketi bekleniyor (aprs_arka.inc)
 
 F_AP_KURULU .EQU 1
 F_AP_GITTI  .EQU 2
@@ -1202,11 +1206,24 @@ AP_ARALIK_AL:
         BCS   AAL_X
         LDA   A,#AP_EN_KISA
         STA   A,AP_ARALIK
-AAL_X:  SEM
+AAL_X:  JSR   AP_ILK_KUR                ; ilk paket AP_ILK saniye sonra
+        SEM
         LDA   A,TIK_32MS
         STA   A,AP_SONTIK
         LDM   #0,AP_OTO
         CLM
+        RTS
+
+; İlk otomatik paket AP_ILK saniye sonra: sayaç aralık - AP_ILK'dan başlar (aralık 0 ise dokunmaz;
+; en kısa aralık 10 s > AP_ILK). M = 0 giriş ve çıkış; A bozulur.
+AP_ILK_KUR:
+        .ASSUME M=0,X=0
+        LDA   A,AP_ARALIK
+        BEQ   AIK_SON
+        SEC
+        SBC   A,#AP_ILK
+        STA   A,AP_SANIYE
+AIK_SON:
         RTS
 
 ; FCS: CRC-16-CCITT (yansıtılmış 0x8408, başlangıç 0xFFFF, sonda tersi) çerçevenin sonuna,
@@ -1422,7 +1439,9 @@ AP_OTO_ZAMAN:
         LDA   A,AP_ARALIK
         BEQ   AOZ_SON
         SEM
-        BBC   #AYAR_TR,AP_AYAR,AOZ_SON  ; APRS TR kapalı (aprs_ayar.inc)
+        LDA   A,AP_AYAR                 ; APRS TR ya da DG açık (aprs_ayar.inc); DG: digi konumu
+        AND   A,#AYAR_TR|AYAR_DG
+        BEQ   AOZ_SON
         LDA   A,AP_OTO
         BEQ   AOZ_SAY
         LDA   A,AP_OTO_SURE             ; istek bekliyor: süresi dolarsa bırak

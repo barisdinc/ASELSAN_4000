@@ -10,6 +10,8 @@
 ; 3 gönderiliyor (APRS_KARAR / APRS_PTT bunu APRS ekranı gibi kabul eder), 4 kanala dönüş.
 ; 144,800'e geçiş ve dönüş APRS menüsününkiyle aynı (AP_KUR: kayıt AP_YEDEK'e; dönüşte kayıt
 ; hâlâ bizimkiyse geri). GPS (gps.inc) burada da dakikada bir güncellenir.
+; İlk paket (açılışta ya da menüde APRS TR / DG / IG değiştirilince; ARKA_ILK = 1): süre AP_ILK
+; saniyeden sayılır ve 30 s yerine AP_ILK saniyelik boşluk yeter (açılıştan ~10 s sonra gider).
 ; RAM: ARKA_DURUM $0131; sayaçlar APRS ekranınınkiler (AP_SANIYE, AP_MS, AP_FARK, AP_OTO_SURE).
 
 ARKA_DURUM  .EQU $0131
@@ -27,6 +29,7 @@ ARKA_YUKLE:
         JSR   AP_ARALIK_AL
         SEM
         LDM   #0,ARKA_DURUM
+        LDM   #1,ARKA_ILK
         CLM
         RTS
 
@@ -56,6 +59,14 @@ AI_SIFIR:
         CLM
         LDM   #0,AP_SANIYE
         LDM   #0,AP_MS
+        SEM
+        LDA   A,ARKA_ILK                ; ilk paket: boşluk beklerken AP_ILK s yeter
+        BEQ   AI_SONJ
+        LDA   A,ARKA_DURUM
+        CMP   A,#1
+        BNE   AI_SONJ
+        CLM
+        LDM   #ARKA_SESSIZ-AP_ILK,AP_SANIYE
         SEM
 AI_SONJ:
         JMP   AI_SON
@@ -139,6 +150,7 @@ AI_DONUS:                               ; 4: kanala dön
         SEM
         LDM   #0,AP_DURUM
         LDM   #0,ARKA_DURUM
+        LDM   #0,ARKA_ILK
         LDX   #0                        ; kayıt hâlâ bizimki mi (kanal anahtarı çevrildiyse dokunma)
 AI_D1:  LDA   A,SYN_KAYIT,X
         CMP   A,AP_KAYIT,X

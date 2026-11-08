@@ -94,7 +94,9 @@ AYAR_TUS:
         SEC
         JSR   AY_ERIS
         PLD
+        JSR   AP_ILK_KUR                ; açılınca ilk otomatik paket hemen (AP_ILK s)
         SEM
+        LDM   #1,ARKA_ILK
         LDM   #' ',LCD+7                ; başlık yeniden: AY_GOSTER durum işaretini koyar
         CLM
         PLA

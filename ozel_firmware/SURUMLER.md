@@ -5,7 +5,7 @@ Aynı notlar sitede: [surumler.html](https://barisdinc.github.io/ASELSAN_4000/su
 
 ## yATOLYE özel firmware'i (`YA4000S_FREKANS_YATOLYE.HEX`)
 
-Güncel sürüm: **AT V0-33** (23.10.2026)
+Güncel sürüm: **AT V0-34** (08.11.2026)
 
 Orijinal YA4000S (AS V2-30) üzerine FREKANS (VFO) menüsü, APRS gönderme / alma, seçmeli çağrı kaldırıldı, açılışta 5 s yATOLYE.
 
@@ -13,7 +13,7 @@ Orijinal YA4000S (AS V2-30) üzerine FREKANS (VFO) menüsü, APRS gönderme / al
 
 - **FREKANS (VFO) menüsü** (AT V0-1 ile geldi): Kanal tablosundan bağımsız alma ve gönderme frekansı, alma ve gönderme TKS (CTCSS) tonu tuşlarla girilir (tonlar V0-17 ile). Ekranda kanal numarası yerine VR (alma) / VT (gönderme); PTT'de gönderme frekansı görünür.
 - **APRS gönderme** (AT V0-1 ile geldi): APRS menüsünde PTT ile ya da ayarlanan aralıkta (PTT'siz) 144,800 MHz'de 1200 baud konum paketi. Çağrı işareti, konum, simge, yorum ve aralık EEPROM'da (0x6E0); programlama sayfasının APRS sekmesinden düzenlenir.
-- **APRS TR / DG / IG ayarları** (AT V0-24 ile geldi): Menüde APRS TR (tracker), APRS DG (digipeater), APRS IG (seri port / igate); 's' ile * / -. Yalnız TR açıkken normal kanalda arka plan tracker (30 s boşlukta 144,800). DG açıkken cihaz tipi APATAR. EEPROM 0x733.
+- **APRS TR / DG / IG ayarları** (AT V0-24 ile geldi): Menüde APRS TR (tracker), APRS DG (digipeater), APRS IG (seri port / igate); 's' ile * / -. TR ya da DG açıkken aralıkla otomatik konum (ilk paket ~5 s'de). Yalnız TR açıkken normal kanalda arka plan tracker (30 s boşlukta 144,800; ilk paket ~10 s'de). DG açıkken cihaz tipi APATAR (digi konumu). EEPROM 0x733.
 - **GPS konumu** (AT V0-26 ile geldi): Seri porttan $GPRMC (GPS ya da sayfadaki benzetim); APRS ekranında dakikada bir konum güncellenir, paketlerde kullanılır; ekranda GPS.
 - **APRS alma: duyulan istasyonlar** (AT V0-6 ile geldi): APRS menüsündeyken çözülen paketin gönderen çağrı işareti ~4 s ekranda. Son 8 istasyon listesi: * bir eskiye, # bir yeniye.
 - **APRS alma: istasyon konumu ve mesajı** (AT V0-22 ile geldi): Listede bir istasyon görünürken 's': enlem, boylam, mesaj (ilk 8 karakter), çağrı işareti sayfaları (8 s). Düz konum biçimleri; sıkıştırılmış ve Mic-E konumu çözülmez (Mic-E yorumu gösterilir).
@@ -27,6 +27,12 @@ Orijinal YA4000S (AS V2-30) üzerine FREKANS (VFO) menüsü, APRS gönderme / al
 - **VFO'yu hafıza kanalına kaydetme** (AT V0-33 ile geldi): VFO kuruluyken q ~1 s: KAYIT __, kanal numarası (1..99), s ile kaydet (TAMAM 05). Alma / gönderme frekansı, tonlar ve güç kanala yazılır; kanalın adı alma frekansı olur (145 5000). Başka tuş ya da 8 s bekleme iptal eder.
 
 ### Sürüm geçmişi
+
+#### AT V0-34 · 08.11.2026 · yalnız simülatörde denendi
+
+- Yeni: APRS DG açıkken telsiz kendi konumunu da yayınlar (APRS TR kapalı olsa da): aralık ayarlıysa her aralıkta, cihaz tipi APATAR olarak (digipeater konumu).
+- Değişiklik: İlk otomatik APRS paketi artık bir aralık beklenmeden gider: APRS ekranına girdikten (telsiz APRS'te açıldıysa açılıştan) ~5 s sonra; sonrası yine her aralıkta.
+- Değişiklik: Arka plan tracker'da ilk paket: telsiz açıldıktan ya da menüde APRS TR / DG / IG değiştirildikten sonra kanalda 5 s boşluk yeter (~10 s'de gider); sonraki paketler yine aralık + 30 s boşlukla.
 
 #### AT V0-33 · 23.10.2026 · yalnız simülatörde denendi
 
